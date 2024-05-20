@@ -1,5 +1,4 @@
-package world
+package world.entity
 
-class Planet : Entity() {
-
+class Planet(val size : Double) : Entity() {
 }
