@@ -1,4 +1,4 @@
-package world
+package world.entity
 
 import org.dyn4j.dynamics.Body
 
