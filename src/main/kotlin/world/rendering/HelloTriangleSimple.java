@@ -34,15 +34,22 @@ public class HelloTriangleSimple implements GLEventListener, KeyListener {
         new HelloTriangleSimple().setup();
     }
 
-    private float[] vertexData = {
-            -1, -1, 1, 0, 0,
-            +0, +2, 0, 0, 1,
-            +1, -1, 0, 1, 0};
+    private float[] vertexData1 = {
+            -1, -1.0f, 1, 0, 0,
+            +0, +0.5f, 1, 0, 0,
+            +1, -1.0f, 1, 0, 0};
 
-    private short[] elementData = {2, 1, 0};
+    private float[] vertexData2 = {
+            -0.5f, -0.5f, 0, 1, 0,
+            +0.5f, -0.5f, 0, 1, 0,
+            +0.5f, +0.5f, 0, 1, 0,
+            -0.5f, +0.5f, 0, 1, 0};
+
+
+    private short[] elementData1 = {0, 1, 2};
+    private short[] elementData2 = {1, 2, 3,4};
 
     private interface BufferIndices {
-
         int VERTEX = 0;
         int ELEMENT = 1;
         int GLOBAL_MATRICES = 2;
@@ -103,7 +110,7 @@ public class HelloTriangleSimple implements GLEventListener, KeyListener {
 
         initBuffers(gl);
 
-        initVertexArray(gl);
+        updateVertexArray(gl);
 
         program = new Program(gl, "", "hello-triangle", "hello-triangle");
 
@@ -148,19 +155,9 @@ public class HelloTriangleSimple implements GLEventListener, KeyListener {
 
     private void initBuffers(GL4 gl) {
 
-        FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(vertexData);
-        ShortBuffer elementBuffer = GLBuffers.newDirectShortBuffer(elementData);
+
 
         gl.glCreateBuffers(BufferIndices.NUM_BUFFERS, bufferIndices);
-
-        gl.glBindBuffer(GL_ARRAY_BUFFER, bufferIndices.get(BufferIndices.VERTEX));
-        gl.glBufferStorage(GL_ARRAY_BUFFER, vertexBuffer.capacity() * Float.BYTES, vertexBuffer, 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferIndices.get(BufferIndices.ELEMENT));
-        gl.glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, elementBuffer.capacity() * Short.BYTES, elementBuffer, 0);
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 
         IntBuffer uniformBufferOffset = GLBuffers.newDirectIntBuffer(1);
         gl.glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, uniformBufferOffset);
@@ -190,7 +187,18 @@ public class HelloTriangleSimple implements GLEventListener, KeyListener {
                 GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     }
 
-    private void initVertexArray(GL4 gl) {
+    private void updateVertexArray(GL4 gl) {
+
+        FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(vertexData1);
+        ShortBuffer elementBuffer = GLBuffers.newDirectShortBuffer(elementData);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, bufferIndices.get(BufferIndices.VERTEX));
+        gl.glBufferStorage(GL_ARRAY_BUFFER, vertexBuffer.capacity() * Float.BYTES, vertexBuffer, 0);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferIndices.get(BufferIndices.ELEMENT));
+        gl.glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, elementBuffer.capacity() * Short.BYTES, elementBuffer, 0);
+        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         gl.glCreateVertexArrays(1, vertexArray);
 
@@ -226,9 +234,9 @@ public class HelloTriangleSimple implements GLEventListener, KeyListener {
         // model matrix
         {
             float[] scale = FloatUtil.makeScale(new float[16], true, 0.5f, 0.5f, 0.5f);
-            float[] rotateZ = FloatUtil.makeRotationAxis(new float[16], 0, 0, 0f, 0f, 1f, new float[3]);
+            float[] rotateZ = FloatUtil.makeRotationAxis(new float[16], 0, 0, 0f, 0f, 0f, new float[3]);
             float[] model = FloatUtil.multMatrix(scale, rotateZ);
-            modelMatrixPointer.asFloatBuffer().put(model);
+            modelMatrixPointer.asFloatBuffer().put(scale);
         }
 
         gl.glUseProgram(program.name);
