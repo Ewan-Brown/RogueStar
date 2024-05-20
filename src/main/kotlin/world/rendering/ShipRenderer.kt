@@ -2,16 +2,17 @@ package world.rendering
 
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
+import com.jogamp.opengl.util.Animator
 import org.dyn4j.geometry.Vector2
 import world.entity.Ship
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.JFrame
 
-class ShipRenderer(val ship: Ship, val width: Int, val height: Int) : GLEventListener {
+class ShipRenderer(private val ship: Ship, private val width: Int, private val height: Int) : GLEventListener {
 
     override fun init(p0: GLAutoDrawable?) {
-
+        println("ShipRenderer.init")
         val gl2 = p0?.gl?.gL2
 
         if(gl2 != null) {
@@ -23,54 +24,56 @@ class ShipRenderer(val ship: Ship, val width: Int, val height: Int) : GLEventLis
             gl2.glMatrixMode(GL2.GL_MODELVIEW)
             gl2.glLoadIdentity()
 
-//            gl2.glEnable(GL.GL_BLEND)
-//            gl2.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-            gl2.glClearColor(0.5f, 0.0f, 0.0f, 0.0f)
+            gl2.glEnable(GL.GL_BLEND)
+            gl2.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+            gl2.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
 
             gl2.swapInterval = 0
+
+
         }
     }
 
     override fun dispose(p0: GLAutoDrawable?) {
-        TODO("Not yet implemented")
+//        TODO("Not yet implemented")
     }
 
     override fun display(p0: GLAutoDrawable?) {
-        val gl = p0?.gl?.gL2
 
-        if(gl != null) {
+
+        println("ShipRenderer.display")
+        val gl2 = p0?.gl?.gL2
+
+        if(gl2 != null) {
             // clear the screen
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-
+            gl2.glClear(GL.GL_COLOR_BUFFER_BIT)
 
             // switch to the model view matrix
-            gl.glMatrixMode(GL2.GL_MODELVIEW)
+            gl2.glMatrixMode(GL2.GL_MODELVIEW)
 
-            // initialize the matrix (0,0) is in the center of the window
-            gl.glLoadIdentity()
+            gl2.glLoadIdentity()
 
-            gl.glBegin(GL2.GL_POLYGON)
-            gl.glColor3d(0.5,0.0,0.0)
+            gl2.glColor4f(0.0f, 1.0f, 0.0f, 1.0f)
+            gl2.glScaled(0.1, 0.1, 1.0)
+            gl2.glBegin(GL2.GL_POLYGON)
 
-            for (point in ship.points) {
-                gl.glVertex2d(point.x, point.y)
+            for (normalizedPoint in ship.normalizedPoints) {
+                gl2.glVertex2f(normalizedPoint.x.toFloat(), normalizedPoint.y.toFloat())
             }
-
-            gl.glEnd()
+            gl2.glEnd()
         }
 
 }
 
     override fun reshape(p0: GLAutoDrawable?, p1: Int, p2: Int, p3: Int, p4: Int) {
-        TODO("Not yet implemented")
+//        TODO("Not yet implemented")
     }
 }
 
 fun main(args: Array<String>) {
     println("ShipRenderer")
 
-    val ship = Ship(listOf(Vector2(0.0, 0.0), Vector2(1.0, 0.0), Vector2(1.0, 1.0), Vector2(0.0, 1.0)))
+    val ship = Ship(listOf(Vector2(1.0, 0.0), Vector2(0.0, 1.0), Vector2(1.0, 2.0), Vector2(2.0, 4.0), Vector2(3.0, 2.0), Vector2(4.0, 1.0), Vector2(3.0, 0.0)))
     val dim = Dimension(600,600)
     val renderer = ShipRenderer(ship, dim.width, dim.height)
 
@@ -94,5 +97,12 @@ fun main(args: Array<String>) {
     frame.add(canvas)
     frame.isVisible = true
 
+    println(frame.size)
+    println(canvas.size)
+
     frame.pack()
+
+    val animator = Animator(canvas)
+    animator.setRunAsFastAsPossible(true)
+    animator.start()
 }
