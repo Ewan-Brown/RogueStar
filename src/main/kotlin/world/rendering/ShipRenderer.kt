@@ -75,7 +75,7 @@ fun main(args: Array<String>) {
 
     val ship = Ship(listOf(Vector2(1.0, 0.0), Vector2(0.0, 1.0), Vector2(1.0, 2.0), Vector2(2.0, 4.0), Vector2(3.0, 2.0), Vector2(4.0, 1.0), Vector2(3.0, 0.0)))
     val dim = Dimension(600,600)
-    val renderer = ShipRenderer(ship, dim.width, dim.height)
+    val renderer = ShipRendererModern(ship, dim.width, dim.height)
 
     val glCaps = GLCapabilities(GLProfile.get(GLProfile.GL2))
     glCaps.doubleBuffered = true
