@@ -9,14 +9,14 @@ class Ship(private val points : List<Vector2>) : Renderable{
     val centroid : Vector2 = Geometry.getAverageCenter(points)
     val normalizedPoints : List<Vector2> = points.map { vector2 ->  vector2.subtract(centroid)}
 
-    fun getPointsAsFloats() : List<Float>{
-        val floats = emptyList<Float>().toMutableList()
+    fun getPointsAsFloats() : FloatArray{
+        val floats = ArrayList<Float>()
         normalizedPoints.iterator().forEach {
             floats.add(it.x.toFloat())
             floats.add(it.y.toFloat())
             floats.add(0.0f)
         }
-        return floats
+        return floats.toFloatArray()
     }
 
     fun getPos_temp() : Vector2 {
