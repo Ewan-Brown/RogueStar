@@ -2,10 +2,10 @@
 #include semantic.glsl
 
 // Incoming vertex position, Model Space
-layout (location = POSITION) in vec2 position;
-
+layout (location = 0) in vec2 position;
 // Incoming vertex color
-layout (location = COLOR) in vec3 color;
+layout (location = 1) in vec3 color;
+layout (location = 2) in vec2 instanced_position;
 
 uniform GlobalMatrices
 {
@@ -25,7 +25,7 @@ out vec3 interpolatedColor;
 void main() {
 
     // Normally gl_Position is in Clip Space and we calculate it by multiplying together all the matrices
-    gl_Position = proj * (view * (model * vec4(position, 0, 1)));
+    gl_Position = proj * (view * (model * vec4(instanced_position, 0, 1)));
 
     // We assign the color to the outgoing variable.
     interpolatedColor = color;
