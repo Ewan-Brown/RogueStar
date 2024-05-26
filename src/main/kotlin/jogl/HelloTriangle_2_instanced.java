@@ -119,11 +119,15 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
     private void initVBOs(GL3 gl) {
 
         //Generate Instance data
-        float[] instanceData = new float[TRIANGLE_COUNT * 2];
+        float[] instanceData = new float[TRIANGLE_COUNT * 3];
 
         for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            instanceData[i*2]= i;
-            instanceData[i*2+1] = 0.0f;
+            float x = (float)i/TRIANGLE_COUNT;
+            float y = 0.0f;
+            float angle = (float)(Math.random() * Math.PI *2);
+            instanceData[i*3]= i;
+            instanceData[i*3+1] = 0.0f;
+            instanceData[i*3+2] = angle;
         }
 
         FloatBuffer vertexBuffer1 = GLBuffers.newDirectFloatBuffer(vertexData1);
@@ -176,7 +180,7 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
 
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, 2 * Float.BYTES, 0);
+            gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, 3 * Float.BYTES, 0);
 
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
