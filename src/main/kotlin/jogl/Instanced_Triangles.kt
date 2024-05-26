@@ -23,8 +23,6 @@ class Instanced_Triangles : GLEventListener, KeyListener {
     var window: GLWindow? = null
     var animator: Animator? = null
 
-
-
     private val vertexData1 = floatArrayOf(
         -1f, -1f, 1f, 0f, 0f,
         +0f, +2f, 0f, 0f, 1f,

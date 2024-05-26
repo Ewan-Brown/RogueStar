@@ -6,7 +6,7 @@
 package world.rendering;
 
 /**
- * @author gbarbieri
+ * 
  */
 abstract public class Semantic {
 
