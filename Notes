@@ -1,0 +1,5 @@
+- Get a working OpenGL 3.0 demo that can render X number of static models in dynamic positions
+- Get a simple Dyn4J world running
+- Define Ships, Planets, and Debris
+- Get a simple control interface up
+- Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
