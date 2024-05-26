@@ -47,7 +47,7 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
             +1, -1, 0, 1, 0
     };
 
-    static final int TRIANGLE_COUNT = 5;
+    static final int TRIANGLE_COUNT = 10;
 
     private short[] elementData1 = {0, 1, 2};
 
@@ -122,8 +122,8 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         float[] instanceData = new float[TRIANGLE_COUNT * 2];
 
         for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            instanceData[i*2]= (float)Math.random() - 0.5f;
-            instanceData[i*2+1] = (float)Math.random() - 0.5f;
+            instanceData[i*2]= i;
+            instanceData[i*2+1] = 0.0f;
         }
 
         FloatBuffer vertexBuffer1 = GLBuffers.newDirectFloatBuffer(vertexData1);
@@ -142,7 +142,7 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Short.BYTES, instanceBuffer, GL_STATIC_DRAW);
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
@@ -164,22 +164,20 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         gl.glBindVertexArray(VAOs.get(0));
         {
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX1));
-            {
-                int stride = (2 + 3) * Float.BYTES;
-                int offset = 0;
+            int stride = (2 + 3) * Float.BYTES;
+            int offset = 0;
 
-                gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE);
-                gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, stride, offset);
+            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, stride, offset);
 
-                offset = 2 * Float.BYTES;
-                gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
-                gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
+            offset = 2 * Float.BYTES;
+            gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
 
-                offset = 0;
-                gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
-                gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, stride, offset);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, 2 * Float.BYTES, 0);
 
-            }
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
 
@@ -225,7 +223,7 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         // model matrix
         {
             float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 0.1f);
-            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.5f);
+            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
 
             for (int i = 0; i < 16; i++) {
@@ -234,8 +232,8 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
             gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
-
+//        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  elementData1.length, TRIANGLE_COUNT);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
