@@ -30,7 +30,7 @@ import static com.jogamp.opengl.GL3.GL_NO_ERROR;
 import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- * @author gbarbieri
+ *  Dynamic Updates POC - render multiple instances whos transformation matrices are constantly changing
  */
 public class HelloTriangle_3_dynamic_instances implements GLEventListener, KeyListener {
 
@@ -48,7 +48,7 @@ public class HelloTriangle_3_dynamic_instances implements GLEventListener, KeyLi
             +1, -1, 0, 1, 0
     };
 
-    static final int TRIANGLE_COUNT = 10;
+    static final int TRIANGLE_COUNT = 10000;
 
     private short[] elementData1 = {0, 1, 2};
 
@@ -183,20 +183,24 @@ public class HelloTriangle_3_dynamic_instances implements GLEventListener, KeyLi
     }
 
     private void updateInstanceData(GL3 gl){
-        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+        gl.glBeginQuery(GL3.GL_TIME_ELAPSED, 0);
+        {
+            float[] instanceData = new float[TRIANGLE_COUNT * 3];
 
-        for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            float x = (float)(Math.random() - 0.5) * 18.0f;
-            float y = (float)(Math.random() - 0.5) * 18.0f;
-            float angle = (float)(Math.random() * Math.PI *2);
-            instanceData[i*3]= x;
-            instanceData[i*3+1] = y;
-            instanceData[i*3+2] = angle;
+            for (int i = 0; i < TRIANGLE_COUNT; i++) {
+                float x = (float) (Math.random() - 0.5) * 18.0f;
+                float y = (float) (Math.random() - 0.5) * 18.0f;
+                float angle = (float) (Math.random() * Math.PI * 2);
+                instanceData[i * 3] = x;
+                instanceData[i * 3 + 1] = y;
+                instanceData[i * 3 + 2] = angle;
+            }
+            FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
-        FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+        
     }
 
 

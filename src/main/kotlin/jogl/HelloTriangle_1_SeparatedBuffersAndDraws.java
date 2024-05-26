@@ -36,7 +36,7 @@ import static com.jogamp.opengl.GL3.GL_NO_ERROR;
 import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- * @author gbarbieri
+ *  Initial POC. Render 2 separate polygons
  */
 public class HelloTriangle_1_SeparatedBuffersAndDraws implements GLEventListener, KeyListener {
 
