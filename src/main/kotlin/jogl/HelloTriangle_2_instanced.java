@@ -47,7 +47,7 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
             +1, -1, 0, 1, 0
     };
 
-    static final int TRIANGLE_COUNT = 10;
+    static final int TRIANGLE_COUNT = 10000;
 
     private short[] elementData1 = {0, 1, 2};
 
@@ -122,11 +122,11 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         float[] instanceData = new float[TRIANGLE_COUNT * 3];
 
         for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            float x = (float)i/TRIANGLE_COUNT;
-            float y = 0.0f;
+            float x = (float)(Math.random() - 0.5) * 18.0f;
+            float y = (float)(Math.random() - 0.5) * 18.0f;
             float angle = (float)(Math.random() * Math.PI *2);
-            instanceData[i*3]= i;
-            instanceData[i*3+1] = 0.0f;
+            instanceData[i*3]= x;
+            instanceData[i*3+1] = y;
             instanceData[i*3+2] = angle;
         }
 
