@@ -1,4 +1,4 @@
-package jogl;
+package jogl.instanced;
 
 import com.jogamp.newt.event.KeyEvent;
 import com.jogamp.newt.event.KeyListener;
@@ -30,15 +30,16 @@ import static com.jogamp.opengl.GL3.GL_NO_ERROR;
 import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- *  Instancing POC - render many instances of the same model
+ *  Dynamic Updates POC - render multiple instances whos transformation matrices are constantly changing
  */
-public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
+public class HelloTriangle_3_dynamic_instances implements GLEventListener, KeyListener {
 
     private static GLWindow window;
     private static Animator animator;
 
     public static void main(String[] args) {
-        new HelloTriangle_2_instanced().setup();
+        HelloTriangle_3_dynamic_instances gui = new HelloTriangle_3_dynamic_instances();
+        gui.setup();
     }
 
     private float[] vertexData1 = {
@@ -119,20 +120,10 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
     private void initVBOs(GL3 gl) {
 
         //Generate Instance data
-        float[] instanceData = new float[TRIANGLE_COUNT * 3];
 
-        for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            float x = (float)(Math.random() - 0.5) * 18.0f;
-            float y = (float)(Math.random() - 0.5) * 18.0f;
-            float angle = (float)(Math.random() * Math.PI *2);
-            instanceData[i*3]= x;
-            instanceData[i*3+1] = y;
-            instanceData[i*3+2] = angle;
-        }
 
         FloatBuffer vertexBuffer1 = GLBuffers.newDirectFloatBuffer(vertexData1);
         ShortBuffer elementBuffer1 = GLBuffers.newDirectShortBuffer(elementData1);
-        FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
 
         gl.glGenBuffers(Buffer.MAX, VBOs); // Create VBOs (n = Buffer.max)
 
@@ -145,13 +136,11 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (long) elementBuffer1.capacity() * Short.BYTES, elementBuffer1, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
         gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
         gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        updateInstanceData(gl);
 
         gl.glBindBufferBase(GL_UNIFORM_BUFFER, Semantic.Uniform.GLOBAL_MATRICES, VBOs.get(Buffer.GLOBAL_MATRICES));
 
@@ -192,6 +181,28 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
 
         checkError(gl, "initVao");
     }
+
+    private void updateInstanceData(GL3 gl){
+        gl.glBeginQuery(GL3.GL_TIME_ELAPSED, 0);
+        {
+            float[] instanceData = new float[TRIANGLE_COUNT * 3];
+
+            for (int i = 0; i < TRIANGLE_COUNT; i++) {
+                float x = (float) (Math.random() - 0.5) * 18.0f;
+                float y = (float) (Math.random() - 0.5) * 18.0f;
+                float angle = (float) (Math.random() * Math.PI * 2);
+                instanceData[i * 3] = x;
+                instanceData[i * 3 + 1] = y;
+                instanceData[i * 3 + 2] = angle;
+            }
+            FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+        
+    }
+
 
     private void initProgram(GL3 gl) {
 
@@ -242,6 +253,8 @@ public class HelloTriangle_2_instanced implements GLEventListener, KeyListener {
         gl.glBindVertexArray(0);
 
         checkError(gl, "display");
+
+        updateInstanceData(gl);
     }
 
     @Override
