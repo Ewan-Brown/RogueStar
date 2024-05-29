@@ -1,16 +1,8 @@
 package jogl.separate;
 
-import com.jogamp.newt.event.KeyEvent;
-import com.jogamp.newt.event.KeyListener;
-import com.jogamp.newt.event.WindowAdapter;
-import com.jogamp.newt.event.WindowEvent;
-import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.math.FloatUtil;
-import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.GLBuffers;
-import com.jogamp.opengl.util.glsl.ShaderCode;
-import com.jogamp.opengl.util.glsl.ShaderProgram;
 import jogl.HelloTriangle_Base;
 import world.rendering.Semantic;
 
@@ -23,20 +15,14 @@ import static com.jogamp.opengl.GL2ES3.*;
 import static com.jogamp.opengl.GL3.GL_ARRAY_BUFFER;
 import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL3.GL_FLOAT;
-import static com.jogamp.opengl.GL3.GL_INVALID_ENUM;
-import static com.jogamp.opengl.GL3.GL_INVALID_FRAMEBUFFER_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_VALUE;
-import static com.jogamp.opengl.GL3.GL_NO_ERROR;
-import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
  *  Render 2 polygons stored in shared vertex/element buffers and 1 draw call.
  */
-public class HelloTriangle_5_shared_vao_one_call extends HelloTriangle_Base {
+public class HelloTriangle_5_shared_vbo_one_call extends HelloTriangle_Base {
 
     public static void main(String[] args) {
-        new HelloTriangle_5_shared_vao_one_call().setup();
+        new HelloTriangle_5_shared_vbo_one_call().setup();
     }
 
     private float[] vertexData1 = {
