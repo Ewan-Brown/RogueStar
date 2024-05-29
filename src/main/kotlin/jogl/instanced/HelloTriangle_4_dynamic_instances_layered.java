@@ -11,6 +11,7 @@ import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.GLBuffers;
 import com.jogamp.opengl.util.glsl.ShaderCode;
 import com.jogamp.opengl.util.glsl.ShaderProgram;
+import jogl.HelloTriangle_Base;
 import world.rendering.Semantic;
 
 import java.nio.FloatBuffer;
@@ -30,12 +31,9 @@ import static com.jogamp.opengl.GL3.GL_NO_ERROR;
 import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- * Layered model POC - render multiple instances of the same entities but each entity has multiple sections that have their own transformations
+ * Render X instances of two models in shared buffers, in 2 draw calls, passing in X vec2(x,y) to shaders
  */
-public class HelloTriangle_4_dynamic_instances_layered implements GLEventListener, KeyListener {
-
-    private static GLWindow window;
-    private static Animator animator;
+public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Base {
 
     public static void main(String[] args) {
         HelloTriangle_4_dynamic_instances_layered gui = new HelloTriangle_4_dynamic_instances_layered();
@@ -71,36 +69,6 @@ public class HelloTriangle_4_dynamic_instances_layered implements GLEventListene
     private FloatBuffer clearDepth = GLBuffers.newDirectFloatBuffer(1);
 
     private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
-
-    private Program program;
-
-    private void setup() {
-
-        GLProfile glProfile = GLProfile.get(GLProfile.GL3);
-        GLCapabilities glCapabilities = new GLCapabilities(glProfile);
-
-        window = GLWindow.create(glCapabilities);
-
-        window.setTitle("Hello Triangle (simple)");
-        window.setSize(1024, 768);
-
-        window.setVisible(true);
-
-        window.addGLEventListener(this);
-        window.addKeyListener(this);
-
-        animator = new Animator(window);
-        animator.start();
-
-        window.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowDestroyed(WindowEvent e) {
-                animator.stop();
-                System.exit(1);
-            }
-        });
-
-    }
 
     @Override
     public void init(GLAutoDrawable drawable) {
@@ -283,87 +251,5 @@ public class HelloTriangle_4_dynamic_instances_layered implements GLEventListene
         gl.glDeleteProgram(program.name);
         gl.glDeleteVertexArrays(1, VAOs);
         gl.glDeleteBuffers(Buffer.MAX, VBOs);
-    }
-
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-            new Thread(() -> {
-                window.destroy();
-            }).start();
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-    }
-
-    private class Program {
-
-        int name, modelToWorldMatUL;
-
-        Program(GL3 gl, Class context, String root, String vertex, String fragment) {
-
-            ShaderCode vertShader = ShaderCode.create(gl, GL_VERTEX_SHADER, this.getClass(), root, null, vertex,
-                    "vert", null, true);
-            ShaderCode fragShader = ShaderCode.create(gl, GL_FRAGMENT_SHADER, this.getClass(), root, null, fragment,
-                    "frag", null, true);
-
-            ShaderProgram shaderProgram = new ShaderProgram();
-
-            shaderProgram.add(vertShader);
-            shaderProgram.add(fragShader);
-
-            shaderProgram.init(gl);
-
-            name = shaderProgram.program();
-
-            shaderProgram.link(gl, System.err);
-
-
-            modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
-
-            if (modelToWorldMatUL == -1) {
-                System.err.println("uniform 'model' not found!");
-            }
-
-
-            int globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices");
-
-            if (globalMatricesBI == -1) {
-                System.err.println("block index 'GlobalMatrices' not found!");
-            }
-            gl.glUniformBlockBinding(name, globalMatricesBI, Semantic.Uniform.GLOBAL_MATRICES);
-        }
-    }
-
-    private void checkError(GL gl, String location) {
-
-        int error = gl.glGetError();
-        if (error != GL_NO_ERROR) {
-            String errorString;
-            switch (error) {
-                case GL_INVALID_ENUM:
-                    errorString = "GL_INVALID_ENUM";
-                    break;
-                case GL_INVALID_VALUE:
-                    errorString = "GL_INVALID_VALUE";
-                    break;
-                case GL_INVALID_OPERATION:
-                    errorString = "GL_INVALID_OPERATION";
-                    break;
-                case GL_INVALID_FRAMEBUFFER_OPERATION:
-                    errorString = "GL_INVALID_FRAMEBUFFER_OPERATION";
-                    break;
-                case GL_OUT_OF_MEMORY:
-                    errorString = "GL_OUT_OF_MEMORY";
-                    break;
-                default:
-                    errorString = "UNKNOWN";
-                    break;
-            }
-            throw new Error("OpenGL Error(" + errorString + "): " + location);
-        }
     }
 }
