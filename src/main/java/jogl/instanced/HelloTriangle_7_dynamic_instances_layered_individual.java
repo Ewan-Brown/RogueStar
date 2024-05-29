@@ -1,4 +1,4 @@
-package jogl.multi;
+package jogl.instanced;
 
 import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -18,31 +18,35 @@ import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL3.GL_FLOAT;
 
 /**
- *  Render distinct multiples of 2 polygons stored in shared vertex/element buffers. Multiple draw calls
+ * Render X instances of two models in shared buffers, in 2 draw calls, passing in X vec2(x,y) to shaders
  */
-public class HelloTriangle_7_shared_vbo_multi_calls extends HelloTriangle_Base {
+public class HelloTriangle_7_dynamic_instances_layered_individual extends HelloTriangle_Base {
 
     public static void main(String[] args) {
-        new HelloTriangle_7_shared_vbo_multi_calls().setup();
+        HelloTriangle_7_dynamic_instances_layered_individual gui = new HelloTriangle_7_dynamic_instances_layered_individual();
+        gui.setup();
     }
 
-    private float[] vertexData1 = {
-            -1, +1, 1, 0, 0,
-            -1, -1, 0, 0, 1,
-            0, 0, 0, 1, 0,
-            +1, +1, 1, 0, 0,
-            +1, -1, 0, 0, 1,
-            0, 0, 0, 1, 0,
+    private float[] vertexData = {
+            -1.0f, -1.0f, 1, 1, 0, 0,
+            +0.0f, +2.0f, 1, 1, 0, 0,
+            +1.0f, -1.0f, 1, 1, 0, 0,
+            -0.5f, -0.5f, 0, 0, 1, 0,
+            +0.0f, +1.0f, 0, 0, 1, 0,
+            +0.5f, -0.5f, 0, 0, 1, 0
     };
 
-    private short[] elementData1 = {0, 1, 2, 3, 4, 5};
+    static final int TRIANGLE_COUNT = 100;
+
+    private short[] elementData = {0, 1, 2, 3, 4, 5};
 
     private interface Buffer {
 
-        int VERTEX1 = 0;
-        int ELEMENT1 = 1;
-        int GLOBAL_MATRICES = 2;
-        int MAX = 3;
+        int VERTEX = 1;
+        int ELEMENT = 2;
+        int INSTANCED_STUFF = 3;
+        int GLOBAL_MATRICES = 4;
+        int MAX = 5;
     }
 
     private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
@@ -65,62 +69,95 @@ public class HelloTriangle_7_shared_vbo_multi_calls extends HelloTriangle_Base {
         initProgram(gl);
 
         gl.glEnable(GL_DEPTH_TEST);
+
     }
 
     private void initVBOs(GL3 gl) {
 
-        FloatBuffer vertexBuffer1 = GLBuffers.newDirectFloatBuffer(vertexData1);
-        ShortBuffer elementBuffer1 = GLBuffers.newDirectShortBuffer(elementData1);
+        //Generate Instance data
+
+        FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(vertexData);
+        ShortBuffer elementBuffer = GLBuffers.newDirectShortBuffer(elementData);
 
         gl.glGenBuffers(Buffer.MAX, VBOs); // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX1));
-        gl.glBufferData(GL_ARRAY_BUFFER, vertexBuffer1.capacity() * Float.BYTES, vertexBuffer1, GL_STATIC_DRAW);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) vertexBuffer.capacity() * Float.BYTES, vertexBuffer, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT1));
-        gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementBuffer1.capacity() * Short.BYTES, elementBuffer1, GL_STATIC_DRAW);
+        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
+        gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (long) elementBuffer.capacity() * Short.BYTES, elementBuffer, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
         gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
         gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+        updateInstanceData(gl);
+
         gl.glBindBufferBase(GL_UNIFORM_BUFFER, Semantic.Uniform.GLOBAL_MATRICES, VBOs.get(Buffer.GLOBAL_MATRICES));
 
         checkError(gl, "initBuffers");
     }
 
-    private void initVAOs(GL3 gl) {
+    static int POSITION_ATTRIB_INDICE = 0;
+    static int COLOR_ATTRIB_INDICE = 1;
+    static int INSTANCE_POSITION_ATTRIB_INDICE = 2;
 
+
+    private void initVAOs(GL3 gl) {
         gl.glGenVertexArrays(1, VAOs); // Create VAO
         gl.glBindVertexArray(VAOs.get(0));
         {
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX1));
-            {
-                int stride = (2 + 3) * Float.BYTES;
-                int offset = 0;
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
+            int stride = (3 + 3) * Float.BYTES;
+            int offset = 0;
 
-                gl.glEnableVertexAttribArray(Semantic.Attr.POSITION);
-                gl.glVertexAttribPointer(Semantic.Attr.POSITION, 2, GL_FLOAT, false, stride, offset);
+            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
 
-                offset = 2 * Float.BYTES;
-                gl.glEnableVertexAttribArray(Semantic.Attr.COLOR);
-                gl.glVertexAttribPointer(Semantic.Attr.COLOR, 3, GL_FLOAT, false, stride, offset);
-            }
+            offset = 3 * Float.BYTES;
+            gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
+
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, 3 * Float.BYTES, 0);
+
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+            gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
 
-            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT1));
+            //TODO We can probably remove the element array buffer yeah? Others seem to not use it...
+            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
         }
         gl.glBindVertexArray(0);
 
         checkError(gl, "initVao");
     }
 
+    private void updateInstanceData(GL3 gl){
+        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+
+        for (int i = 0; i < TRIANGLE_COUNT; i++) {
+            float x = (float) (Math.random() - 0.5) * 18.0f;
+            float y = (float) (Math.random() - 0.5) * 18.0f;
+            float angle = (float) (Math.random() * Math.PI * 2);
+            instanceData[i * 3] = x;
+            instanceData[i * 3 + 1] = y;
+            instanceData[i * 3 + 2] = angle;
+        }
+        FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    }
+
+
     private void initProgram(GL3 gl) {
 
-        program = new Program(gl, getClass(), "", "hello-triangle_5", "hello-triangle_5");
+        program = new Program(gl, getClass(), "", "hello-triangle_7", "hello-triangle_7");
 
         checkError(gl, "initProgram");
     }
@@ -151,7 +188,7 @@ public class HelloTriangle_7_shared_vbo_multi_calls extends HelloTriangle_Base {
 
         // model matrix
         {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.5f, 0.5f, 0.5f);
+            float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 0.1f);
             float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
 
@@ -161,13 +198,19 @@ public class HelloTriangle_7_shared_vbo_multi_calls extends HelloTriangle_Base {
             gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        gl.glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0, 0);    ;
-        gl.glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0, 3);    ;
-
+        //CONTINUE - It looks like we can draw both, but the larger triangles are covering up the smaller ones.
+        // Need to do two things:
+        // - Ensure proper layering of things
+        // - Ensure that the second set of models can be passed an angle relative to the larger one, or absolute. Not sure which is more fitting
+//        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 3,  3, TRIANGLE_COUNT);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
         checkError(gl, "display");
+
+//        updateInstanceData(gl);
     }
 
     @Override
