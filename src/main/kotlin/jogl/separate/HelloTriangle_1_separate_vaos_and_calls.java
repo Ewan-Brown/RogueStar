@@ -1,4 +1,4 @@
-package jogl;
+package jogl.separate;
 
 import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
@@ -36,15 +36,15 @@ import static com.jogamp.opengl.GL3.GL_NO_ERROR;
 import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- *  Initial POC. Render 2 separate polygons
+ *  Initial POC. Render 2 separate polygons with two separate VAOs and two draw calls
  */
-public class HelloTriangle_1_SeparatedBuffersAndDraws implements GLEventListener, KeyListener {
+public class HelloTriangle_1_separate_vaos_and_calls implements GLEventListener, KeyListener {
 
     private static GLWindow window;
     private static Animator animator;
 
     public static void main(String[] args) {
-        new HelloTriangle_1_SeparatedBuffersAndDraws().setup();
+        new HelloTriangle_1_separate_vaos_and_calls().setup();
     }
 
     private float[] vertexData1 = {
