@@ -1,16 +1,8 @@
 package jogl.instanced;
 
-import com.jogamp.newt.event.KeyEvent;
-import com.jogamp.newt.event.KeyListener;
-import com.jogamp.newt.event.WindowAdapter;
-import com.jogamp.newt.event.WindowEvent;
-import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.math.FloatUtil;
-import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.GLBuffers;
-import com.jogamp.opengl.util.glsl.ShaderCode;
-import com.jogamp.opengl.util.glsl.ShaderProgram;
 import jogl.HelloTriangle_Base;
 import world.rendering.Semantic;
 
@@ -23,43 +15,34 @@ import static com.jogamp.opengl.GL2ES3.*;
 import static com.jogamp.opengl.GL3.GL_ARRAY_BUFFER;
 import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL3.GL_FLOAT;
-import static com.jogamp.opengl.GL3.GL_INVALID_ENUM;
-import static com.jogamp.opengl.GL3.GL_INVALID_FRAMEBUFFER_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_VALUE;
-import static com.jogamp.opengl.GL3.GL_NO_ERROR;
-import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
- * Render X instances of two models in shared buffers, in 2 draw calls, passing in X vec2(x,y) to shaders
+ *  Render X instanced of one model in one draw call, passing in dynamically updated X vec2(x,y) to shaders,
  */
-public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Base {
+public class HelloTriangle_3_dynamic_instances extends HelloTriangle_Base {
 
     public static void main(String[] args) {
-        HelloTriangle_4_dynamic_instances_layered gui = new HelloTriangle_4_dynamic_instances_layered();
+        HelloTriangle_3_dynamic_instances gui = new HelloTriangle_3_dynamic_instances();
         gui.setup();
     }
 
-    private float[] vertexData = {
-            -1.0f, -1.0f, 1, 1, 0, 0,
-            +0.0f, +2.0f, 1, 1, 0, 0,
-            +1.0f, -1.0f, 1, 1, 0, 0,
-            -0.5f, -0.5f, 0, 0, 1, 0,
-            +0.0f, +1.0f, 0, 0, 1, 0,
-            +0.5f, -0.5f, 0, 0, 1, 0
+    private float[] vertexData1 = {
+            -1, -1, 1, 0, 0,
+            +0, +2, 0, 0, 1,
+            +1, -1, 0, 1, 0
     };
 
-    static final int TRIANGLE_COUNT = 100;
+    static final int TRIANGLE_COUNT = 10000;
 
-    private short[] elementData = {0, 1, 2, 3, 4, 5};
+    private short[] elementData1 = {0, 1, 2};
 
     private interface Buffer {
 
-        int VERTEX = 1;
-        int ELEMENT = 2;
-        int INSTANCED_STUFF = 3;
-        int GLOBAL_MATRICES = 4;
-        int MAX = 5;
+        int VERTEX1 = 0;
+        int ELEMENT1 = 1;
+        int INSTANCED_STUFF = 2;
+        int GLOBAL_MATRICES = 3;
+        int MAX = 4;
     }
 
     private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
@@ -82,25 +65,31 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
         initProgram(gl);
 
         gl.glEnable(GL_DEPTH_TEST);
+    }
 
+    private void initProgram(GL3 gl) {
+
+        program = new Program(gl, getClass(), "", "hello-triangle_2", "hello-triangle_2");
+
+        checkError(gl, "initProgram");
     }
 
     private void initVBOs(GL3 gl) {
 
         //Generate Instance data
 
-        FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(vertexData);
-        ShortBuffer elementBuffer = GLBuffers.newDirectShortBuffer(elementData);
+        FloatBuffer vertexBuffer1 = GLBuffers.newDirectFloatBuffer(vertexData1);
+        ShortBuffer elementBuffer1 = GLBuffers.newDirectShortBuffer(elementData1);
 
         gl.glGenBuffers(Buffer.MAX, VBOs); // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) vertexBuffer.capacity() * Float.BYTES, vertexBuffer, GL_STATIC_DRAW);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX1));
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) vertexBuffer1.capacity() * Float.BYTES, vertexBuffer1, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
-        gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (long) elementBuffer.capacity() * Short.BYTES, elementBuffer, GL_STATIC_DRAW);
+        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT1));
+        gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (long) elementBuffer1.capacity() * Short.BYTES, elementBuffer1, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
@@ -123,14 +112,14 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
         gl.glGenVertexArrays(1, VAOs); // Create VAO
         gl.glBindVertexArray(VAOs.get(0));
         {
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
-            int stride = (3 + 3) * Float.BYTES;
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX1));
+            int stride = (2 + 3) * Float.BYTES;
             int offset = 0;
 
             gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
+            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 2, GL_FLOAT, false, stride, offset);
 
-            offset = 3 * Float.BYTES;
+            offset = 2 * Float.BYTES;
             gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
             gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
 
@@ -142,7 +131,7 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
 
             //TODO We can probably remove the element array buffer yeah? Others seem to not use it...
-            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
+            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT1));
         }
         gl.glBindVertexArray(0);
 
@@ -150,34 +139,28 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
     }
 
     private void updateInstanceData(GL3 gl){
-        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+        gl.glBeginQuery(GL3.GL_TIME_ELAPSED, 0);
+        {
+            float[] instanceData = new float[TRIANGLE_COUNT * 3];
 
-        for (int i = 0; i < TRIANGLE_COUNT; i++) {
-            float x = (float) (Math.random() - 0.5) * 18.0f;
-            float y = (float) (Math.random() - 0.5) * 18.0f;
-            float angle = (float) (Math.random() * Math.PI * 2);
-            instanceData[i * 3] = x;
-            instanceData[i * 3 + 1] = y;
-            instanceData[i * 3 + 2] = angle;
+            for (int i = 0; i < TRIANGLE_COUNT; i++) {
+                float x = (float) (Math.random() - 0.5) * 18.0f;
+                float y = (float) (Math.random() - 0.5) * 18.0f;
+                float angle = (float) (Math.random() * Math.PI * 2);
+                instanceData[i * 3] = x;
+                instanceData[i * 3 + 1] = y;
+                instanceData[i * 3 + 2] = angle;
+            }
+            FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
+            gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
-        FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    }
-
-
-    private void initProgram(GL3 gl) {
-
-        program = new Program(gl, getClass(), "", "hello-triangle_4", "hello-triangle_4");
-
-        checkError(gl, "initProgram");
+        
     }
 
     @Override
     public void display(GLAutoDrawable drawable) {
-
         GL3 gl = drawable.getGL().getGL3();
 
         // view matrix
@@ -211,19 +194,14 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
             gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        //CONTINUE - It looks like we can draw both, but the larger triangles are covering up the smaller ones.
-        // Need to do two things:
-        // - Ensure proper layering of things
-        // - Ensure that the second set of models can be passed an angle relative to the larger one, or absolute. Not sure which is more fitting
 //        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 3,  3, TRIANGLE_COUNT);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  elementData1.length, TRIANGLE_COUNT);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
         checkError(gl, "display");
 
-//        updateInstanceData(gl);
+        updateInstanceData(gl);
     }
 
     @Override
@@ -252,4 +230,5 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
         gl.glDeleteVertexArrays(1, VAOs);
         gl.glDeleteBuffers(Buffer.MAX, VBOs);
     }
+
 }

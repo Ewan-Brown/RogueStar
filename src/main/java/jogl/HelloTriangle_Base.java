@@ -9,7 +9,6 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.glsl.ShaderCode;
 import com.jogamp.opengl.util.glsl.ShaderProgram;
-import jogl.instanced.HelloTriangle_2_instanced;
 import world.rendering.Semantic;
 
 import static com.jogamp.opengl.GL.*;

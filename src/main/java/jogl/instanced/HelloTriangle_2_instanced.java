@@ -1,16 +1,8 @@
 package jogl.instanced;
 
-import com.jogamp.newt.event.KeyEvent;
-import com.jogamp.newt.event.KeyListener;
-import com.jogamp.newt.event.WindowAdapter;
-import com.jogamp.newt.event.WindowEvent;
-import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.math.FloatUtil;
-import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.GLBuffers;
-import com.jogamp.opengl.util.glsl.ShaderCode;
-import com.jogamp.opengl.util.glsl.ShaderProgram;
 import jogl.HelloTriangle_Base;
 import world.rendering.Semantic;
 
@@ -23,12 +15,6 @@ import static com.jogamp.opengl.GL2ES3.*;
 import static com.jogamp.opengl.GL3.GL_ARRAY_BUFFER;
 import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL3.GL_FLOAT;
-import static com.jogamp.opengl.GL3.GL_INVALID_ENUM;
-import static com.jogamp.opengl.GL3.GL_INVALID_FRAMEBUFFER_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_OPERATION;
-import static com.jogamp.opengl.GL3.GL_INVALID_VALUE;
-import static com.jogamp.opengl.GL3.GL_NO_ERROR;
-import static com.jogamp.opengl.GL3.GL_OUT_OF_MEMORY;
 
 /**
  *  Render X instanced of one model in one draw call, passing in X vec2(x,y) to shaders
