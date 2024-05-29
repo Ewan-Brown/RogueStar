@@ -202,8 +202,7 @@ public class HelloTriangle_4_dynamic_instances_layered extends HelloTriangle_Bas
         // - Ensure proper layering of things
         // - Ensure that the second set of models can be passed an angle relative to the larger one, or absolute. Not sure which is more fitting
 //        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 3,  3, TRIANGLE_COUNT);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  6, TRIANGLE_COUNT);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
