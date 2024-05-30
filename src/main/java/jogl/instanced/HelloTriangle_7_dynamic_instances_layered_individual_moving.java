@@ -5,6 +5,7 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.HelloTriangle_Base;
+import org.dyn4j.geometry.Vector2;
 import world.rendering.Semantic;
 
 import java.nio.FloatBuffer;
@@ -19,26 +20,38 @@ import static com.jogamp.opengl.GL3.GL_FLOAT;
 
 /**
  * Render X instances of two models in shared buffers, in 2 draw calls, passing in X vec2(x,y) to shaders
+ *
+ * Think of X spacesships, each with 1 turret on them that sits relative to the spaceship's main hull
  */
-public class HelloTriangle_7_dynamic_instances_layered_individual extends HelloTriangle_Base {
+public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends HelloTriangle_Base {
 
     public static void main(String[] args) {
-        HelloTriangle_7_dynamic_instances_layered_individual gui = new HelloTriangle_7_dynamic_instances_layered_individual();
+        HelloTriangle_7_dynamic_instances_layered_individual_moving gui = new HelloTriangle_7_dynamic_instances_layered_individual_moving();
         gui.setup();
     }
+
+
+    /*
+              /\
+             / _\__
+       0 -> / |__\|
+           /__^___\
+              0
+     */
 
     private float[] vertexData = {
             -1.0f, -1.0f, 1, 1, 0, 0,
             +0.0f, +2.0f, 1, 1, 0, 0,
             +1.0f, -1.0f, 1, 1, 0, 0,
-            -0.5f, -0.5f, 0, 0, 1, 0,
+            -0.0f, -0.0f, 0, 0, 1, 0,
             +0.0f, +1.0f, 0, 0, 1, 0,
-            +0.5f, -0.5f, 0, 0, 1, 0
+            +1.0f, +1.0f, 0, 0, 1, 0,
+            +1.0f, 0.0f, 0, 0, 1, 0
     };
 
     static final int TRIANGLE_COUNT = 100;
 
-    private short[] elementData = {0, 1, 2, 3, 4, 5};
+    private short[] elementData = {0, 1, 2, 3, 4, 5, 6};
 
     private interface Buffer {
 
@@ -124,8 +137,8 @@ public class HelloTriangle_7_dynamic_instances_layered_individual extends HelloT
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
             gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, 3 * Float.BYTES, 0);
-
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
 
             //TODO We can probably remove the element array buffer yeah? Others seem to not use it...
@@ -136,16 +149,35 @@ public class HelloTriangle_7_dynamic_instances_layered_individual extends HelloT
         checkError(gl, "initVao");
     }
 
-    private void updateInstanceData(GL3 gl){
-        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+    Vector2[] positions = new Vector2[TRIANGLE_COUNT];
+    float[] angles = new float[TRIANGLE_COUNT];
 
+    {
         for (int i = 0; i < TRIANGLE_COUNT; i++) {
             float x = (float) (Math.random() - 0.5) * 18.0f;
             float y = (float) (Math.random() - 0.5) * 18.0f;
             float angle = (float) (Math.random() * Math.PI * 2);
+
+            positions[i] = new Vector2(x, y);
+            angles[i] = angle;
+        }
+    }
+
+    private void updateInstanceData(GL3 gl){
+        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+
+        for (int i = 0; i < TRIANGLE_COUNT; i++) {
+            float currentAngle = angles[i];
+            float x = (float)positions[i].x;
+            float y = (float)positions[i].y;
+
             instanceData[i * 3] = x;
             instanceData[i * 3 + 1] = y;
-            instanceData[i * 3 + 2] = angle;
+            instanceData[i * 3 + 2] = currentAngle;
+
+            positions[i].x += Math.cos(currentAngle + Math.PI/2)/10;
+            positions[i].y += Math.sin(currentAngle + Math.PI/2)/10;
+            angles[i] += (i % 2 == 0) ? -(0.3f/i) : (0.3f/i);
         }
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
@@ -202,15 +234,17 @@ public class HelloTriangle_7_dynamic_instances_layered_individual extends HelloT
         // Need to do two things:
         // - Ensure proper layering of things
         // - Ensure that the second set of models can be passed an angle relative to the larger one, or absolute. Not sure which is more fitting
-//        gl.glDrawElements(GL_TRIANGLES, elementData1.length, GL_UNSIGNED_SHORT, 0);
+//        gl.glDrawArraysInstanced(GL_TRIANGLES, 1,  3, TRIANGLE_COUNT);
+//        gl.glEnable(GL_POINT);
+//        gl.glPointSize(10f);
         gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 3,  3, TRIANGLE_COUNT);
+        gl.glDrawArraysInstanced(GL_TRIANGLE_FAN, 3,  4, TRIANGLE_COUNT);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
         checkError(gl, "display");
 
-//        updateInstanceData(gl);
+        updateInstanceData(gl);
     }
 
     @Override
