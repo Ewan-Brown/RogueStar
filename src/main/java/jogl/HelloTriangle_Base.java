@@ -9,7 +9,6 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.glsl.ShaderCode;
 import com.jogamp.opengl.util.glsl.ShaderProgram;
-import world.rendering.Semantic;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL.GL_OUT_OF_MEMORY;

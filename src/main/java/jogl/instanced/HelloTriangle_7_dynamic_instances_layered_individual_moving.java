@@ -6,7 +6,7 @@ import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.HelloTriangle_Base;
 import org.dyn4j.geometry.Vector2;
-import world.rendering.Semantic;
+import jogl.Semantic;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;

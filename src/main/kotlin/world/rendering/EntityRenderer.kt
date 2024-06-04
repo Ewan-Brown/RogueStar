@@ -1,24 +1,25 @@
 package world.rendering
 
-import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.*
 import com.jogamp.opengl.GL.*
 import com.jogamp.opengl.awt.GLCanvas
-import com.jogamp.opengl.math.Matrix4
 import com.jogamp.opengl.util.Animator
-import com.jogamp.opengl.util.glsl.ShaderCode
-import com.jogamp.opengl.util.glsl.ShaderProgram
 import org.dyn4j.geometry.Vector2
-import world.entity.Ship
+import world.entity.Component
+import world.entity.Entity
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.JFrame
 
 
-class ShipRendererModern(private val ship: Ship, private val width: Int, private val height: Int) : GLEventListener {
+class EntityRenderer(private val entities: List<Entity>, private val width: Int, private val height: Int) : GLEventListener {
+
+    val registeredModels = mutableSetOf<Model>()
 
     override fun init(p0: GLAutoDrawable?) {
-        println("ShipRenderer.init")
+        for (entity in entities) {
+            registeredModels.addAll(entity.getComponents().map { component: Component -> component.model})
+        }
     }
 
     override fun dispose(p0: GLAutoDrawable?) {
@@ -26,9 +27,7 @@ class ShipRendererModern(private val ship: Ship, private val width: Int, private
     }
 
     override fun display(p0: GLAutoDrawable?) {
-        println("ShipRenderer.display")
         val gl4 = p0?.gl?.gL4
-
     }
 
     override fun reshape(p0: GLAutoDrawable?, p1: Int, p2: Int, p3: Int, p4: Int) {
@@ -39,9 +38,8 @@ class ShipRendererModern(private val ship: Ship, private val width: Int, private
 fun main(args: Array<String>) {
     println("ShipRenderer")
 
-    val ship = Ship(listOf(Vector2(1.0, 0.0), Vector2(0.0, 1.0), Vector2(1.0, 2.0), Vector2(2.0, 4.0), Vector2(3.0, 2.0), Vector2(4.0, 1.0), Vector2(3.0, 0.0)))
     val dim = Dimension(600,600)
-    val renderer = ShipRendererModern(ship, dim.width, dim.height)
+    val renderer = EntityRenderer(listOf(), dim.width, dim.height)
 
     val glCaps = GLCapabilities(GLProfile.get(GLProfile.GL3))
     glCaps.doubleBuffered = true

@@ -4,7 +4,7 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.HelloTriangle_Base;
-import world.rendering.Semantic;
+import jogl.Semantic;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
