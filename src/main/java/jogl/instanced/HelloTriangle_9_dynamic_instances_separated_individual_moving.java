@@ -25,6 +25,14 @@ import static com.jogamp.opengl.GL3.GL_FLOAT;
  */
 public class HelloTriangle_9_dynamic_instances_separated_individual_moving extends HelloTriangle_Base {
 
+    private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
+    private IntBuffer VAOs = GLBuffers.newDirectIntBuffer(1);
+
+    private FloatBuffer clearColor = GLBuffers.newDirectFloatBuffer(4);
+    private FloatBuffer clearDepth = GLBuffers.newDirectFloatBuffer(1);
+
+    private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
+
     public static void main(String[] args) {
         HelloTriangle_9_dynamic_instances_separated_individual_moving gui = new HelloTriangle_9_dynamic_instances_separated_individual_moving();
         gui.setup();
@@ -52,24 +60,15 @@ public class HelloTriangle_9_dynamic_instances_separated_individual_moving exten
     static final int TRIANGLE_COUNT = 50;
     static final int SQUARE_COUNT = 50;
 
-    private short[] elementData = {0, 1, 2, 3, 4, 5, 6};
-
     private interface Buffer {
 
         int VERTEX = 1;
-        int ELEMENT = 2;
-        int INSTANCED_STUFF = 3;
-        int GLOBAL_MATRICES = 4;
-        int MAX = 5;
+        int INSTANCED_STUFF = 2;
+        int GLOBAL_MATRICES = 3;
+        int MAX = 4;
     }
 
-    private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
-    private IntBuffer VAOs = GLBuffers.newDirectIntBuffer(1);
 
-    private FloatBuffer clearColor = GLBuffers.newDirectFloatBuffer(4);
-    private FloatBuffer clearDepth = GLBuffers.newDirectFloatBuffer(1);
-
-    private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
 
     @Override
     public void init(GLAutoDrawable drawable) {
@@ -91,7 +90,6 @@ public class HelloTriangle_9_dynamic_instances_separated_individual_moving exten
         //Generate Instance data
 
         FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(vertexData);
-        ShortBuffer elementBuffer = GLBuffers.newDirectShortBuffer(elementData);
 
         gl.glGenBuffers(Buffer.MAX, VBOs); // Create VBOs (n = Buffer.max)
 
@@ -99,10 +97,6 @@ public class HelloTriangle_9_dynamic_instances_separated_individual_moving exten
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
         gl.glBufferData(GL_ARRAY_BUFFER, (long) vertexBuffer.capacity() * Float.BYTES, vertexBuffer, GL_STATIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
-        gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (long) elementBuffer.capacity() * Short.BYTES, elementBuffer, GL_STATIC_DRAW);
-        gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
         gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
@@ -146,9 +140,6 @@ public class HelloTriangle_9_dynamic_instances_separated_individual_moving exten
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
-
-            //TODO We can probably remove the element array buffer yeah? Others seem to not use it...
-            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs.get(Buffer.ELEMENT));
         }
         gl.glBindVertexArray(0);
 
