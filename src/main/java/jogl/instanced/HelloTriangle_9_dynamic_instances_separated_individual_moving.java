@@ -5,8 +5,8 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.HelloTriangle_Base;
-import org.dyn4j.geometry.Vector2;
 import jogl.Semantic;
+import org.dyn4j.geometry.Vector2;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -23,10 +23,10 @@ import static com.jogamp.opengl.GL3.GL_FLOAT;
  *
  * Think of X spacesships, each with 1 turret on them that sits relative to the spaceship's main hull
  */
-public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends HelloTriangle_Base {
+public class HelloTriangle_9_dynamic_instances_separated_individual_moving extends HelloTriangle_Base {
 
     public static void main(String[] args) {
-        HelloTriangle_7_dynamic_instances_layered_individual_moving gui = new HelloTriangle_7_dynamic_instances_layered_individual_moving();
+        HelloTriangle_9_dynamic_instances_separated_individual_moving gui = new HelloTriangle_9_dynamic_instances_separated_individual_moving();
         gui.setup();
     }
 
@@ -49,7 +49,8 @@ public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends
             +1.0f, 0.0f, 0, 0, 1, 0
     };
 
-    static final int TRIANGLE_COUNT = 100;
+    static final int TRIANGLE_COUNT = 50;
+    static final int SQUARE_COUNT = 50;
 
     private short[] elementData = {0, 1, 2, 3, 4, 5, 6};
 
@@ -154,11 +155,11 @@ public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends
         checkError(gl, "initVao");
     }
 
-    Vector2[] positions = new Vector2[TRIANGLE_COUNT];
-    float[] angles = new float[TRIANGLE_COUNT];
+    Vector2[] positions = new Vector2[TRIANGLE_COUNT + SQUARE_COUNT];
+    float[] angles = new float[TRIANGLE_COUNT + SQUARE_COUNT];
 
     {
-        for (int i = 0; i < TRIANGLE_COUNT; i++) {
+        for (int i = 0; i < TRIANGLE_COUNT + SQUARE_COUNT; i++) {
             float x = (float) (Math.random() - 0.5) * 18.0f;
             float y = (float) (Math.random() - 0.5) * 18.0f;
             float angle = (float) (Math.random() * Math.PI * 2);
@@ -169,9 +170,9 @@ public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends
     }
 
     private void updateInstanceData(GL3 gl){
-        float[] instanceData = new float[TRIANGLE_COUNT * 3];
+        float[] instanceData = new float[(TRIANGLE_COUNT + SQUARE_COUNT) * 3];
 
-        for (int i = 0; i < TRIANGLE_COUNT; i++) {
+        for (int i = 0; i < (TRIANGLE_COUNT + SQUARE_COUNT); i++) {
             float currentAngle = angles[i];
             float x = (float)positions[i].x;
             float y = (float)positions[i].y;
@@ -190,7 +191,6 @@ public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     }
-
 
     private void initProgram(GL3 gl) {
 
@@ -243,7 +243,7 @@ public class HelloTriangle_7_dynamic_instances_layered_individual_moving extends
 //        gl.glEnable(GL_POINT);
 //        gl.glPointSize(10f);
         gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
-        gl.glDrawArraysInstanced(GL_TRIANGLE_FAN, 3,  4, TRIANGLE_COUNT);
+        gl.glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 3,  4, SQUARE_COUNT, 50);
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 

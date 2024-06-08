@@ -37,7 +37,6 @@ public class HelloTriangle_5_shared_vbo_one_call extends HelloTriangle_Base {
     private short[] elementData1 = {0, 1, 2, 3, 4, 5};
 
     private interface Buffer {
-
         int VERTEX1 = 0;
         int ELEMENT1 = 1;
         int GLOBAL_MATRICES = 2;
