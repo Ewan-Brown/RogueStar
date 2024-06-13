@@ -1,6 +1,5 @@
 package jogl.instanced;
 
-import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
@@ -11,10 +10,7 @@ import org.dyn4j.geometry.Vector2;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES3.*;
@@ -48,24 +44,31 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
               0
      */
 
-    List<MockEntity> mockEntities = new ArrayList<>();
+    List<Entity> entities = new ArrayList<>();
     {
-        mockEntities.add(new MockEntity(Model.TRIANGLE, new Object()));
-        mockEntities.add(new MockEntity(Model.SQUARE1, new Object()));
+        entities.add(new Entity(Model.TRIANGLE, new Object()));
+        entities.add(new Entity(Model.SQUARE1, new Object()));
     }
 
-    private static class MockEntity{
+    private static class Entity{
         Model m;
         Object someData;
+        Vector2 pos = new Vector2(Math.random() + 0.5, Math.random() + 0.5);
+        float angle = (float)Math.random();
 
-        public MockEntity(Model m, Object someData) {
+        public Entity(Model m, Object someData) {
             this.m = m;
             this.someData = someData;
         }
     }
 
+    //Points to where the start of each model's vertex data is in the VERTEX buffer
     final HashMap<Model, Integer> verticeIndexes = new HashMap<>(); //Can probably be attached directly to a model object (wrap the Enum in an object to make mutable fields)
+    //Points to where each grouping of model starts in the INSTANCE buffer
+    // (InstanceData is sorted by model!)
     final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
+
+    final HashMap<Model, Integer> sortedEntityCounts = new HashMap<>();
 
     private enum Model {
         TRIANGLE(new float[]{
@@ -95,9 +98,6 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
             this.drawMode = dMode;
         }
     };
-
-    static final int TRIANGLE_COUNT = 50;
-    static final int SQUARE_COUNT = 50;
 
     private interface Buffer {
 
@@ -209,36 +209,37 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         checkError(gl, "initVao");
     }
 
-    Vector2[] positions = new Vector2[TRIANGLE_COUNT + SQUARE_COUNT];
-    float[] angles = new float[TRIANGLE_COUNT + SQUARE_COUNT];
-
-    {
-        for (int i = 0; i < TRIANGLE_COUNT + SQUARE_COUNT; i++) {
-            float x = (float) (Math.random() - 0.5) * 18.0f;
-            float y = (float) (Math.random() - 0.5) * 18.0f;
-            float angle = (float) (Math.random() * Math.PI * 2);
-
-            positions[i] = new Vector2(x, y);
-            angles[i] = angle;
-        }
-    }
-
     private void updateInstanceData(GL3 gl){
-        float[] instanceData = new float[(TRIANGLE_COUNT + SQUARE_COUNT) * 3];
 
-        for (int i = 0; i < (TRIANGLE_COUNT + SQUARE_COUNT); i++) {
-            float currentAngle = angles[i];
-            float x = (float)positions[i].x;
-            float y = (float)positions[i].y;
+        int entityCount = entities.size();
 
-            instanceData[i * 3] = x;
-            instanceData[i * 3 + 1] = y;
-            instanceData[i * 3 + 2] = currentAngle;
-
-            positions[i].x += Math.cos(currentAngle + Math.PI/2)/10;
-            positions[i].y += Math.sin(currentAngle + Math.PI/2)/10;
-            angles[i] += (i % 2 == 0) ? -(0.3f/i) : (0.3f/i);
+        HashMap<Model, List<Entity>> sortedEntities = new HashMap<>();
+        for (Entity entity : entities) {
+            if(!sortedEntities.containsKey(entity.m)){
+                sortedEntities.put(entity.m, new ArrayList<>());
+            }
+            sortedEntities.get(entity.m).add(entity);
         }
+
+        int indexCounter = 0;
+        int instanceDataIndex = 0;
+        float[] instanceData = new float[entityCount * 3];
+        for (Model model : sortedEntities.keySet()) {
+            for (Entity entity : sortedEntities.get(model)) {
+                instanceData[instanceDataIndex++] = (float)entity.pos.x;
+                instanceData[instanceDataIndex++] = (float)entity.pos.y;
+                instanceData[instanceDataIndex++] = (float)entity.angle;
+
+                entity.pos.x += Math.cos(entity.angle + Math.PI/2.0)/10.0;
+                entity.pos.y += Math.sin(entity.angle + Math.PI/2.0)/10.0;
+                entity.angle += 0.2/(double)instanceDataIndex;
+
+            }
+            instanceIndexes.put(model, indexCounter);
+            sortedEntityCounts.put(model, sortedEntities.get(model).size());
+            indexCounter += sortedEntities.get(model).size();
+        }
+
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
         gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
@@ -302,7 +303,7 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
         int instanceDataOffset = 0; //TODO changeme this should be more correcter
         for (Model value : Model.values()) {
-            int entityCount = (int)mockEntities.stream().filter(e -> e.m == value).count();
+            int entityCount = (int) entities.stream().filter(e -> e.m == value).count();
             gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, 50, instanceDataOffset);
 //            instanceDataOffset += 1;
         }
