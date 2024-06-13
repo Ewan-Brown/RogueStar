@@ -96,16 +96,6 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         }
     };
 
-    private float[] vertexData = {
-            -1.0f, -1.0f, 1, 1, 0, 0,
-            +0.0f, +2.0f, 1, 1, 0, 0,
-            +1.0f, -1.0f, 1, 1, 0, 0,
-            -0.0f, -0.0f, 0, 0, 1, 0,
-            +0.0f, +1.0f, 0, 0, 1, 0,
-            +1.0f, +1.0f, 0, 0, 1, 0,
-            +1.0f, 0.0f, 0, 0, 1, 0
-    };
-
     static final int TRIANGLE_COUNT = 50;
     static final int SQUARE_COUNT = 50;
 
@@ -150,11 +140,6 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         }
 
         System.out.println(verticeArray.length);
-        System.out.println(vertexData.length);
-
-        for (int i = 0; i < verticeArray.length; i++) {
-            System.out.println(verticeArray[i] + " " + vertexData[i]);
-        }
 
         FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray);
 
