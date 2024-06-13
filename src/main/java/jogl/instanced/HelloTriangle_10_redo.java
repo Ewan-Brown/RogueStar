@@ -13,6 +13,7 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES3.*;
@@ -49,10 +50,7 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
     List<MockEntity> mockEntities = new ArrayList<>();
     {
         mockEntities.add(new MockEntity(Model.TRIANGLE, new Object()));
-        mockEntities.add(new MockEntity(Model.SQUARE, new Object()));
-//        mockEntities.add(new MockEntity(Model.TRIANGLE, new Object()));
-//        mockEntities.add(new MockEntity(Model.SQUARE, new Object()));
-//        mockEntities.add(new MockEntity(Model.SQUARE, new Object()));
+        mockEntities.add(new MockEntity(Model.SQUARE1, new Object()));
     }
 
     private static class MockEntity{
@@ -67,21 +65,13 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     final HashMap<Model, Integer> verticeIndexes = new HashMap<>();
 
-    {
-        int marker = 0;
-        for (Model value : Model.values()) {
-            verticeIndexes.put(value, marker);
-            marker += value.points;
-        }
-    }
-
     private enum Model {
         TRIANGLE(new float[]{
                 -1.0f, -1.0f, 1, 1, 0, 0,
                 +0.0f, +2.0f, 1, 1, 0, 0,
                 +1.0f, -1.0f, 1, 1, 0, 0
         }),
-        SQUARE(new float[]{
+        SQUARE1(new float[]{
                 -0.0f, -0.0f, 0, 0, 1, 0,
                 +0.0f, +1.0f, 0, 0, 1, 0,
                 +1.0f, +1.0f, 0, 0, 1, 0,
@@ -131,21 +121,32 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     private void initVBOs(GL3 gl) {
 
-        //Generate Instance data
+        for (Map.Entry<Model, Integer> modelIntegerEntry : verticeIndexes.entrySet()) {
+            System.out.println(modelIntegerEntry.getKey().toString());
+            System.out.println("\t" + modelIntegerEntry.getValue());
+        }
 
+        //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
+        int marker = 0;
         for (Model value : Model.values()) {
+            System.out.println("model loaded : " + value +", size : " + value.points);
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
+            verticeIndexes.put(value, marker);
+            marker += value.points;
+        }
+
+        for (Map.Entry<Model, Integer> modelIntegerEntry : verticeIndexes.entrySet()) {
+            System.out.println("model : " + modelIntegerEntry.getKey());
+            System.out.println("\t" + modelIntegerEntry.getValue());
         }
 
         float[] verticeArray = new float[verticeList.size()];
         for (int i = 0; i < verticeList.size(); i++) {
             verticeArray[i] = verticeList.get(i);
         }
-
-        System.out.println(verticeArray.length);
 
         FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray);
 
