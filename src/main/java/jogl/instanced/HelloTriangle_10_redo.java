@@ -1,5 +1,6 @@
 package jogl.instanced;
 
+import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
@@ -63,32 +64,35 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         }
     }
 
-    final HashMap<Model, Integer> verticeIndexes = new HashMap<>();
+    final HashMap<Model, Integer> verticeIndexes = new HashMap<>(); //Can probably be attached directly to a model object (wrap the Enum in an object to make mutable fields)
+    final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
 
     private enum Model {
         TRIANGLE(new float[]{
-                -1.0f, -1.0f, 1, 1, 0, 0,
-                +0.0f, +2.0f, 1, 1, 0, 0,
-                +1.0f, -1.0f, 1, 1, 0, 0
-        }),
+                -1.0f, -1.0f, 2, 1, 0, 0,
+                +0.0f, +2.0f, 2, 1, 0, 0,
+                +1.0f, -1.0f, 2, 1, 0, 0
+        }, GL_TRIANGLES),
         SQUARE1(new float[]{
-                -0.0f, -0.0f, 0, 0, 1, 0,
-                +0.0f, +1.0f, 0, 0, 1, 0,
-                +1.0f, +1.0f, 0, 0, 1, 0,
-                +1.0f, 0.0f, 0, 0, 1, 0
-        }),
+                -0.0f, -0.0f, 1, 0, 1, 0,
+                +0.0f, +1.0f, 1, 0, 1, 0,
+                +1.0f, +1.0f, 1, 0, 1, 0,
+                +1.0f, 0.0f, 1, 0, 1, 0
+        }, GL_TRIANGLE_FAN),
         SQUARE2(new float[]{
-            -1.0f, -0.0f, 0, 0, 1, 0,
-            -1.0f, +1.0f, 0, 0, 1, 0,
-            +0.0f, +1.0f, 0, 0, 1, 0,
-            +0.0f, 0.0f, 0, 0, 1, 0
-        });
+            -1.0f, -0.0f, 0, 1, 1, 0,
+            -1.0f, +1.0f, 0, 1, 1, 0,
+            +0.0f, +1.0f, 0, 1, 1, 0,
+            +0.0f, 0.0f, 0, 1, 1, 0
+        }, GL_TRIANGLE_FAN);
         final int points;
         final float[] vertexData;
+        final int drawMode;
 
-        Model(float[] vertexData) {
+        Model(float[] vertexData, int dMode) {
             this.points = vertexData.length/6; //Change if vertex data size changes!
             this.vertexData = vertexData;
+            this.drawMode = dMode;
         }
     };
 
@@ -292,8 +296,18 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 //        gl.glDrawArraysInstanced(GL_TRIANGLES, 1,  3, TRIANGLE_COUNT);
 //        gl.glEnable(GL_POINT);
 //        gl.glPointSize(10f);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 0,  3, TRIANGLE_COUNT);
-        gl.glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 3,  4, SQUARE_COUNT, 50);
+//        gl.glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 3,  4, SQUARE_COUNT, 50);
+
+
+
+        int instanceDataOffset = 0; //TODO changeme this should be more correcter
+        for (Model value : Model.values()) {
+            int entityCount = (int)mockEntities.stream().filter(e -> e.m == value).count();
+            gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, 50, instanceDataOffset);
+//            instanceDataOffset += 1;
+        }
+
+
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);
 
