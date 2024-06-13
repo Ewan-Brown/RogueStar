@@ -48,6 +48,8 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
     {
         entities.add(new Entity(Model.TRIANGLE, new Object()));
         entities.add(new Entity(Model.SQUARE1, new Object()));
+        entities.add(new Entity(Model.SQUARE2, new Object()));
+
     }
 
     private static class Entity{
@@ -304,7 +306,7 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         int instanceDataOffset = 0; //TODO changeme this should be more correcter
         for (Model value : Model.values()) {
             int entityCount = (int) entities.stream().filter(e -> e.m == value).count();
-            gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, 50, instanceDataOffset);
+            gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedEntityCounts.get(value), instanceIndexes.get(value));
 //            instanceDataOffset += 1;
         }
 
