@@ -86,6 +86,12 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
                 +0.0f, +1.0f, 0, 0, 1, 0,
                 +1.0f, +1.0f, 0, 0, 1, 0,
                 +1.0f, 0.0f, 0, 0, 1, 0
+        }),
+        SQUARE2(new float[]{
+            -1.0f, -0.0f, 0, 0, 1, 0,
+            -1.0f, +1.0f, 0, 0, 1, 0,
+            +0.0f, +1.0f, 0, 0, 1, 0,
+            +0.0f, 0.0f, 0, 0, 1, 0
         });
         final int points;
         final float[] vertexData;
