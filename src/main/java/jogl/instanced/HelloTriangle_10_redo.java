@@ -175,15 +175,15 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
     private void initVBOs(GL3 gl) {
 
         for (Map.Entry<Model, Integer> modelIntegerEntry : verticeIndexes.entrySet()) {
-            System.out.println(modelIntegerEntry.getKey().toString());
-            System.out.println("\t" + modelIntegerEntry.getValue());
+//            System.out.println(modelIntegerEntry.getKey().toString());
+//            System.out.println("\t" + modelIntegerEntry.getValue());
         }
 
         //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
         int marker = 0;
         for (Model value : Model.values()) {
-            System.out.println("model loaded : " + value +", size : " + value.points);
+//            System.out.println("model loaded : " + value +", size : " + value.points);
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
@@ -192,8 +192,8 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         }
 
         for (Map.Entry<Model, Integer> modelIntegerEntry : verticeIndexes.entrySet()) {
-            System.out.println("model : " + modelIntegerEntry.getKey());
-            System.out.println("\t" + modelIntegerEntry.getValue());
+//            System.out.println("model : " + modelIntegerEntry.getKey());
+//            System.out.println("\t" + modelIntegerEntry.getValue());
         }
 
         float[] verticeArray = new float[verticeList.size()];
@@ -258,6 +258,22 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         checkError(gl, "initVao");
     }
 
+    private void updateEntities(){
+        for (Entity entity : entities) {
+            Transform transform = entity.getTransform();
+            double x = transform.position.x;
+            double y = transform.position.y;
+            double angle = transform.angle();
+
+            x += Math.cos(angle + Math.PI/2.0)/10.0;
+            y += Math.sin(angle + Math.PI/2.0)/10.0;
+            angle += 0.2/entities.indexOf(entity);
+
+            entity.updateTransform(buildTransform(x, y, (float)angle));
+        }
+
+    }
+
     private void updateInstanceData(GL3 gl){
 
         int modelCount = 0;
@@ -287,15 +303,11 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
                 double y = transform.position.y;
                 double angle = transform.angle;
 
-                System.out.println("x, y, angle : " + x + ", " + y + ", " + angle);
+//                System.out.println("x, y, angle : " + x + ", " + y + ", " + angle);
 
                 instanceData[instanceDataIndex++] = (float)x;
                 instanceData[instanceDataIndex++] = (float)y;
                 instanceData[instanceDataIndex++] = (float)angle;
-
-//                x += Math.cos(angle + Math.PI/2.0)/10.0;
-//                y += Math.sin(angle + Math.PI/2.0)/10.0;
-//                angle += 0.2/(double)instanceDataIndex;
 
             }
             instanceIndexes.put(model, indexCounter);
@@ -308,6 +320,7 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+        updateEntities();
     }
 
     private void initProgram(GL3 gl) {
@@ -365,12 +378,12 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
 
         for (Model value : Model.values()) {
-            System.out.println("===================================");
-            System.out.println("Model : " + value.toString());
-            System.out.println("verticeIndex : " + verticeIndexes.get(value));
-            System.out.println("# of points : " + value.points);
-            System.out.println("sortedModelCount : " + sortedModelCounts.get(value));
-            System.out.println("instanceIndexes : " + instanceIndexes.get(value));
+//            System.out.println("===================================");
+//            System.out.println("Model : " + value.toString());
+//            System.out.println("verticeIndex : " + verticeIndexes.get(value));
+//            System.out.println("# of points : " + value.points);
+//            System.out.println("sortedModelCount : " + sortedModelCounts.get(value));
+//            System.out.println("instanceIndexes : " + instanceIndexes.get(value));
             gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedModelCounts.get(value), instanceIndexes.get(value));
         }
 
