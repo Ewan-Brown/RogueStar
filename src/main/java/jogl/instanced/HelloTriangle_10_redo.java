@@ -55,8 +55,12 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     List<Entity> entities = new ArrayList<>();
 
+    private Transform getRandomTransform(int mult){
+        return buildTransform((Math.random() - 0.5) * mult, (Math.random() - 0.5) * mult, (float)(Math.random()*2.0*Math.PI));
+    }
+
     private Transform getRandomTransform(){
-        return buildTransform((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, (float)(Math.random()*2.0*Math.PI));
+        return getRandomTransform(1);
     }
 
     private Transform buildTransform(double x, double y, float a){
@@ -69,10 +73,11 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     {
         for (int i = 0; i < 10; i++) {
-            entities.add(new Entity(getRandomTransform(), List.of(
+            entities.add(new Entity(getRandomTransform(10), List.of(
                     new Pair<>(Model.TRIANGLE, getZeroTransform()),
-                    new Pair<>(Model.SQUARE1, getZeroTransform()),
-                    new Pair<>(Model.SQUARE2, getZeroTransform()))));
+                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
+                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))
+            )));
 
         }
     }
@@ -121,16 +126,16 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
                 +1.0f, -1.0f, 2, 1, 0, 0
         }, GL_TRIANGLES),
         SQUARE1(new float[]{
-                -0.0f, -0.0f, 1, 0, 1, 0,
-                +0.0f, +1.0f, 1, 0, 1, 0,
-                +1.0f, +1.0f, 1, 0, 1, 0,
-                +1.0f, 0.0f, 1, 0, 1, 0
+                -0.5f, -0.5f, 1, 0, 1, 0,
+                -0.5f, +0.5f, 1, 0, 1, 0,
+                +0.5f, +0.5f, 1, 0, 1, 0,
+                +0.5f, -0.5f, 1, 0, 1, 0
         }, GL_TRIANGLE_FAN),
         SQUARE2(new float[]{
-            -1.0f, -0.0f, 0, 1, 1, 0,
-            -1.0f, +1.0f, 0, 1, 1, 0,
-            +0.0f, +1.0f, 0, 1, 1, 0,
-            +0.0f, 0.0f, 0, 1, 1, 0
+                -0.5f, -0.5f, 1, 1, 1, 0,
+                -0.5f, +0.5f, 1, 1, 1, 0,
+                +0.5f, +0.5f, 1, 1, 1, 0,
+                +0.5f, -0.5f, 1, 1, 1, 0
         }, GL_TRIANGLE_FAN);
         final int points;
         final float[] vertexData;
