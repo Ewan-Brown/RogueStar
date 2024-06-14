@@ -6,6 +6,7 @@ import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.HelloTriangle_Base;
 import jogl.Semantic;
+import kotlin.Pair;
 import org.dyn4j.geometry.Vector2;
 
 import java.nio.FloatBuffer;
@@ -31,6 +32,14 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
 
+    //Points to where the start of each model's vertex data is in the VERTEX buffer
+    final HashMap<Model, Integer> verticeIndexes = new HashMap<>(); //Can probably be attached directly to a model object (wrap the Enum in an object to make mutable fields)
+    //Points to where each grouping of model starts in the INSTANCE buffer
+    // (InstanceData is sorted by model!)
+    final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
+
+    final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
+
     public static void main(String[] args) {
         HelloTriangle_10_redo gui = new HelloTriangle_10_redo();
         gui.setup();
@@ -45,32 +54,65 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
      */
 
     List<Entity> entities = new ArrayList<>();
-    {
-        entities.add(new Entity(Model.TRIANGLE, new Object()));
-        entities.add(new Entity(Model.SQUARE1, new Object()));
-        entities.add(new Entity(Model.SQUARE2, new Object()));
 
+    private Transform getRandomTransform(){
+        return buildTransform((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, (float)(Math.random()*2.0*Math.PI));
     }
 
-    private static class Entity{
-        Model m;
-        Object someData;
-        Vector2 pos = new Vector2(Math.random() + 0.5, Math.random() + 0.5);
-        float angle = (float)Math.random();
+    private Transform buildTransform(double x, double y, float a){
+        return new Transform(new Vector2(x, y), a);
+    }
 
-        public Entity(Model m, Object someData) {
-            this.m = m;
-            this.someData = someData;
+    private Transform getZeroTransform(){
+        return new Transform(new Vector2(0,0), 0);
+    }
+
+    {
+        for (int i = 0; i < 10; i++) {
+            entities.add(new Entity(getRandomTransform(), List.of(
+                    new Pair<>(Model.TRIANGLE, getZeroTransform()),
+                    new Pair<>(Model.SQUARE1, getZeroTransform()),
+                    new Pair<>(Model.SQUARE2, getZeroTransform()))));
+
         }
     }
 
-    //Points to where the start of each model's vertex data is in the VERTEX buffer
-    final HashMap<Model, Integer> verticeIndexes = new HashMap<>(); //Can probably be attached directly to a model object (wrap the Enum in an object to make mutable fields)
-    //Points to where each grouping of model starts in the INSTANCE buffer
-    // (InstanceData is sorted by model!)
-    final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
+    private static class Entity{
 
-    final HashMap<Model, Integer> sortedEntityCounts = new HashMap<>();
+        private Transform transform;
+        private final List<Pair<Model, HelloTriangle_10_redo.Transform>> models;
+
+        //TODO This doesn't actually transform them!
+        public List<Pair<Model, Transform>> getTransformedComponents(){
+            List<Pair<Model, Transform>> result = new ArrayList<>();
+
+            final float entityAngle = transform.angle;
+            final Vector2 entityPos = transform.position;
+
+            for (Pair<Model, Transform> component : models) {
+                Vector2 newPos = component.component2().position.copy().rotate(entityAngle).add(entityPos);
+                float newAngle = entityAngle + component.component2().angle;
+                result.add(new Pair<>(component.component1(),new Transform(newPos, newAngle)));
+            }
+
+            return result;
+        }
+
+        public void updateTransform(Transform t){
+            transform = t;
+        }
+
+        public Transform getTransform(){
+            return transform;
+        }
+
+        public Entity(Transform initialTransform, List<Pair<Model, Transform>> m) {
+            transform = initialTransform;
+            models = m;
+        }
+    }
+
+    private static record Transform(Vector2 position, float angle){}
 
     private enum Model {
         TRIANGLE(new float[]{
@@ -213,33 +255,47 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
     private void updateInstanceData(GL3 gl){
 
-        int entityCount = entities.size();
+        int modelCount = 0;
 
-        HashMap<Model, List<Entity>> sortedEntities = new HashMap<>();
+        HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
         for (Entity entity : entities) {
-            if(!sortedEntities.containsKey(entity.m)){
-                sortedEntities.put(entity.m, new ArrayList<>());
+            var components = entity.getTransformedComponents();
+            for (Pair<Model, Transform> component : components) {
+                Model model = component.component1();
+                Transform transform = component.component2();
+                if(!sortedComponents.containsKey(model)){
+                    sortedComponents.put(model, new ArrayList<>());
+                }
+                sortedComponents.get(model).add(transform);
+                modelCount++;
             }
-            sortedEntities.get(entity.m).add(entity);
+
         }
 
         int indexCounter = 0;
         int instanceDataIndex = 0;
-        float[] instanceData = new float[entityCount * 3];
-        for (Model model : sortedEntities.keySet()) {
-            for (Entity entity : sortedEntities.get(model)) {
-                instanceData[instanceDataIndex++] = (float)entity.pos.x;
-                instanceData[instanceDataIndex++] = (float)entity.pos.y;
-                instanceData[instanceDataIndex++] = (float)entity.angle;
+        float[] instanceData = new float[modelCount * 3];
+        for (Model model : sortedComponents.keySet()) {
+            for (Transform transform : sortedComponents.get(model)) {
 
-                entity.pos.x += Math.cos(entity.angle + Math.PI/2.0)/10.0;
-                entity.pos.y += Math.sin(entity.angle + Math.PI/2.0)/10.0;
-                entity.angle += 0.2/(double)instanceDataIndex;
+                double x = transform.position.x;
+                double y = transform.position.y;
+                double angle = transform.angle;
+
+                System.out.println("x, y, angle : " + x + ", " + y + ", " + angle);
+
+                instanceData[instanceDataIndex++] = (float)x;
+                instanceData[instanceDataIndex++] = (float)y;
+                instanceData[instanceDataIndex++] = (float)angle;
+
+//                x += Math.cos(angle + Math.PI/2.0)/10.0;
+//                y += Math.sin(angle + Math.PI/2.0)/10.0;
+//                angle += 0.2/(double)instanceDataIndex;
 
             }
             instanceIndexes.put(model, indexCounter);
-            sortedEntityCounts.put(model, sortedEntities.get(model).size());
-            indexCounter += sortedEntities.get(model).size();
+            sortedModelCounts.put(model, sortedComponents.get(model).size());
+            indexCounter += sortedComponents.get(model).size();
         }
 
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
@@ -303,11 +359,14 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
 
 
 
-        int instanceDataOffset = 0; //TODO changeme this should be more correcter
         for (Model value : Model.values()) {
-            int entityCount = (int) entities.stream().filter(e -> e.m == value).count();
-            gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedEntityCounts.get(value), instanceIndexes.get(value));
-//            instanceDataOffset += 1;
+            System.out.println("===================================");
+            System.out.println("Model : " + value.toString());
+            System.out.println("verticeIndex : " + verticeIndexes.get(value));
+            System.out.println("# of points : " + value.points);
+            System.out.println("sortedModelCount : " + sortedModelCounts.get(value));
+            System.out.println("instanceIndexes : " + instanceIndexes.get(value));
+            gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedModelCounts.get(value), instanceIndexes.get(value));
         }
 
 
