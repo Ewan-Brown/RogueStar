@@ -53,7 +53,7 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
 
     final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
 
-    World<Entity> w = new World();
+    World<Entity> w = new World<>();
 
     public HelloTriangle_12_correct_dyn4j_bodies() {
         w.setGravity(0, 0);
@@ -84,21 +84,40 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
         return new Transform(new Vector2(0,0), 0);
     }
 
+    private static void addModelsToEntity(Entity e, List<Pair<Model, Transform>> models){
+        for (Pair<Model, Transform> pair : models) {
+            Convex v = new Polygon(pair.component1().asVectorData);
+            v.translate(pair.component2().position.product(1.0));
+            v.rotate(pair.component2().angle());
+            BodyFixture f = new BodyFixture(v);
+            f.setUserData(pair.component1());
+            e.addFixture(f);
+        }
+        e.setMass(MassType.NORMAL);
+        e.setModels(models);
+
+    }
+
     {
-        Entity p = new Entity(getZeroTransform(), List.of(
-                new Pair<>(Model.SQUARE1, buildTransform(1.0d, 0.0d, 0)),
+        Entity p = new Entity();
+        addModelsToEntity(p, List.of(
+                new Pair<>(Model.SQUARE2, buildTransform(1.0d, 1.0d, 0)),
                 new Pair<>(Model.SQUARE1, buildTransform(0.0d, 0.0d, 0))
         ));
+
         entities.add(p);
         w.addBody(p);
+        System.out.println("p.getLocalCenter() = " + p.getLocalCenter());
+        System.out.println("p.getWorldCenter() = " + p.getWorldCenter());
         for (int i = 0; i < 10; i++) {
-            Entity e = new Entity(getRandomTransform(10), List.of(
-//                    new Pair<>(Model.TRIANGLE, getZeroTransform()),
-//                    new Pair<>(Model.SQUARE1, buildTransform(0.0d, 0.0d, (float)(Math.PI/2.0)))
+            Entity e = new Entity();
+
+            addModelsToEntity(e, List.of(
                     new Pair<>(Model.SQUARE1, buildTransform(0.0d, 0.0d, 0))
-//                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
-//                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))
             ));
+
+            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
+            e.rotate(Math.random()*2*Math.PI);
             entities.add(e);
             w.addBody(e);
         }
@@ -123,7 +142,7 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
 
     private static class Entity extends Body {
 
-        private final List<Pair<Model, HelloTriangle_12_correct_dyn4j_bodies.Transform>> models;
+        private List<Pair<Model, Transform>> models = null; //TODO This is silly, we should be grabbing these as fixtures from the body!
 
         public List<Pair<Model, Transform>> getTransformedComponents(){
             List<Pair<Model, Transform>> result = new ArrayList<>();
@@ -140,24 +159,11 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
             return result;
         }
 
-        public Entity(Transform initialTransform, List<Pair<Model, Transform>> m) {
-
-            this.translate(initialTransform.position);
-            this.rotate(initialTransform.angle);
-            for (Pair<Model, Transform> pair : m) {
-                Convex v = new Polygon(pair.component1().asVectorData);
-                v.translate(pair.component2().position.product(1.0));
-                v.rotate(pair.component2().angle());
-                System.out.println(pair.component2().angle);
-                BodyFixture f = new BodyFixture(v);
-                this.addFixture(f);
-
+        public void setModels(List<Pair<Model, Transform>> models){
+            for (Pair<Model, Transform> model : models) {
+                model.component2().position.subtract(this.getMass().getCenter());
             }
-
-            this.setMass(MassType.NORMAL);
-
-
-            models = m;
+            this.models = models;
         }
 
         public void render(Graphics2D g, double scale, Color color) {
@@ -343,6 +349,10 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
         checkError(gl, "initVao");
     }
 
+    JFrame frame = null;
+    JPanel panel = null;
+    BufferedImage image = null;
+
     private void updateEntities(){
 
         float x = 0;
@@ -368,21 +378,16 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
             a--;
         }
 
-        if(keySet.get(KeyEvent.VK_SPACE)){
-            keySet.set(KeyEvent.VK_SPACE, false);
-            BufferedImage bI = new BufferedImage(1920,1080, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = (Graphics2D) bI.getGraphics();
-
-            for (Entity entity : entities) {
-                entity.render(g, 10, Color.RED);
-            }
-
-            JFrame frame = new JFrame();
-            JPanel panel = new JPanel(){
+        if(frame == null){
+            frame = new JFrame();
+            panel = new JPanel(){
                 @Override
                 public void paint(Graphics g) {
                     super.paint(g);
-                    g.drawImage(bI, 0, 0, null);
+                    if(image != null) {
+                        g.drawImage(image, 0, 0, null);
+                    }
+                    repaint();
                 }
             };
             frame.add(panel);
@@ -390,8 +395,23 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
             frame.setVisible(true);
         }
 
+        BufferedImage bI = new BufferedImage(1920,1080, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = (Graphics2D) bI.getGraphics();
+
+        for (Entity entity : entities) {
+            entity.render(g, 10, Color.RED);
+        }
+
+        image = bI;
+
+        if(keySet.get(KeyEvent.VK_SPACE)){
+            keySet.set(KeyEvent.VK_SPACE, false);
+
+        }
+
         desiredVelocity = new Vector2(x, y);
         desiredRotationalVelocity = a;
+
 
         player.applyForce(desiredVelocity.multiply(2));
         player.applyTorque(desiredRotationalVelocity*2);
