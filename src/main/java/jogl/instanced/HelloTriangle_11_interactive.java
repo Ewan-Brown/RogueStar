@@ -81,14 +81,14 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
         return new Transform(new Vector2(x, y), a);
     }
 
-    private static Transform getZeroTransform(){
+    private static Transform buildZeroTransform(){
         return new Transform(new Vector2(0,0), 0);
     }
 
     {
         for (int i = 0; i < 10; i++) {
             Entity e = new Entity(getRandomTransform(10), List.of(
-                    new Pair<>(Model.TRIANGLE, getZeroTransform()),
+                    new Pair<>(Model.TRIANGLE, buildZeroTransform()),
                     new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))
             ));
