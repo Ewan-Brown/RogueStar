@@ -85,11 +85,27 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
     }
 
     private static void addModelsToEntity(Entity e, List<Pair<Model, Transform>> models){
+        System.out.println("====================");
         for (Pair<Model, Transform> pair : models) {
-            Convex v = new Polygon(pair.component1().asVectorData);
-            v.translate(pair.component2().position.product(1.0));
+            Vector2[] vertices = new Vector2[pair.component1().points];
+            for (int i = 0; i < vertices.length; i++) {
+                vertices[i] = pair.component1().asVectorData[i].copy();
+            }
+            Polygon v = new Polygon(vertices);
+            v.translate(pair.component2().position.copy());
+            System.out.println("-----------------");
             v.rotate(pair.component2().angle());
             BodyFixture f = new BodyFixture(v);
+            System.out.print("Model Vector Data: ");
+            for (Vector2 asVectorDatum : pair.component1().asVectorData) {
+                System.out.print(asVectorDatum+", ");
+            }
+            System.out.println();
+            System.out.print("Transformed Data: ");
+            for (Vector2 vertex : v.getVertices()) {
+                System.out.print(vertex+", ");
+            }
+            System.out.println();
             f.setUserData(pair.component1());
             e.addFixture(f);
         }
@@ -101,23 +117,25 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
     {
         Entity p = new Entity();
         addModelsToEntity(p, List.of(
-                new Pair<>(Model.SQUARE2, buildTransform(1.0d, 1.0d, 0)),
-                new Pair<>(Model.SQUARE1, buildTransform(0.0d, 0.0d, 0))
+                new Pair<>(Model.TRIANGLE, buildTransform(0.0d, 0.0d, 0)),
+                new Pair<>(Model.SQUARE1, buildTransform(-0.5d, -1.5d, 0)),
+                new Pair<>(Model.SQUARE2, buildTransform(0.5d, -1.5d, 0))
         ));
 
         entities.add(p);
         w.addBody(p);
-        System.out.println("p.getLocalCenter() = " + p.getLocalCenter());
-        System.out.println("p.getWorldCenter() = " + p.getWorldCenter());
-        for (int i = 0; i < 10; i++) {
+        p.translate(10,10);
+        for (int i = 0; i < 4; i++) {
             Entity e = new Entity();
 
             addModelsToEntity(e, List.of(
-                    new Pair<>(Model.SQUARE1, buildTransform(0.0d, 0.0d, 0))
+                    new Pair<>(Model.TRIANGLE, buildTransform(0.0d, 0.0d, 0)),
+                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, -1.5d, 0)),
+                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, -1.5d, 0))
             ));
 
-            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
-            e.rotate(Math.random()*2*Math.PI);
+//            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
+//            e.rotate(Math.random()*2*Math.PI);
             entities.add(e);
             w.addBody(e);
         }
@@ -500,7 +518,7 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
 
         // model matrix
         {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 0.1f);
+            float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
             float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
 
