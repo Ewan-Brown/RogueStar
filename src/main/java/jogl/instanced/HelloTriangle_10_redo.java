@@ -67,14 +67,14 @@ public class HelloTriangle_10_redo extends HelloTriangle_Base {
         return new Transform(new Vector2(x, y), a);
     }
 
-    private Transform getZeroTransform(){
+    private Transform buildZeroTransform(){
         return new Transform(new Vector2(0,0), 0);
     }
 
     {
         for (int i = 0; i < 10; i++) {
             entities.add(new Entity(getRandomTransform(10), List.of(
-                    new Pair<>(Model.TRIANGLE, getZeroTransform()),
+                    new Pair<>(Model.TRIANGLE, buildZeroTransform()),
                     new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))
             )));

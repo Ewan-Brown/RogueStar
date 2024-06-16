@@ -80,12 +80,11 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
         return new Transform(new Vector2(x, y), a);
     }
 
-    private static Transform getZeroTransform(){
+    private static Transform buildZeroTransform(){
         return new Transform(new Vector2(0,0), 0);
     }
 
     private static void addModelsToEntity(Entity e, List<Pair<Model, Transform>> models){
-        System.out.println("====================");
         for (Pair<Model, Transform> pair : models) {
             Vector2[] vertices = new Vector2[pair.component1().points];
             for (int i = 0; i < vertices.length; i++) {
@@ -93,20 +92,8 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
             }
             Polygon v = new Polygon(vertices);
             v.translate(pair.component2().position.copy());
-            System.out.println("-----------------");
             v.rotate(pair.component2().angle());
             BodyFixture f = new BodyFixture(v);
-            System.out.print("Model Vector Data: ");
-            for (Vector2 asVectorDatum : pair.component1().asVectorData) {
-                System.out.print(asVectorDatum+", ");
-            }
-            System.out.println();
-            System.out.print("Transformed Data: ");
-            for (Vector2 vertex : v.getVertices()) {
-                System.out.print(vertex+", ");
-            }
-            System.out.println();
-            f.setUserData(pair.component1());
             e.addFixture(f);
         }
         e.setMass(MassType.NORMAL);
@@ -125,7 +112,7 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
         entities.add(p);
         w.addBody(p);
         p.translate(10,10);
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 100; i++) {
             Entity e = new Entity();
 
             addModelsToEntity(e, List.of(
@@ -134,8 +121,8 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d, -1.5d, 0))
             ));
 
-//            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
-//            e.rotate(Math.random()*2*Math.PI);
+            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
+            e.rotate(Math.random()*2*Math.PI);
             entities.add(e);
             w.addBody(e);
         }
@@ -396,31 +383,31 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
             a--;
         }
 
-        if(frame == null){
-            frame = new JFrame();
-            panel = new JPanel(){
-                @Override
-                public void paint(Graphics g) {
-                    super.paint(g);
-                    if(image != null) {
-                        g.drawImage(image, 0, 0, null);
-                    }
-                    repaint();
-                }
-            };
-            frame.add(panel);
-            frame.setSize(1920,1080);
-            frame.setVisible(true);
-        }
-
-        BufferedImage bI = new BufferedImage(1920,1080, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = (Graphics2D) bI.getGraphics();
-
-        for (Entity entity : entities) {
-            entity.render(g, 10, Color.RED);
-        }
-
-        image = bI;
+//        if(frame == null){
+//            frame = new JFrame();
+//            panel = new JPanel(){
+//                @Override
+//                public void paint(Graphics g) {
+//                    super.paint(g);
+//                    if(image != null) {
+//                        g.drawImage(image, 0, 0, null);
+//                    }
+//                    repaint();
+//                }
+//            };
+//            frame.add(panel);
+//            frame.setSize(1920,1080);
+//            frame.setVisible(true);
+//        }
+//
+//        BufferedImage bI = new BufferedImage(1920,1080, BufferedImage.TYPE_INT_ARGB);
+//        Graphics2D g = (Graphics2D) bI.getGraphics();
+//
+//        for (Entity entity : entities) {
+//            entity.render(g, 10, Color.RED);
+//        }
+//
+//        image = bI;
 
         if(keySet.get(KeyEvent.VK_SPACE)){
             keySet.set(KeyEvent.VK_SPACE, false);
@@ -431,7 +418,7 @@ public class HelloTriangle_12_correct_dyn4j_bodies extends HelloTriangle_Base im
         desiredRotationalVelocity = a;
 
 
-        player.applyForce(desiredVelocity.multiply(2));
+        player.applyForce(desiredVelocity.multiply(10));
         player.applyTorque(desiredRotationalVelocity*2);
 
         w.update(1.0);
