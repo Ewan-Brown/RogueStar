@@ -15,16 +15,23 @@ import static com.jogamp.opengl.GL.GL_OUT_OF_MEMORY;
 import static com.jogamp.opengl.GL2ES2.GL_FRAGMENT_SHADER;
 import static com.jogamp.opengl.GL2ES2.GL_VERTEX_SHADER;
 
-public abstract class HelloTriangle_Base implements GLEventListener, KeyListener {
+public abstract class HelloTriangle_Base implements GLEventListener {
     private static GLWindow window;
     private static Animator animator;
 
-    protected void setup() {
+    protected void setup(){
+        setup(null);
+    }
+    protected void setup(KeyListener keyListener) {
 
         GLProfile glProfile = GLProfile.get(GLProfile.GL3);
         GLCapabilities glCapabilities = new GLCapabilities(glProfile);
 
         window = GLWindow.create(glCapabilities);
+
+        if(keyListener != null){
+            window.addKeyListener(keyListener);
+        }
 
         window.setTitle("Hello Triangle (simple)");
         window.setSize(1024, 768);
@@ -32,7 +39,6 @@ public abstract class HelloTriangle_Base implements GLEventListener, KeyListener
         window.setVisible(true);
 
         window.addGLEventListener(this);
-        window.addKeyListener(this);
 
         animator = new Animator(window);
         animator.start();
@@ -45,14 +51,6 @@ public abstract class HelloTriangle_Base implements GLEventListener, KeyListener
             }
         });
 
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
     }
 
     protected Program program;
