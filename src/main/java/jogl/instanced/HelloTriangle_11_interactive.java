@@ -11,15 +11,13 @@ import jogl.Semantic;
 import kotlin.Pair;
 import org.dyn4j.dynamics.Body;
 import org.dyn4j.geometry.Mass;
+import org.dyn4j.geometry.Rectangle;
 import org.dyn4j.geometry.Vector2;
 import org.dyn4j.world.World;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES3.*;
@@ -88,27 +86,34 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
     }
 
     {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             Entity e = new Entity(getRandomTransform(10), List.of(
                     new Pair<>(Model.TRIANGLE, getZeroTransform()),
                     new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))
             ));
             entities.add(e);
-            e.setMass(new Mass(new Vector2(0,0), 1, 100));
+            e.setMass(new Mass(new Vector2(0,0), 1, 1));
+            e.addFixture(new Rectangle(0.5,0.5));
             w.addBody(e);
         }
         player = entities.get(0);
     }
 
+    Vector2 desiredVelocity = new Vector2(0, 0);
+    float desiredRotationalVelocity = 0;
+    BitSet keySet = new BitSet(256);
+
     @Override
     public void keyPressed(KeyEvent e) {
-
+        keySet.set(e.getKeyCode(), true);
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-
+        if(!e.isAutoRepeat()) {
+            keySet.set(e.getKeyCode(), false);
+        }
     }
 
     private static class Entity extends Body {
@@ -138,7 +143,7 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
         }
     }
 
-    private static record Transform(Vector2 position, float angle){}
+    private record Transform(Vector2 position, float angle){}
 
     private enum Model {
         TRIANGLE(new float[]{
@@ -280,21 +285,36 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
     }
 
     private void updateEntities(){
-        for (Entity entity : entities) {
-            double x = entity.getWorldCenter().x;
-            double y = entity.getWorldCenter().y;
 
-//            System.out.println("x : " + x + ", y : " + y);
-            System.out.println(entity.getForce());
-            System.out.println(entity.getTorque());
+        float x = 0;
+        float y = 0;
+        float a = 0;
 
-            double angle = entity.getTransform().getRotationAngle();
-
-//            entity.applyForce(new Vector2(1, 1));
-//            entity.applyForce(new Vector2(Math.cos(angle + Math.PI/2.0), Math.sin(angle + Math.PI/2.0)));
-            entity.applyTorque(0.1);
-//            entity.updateTransform(buildTransform(x, y, (float)angle));
+        if(keySet.get(KeyEvent.VK_W)){
+            y++;
         }
+        if(keySet.get(KeyEvent.VK_S)){
+            y--;
+        }
+        if(keySet.get(KeyEvent.VK_A)){
+            x--;
+        }
+        if(keySet.get(KeyEvent.VK_D)){
+            x++;
+        }
+        if(keySet.get(KeyEvent.VK_Q)){
+            a++;
+        }
+        if(keySet.get(KeyEvent.VK_E)){
+            a--;
+        }
+
+        desiredVelocity = new Vector2(x, y);
+        desiredRotationalVelocity = a;
+
+        player.applyForce(desiredVelocity);
+        player.applyTorque(desiredRotationalVelocity);
+
         w.update(1.0);
 
     }
@@ -327,8 +347,6 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
                 double x = transform.position.x;
                 double y = transform.position.y;
                 double angle = transform.angle;
-
-//                System.out.println("x, y, angle : " + x + ", " + y + ", " + angle);
 
                 instanceData[instanceDataIndex++] = (float)x;
                 instanceData[instanceDataIndex++] = (float)y;
@@ -391,24 +409,7 @@ public class HelloTriangle_11_interactive extends HelloTriangle_Base implements 
             gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        //CONTINUE - It looks like we can draw both, but the larger triangles are covering up the smaller ones.
-        // Need to do two things:
-        // - Ensure proper layering of things
-        // - Ensure that the second set of models can be passed an angle relative to the larger one, or absolute. Not sure which is more fitting
-//        gl.glDrawArraysInstanced(GL_TRIANGLES, 1,  3, TRIANGLE_COUNT);
-//        gl.glEnable(GL_POINT);
-//        gl.glPointSize(10f);
-//        gl.glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 3,  4, SQUARE_COUNT, 50);
-
-
-
         for (Model value : Model.values()) {
-//            System.out.println("===================================");
-//            System.out.println("Model : " + value.toString());
-//            System.out.println("verticeIndex : " + verticeIndexes.get(value));
-//            System.out.println("# of points : " + value.points);
-//            System.out.println("sortedModelCount : " + sortedModelCounts.get(value));
-//            System.out.println("instanceIndexes : " + instanceIndexes.get(value));
             gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedModelCounts.get(value), instanceIndexes.get(value));
         }
 
