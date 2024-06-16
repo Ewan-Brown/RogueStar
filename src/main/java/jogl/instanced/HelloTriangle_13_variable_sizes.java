@@ -118,7 +118,6 @@ public class HelloTriangle_13_variable_sizes extends HelloTriangle_Base implemen
 
         entities.add(p);
         w.addBody(p);
-        p.translate(10,10);
         for (int i = 0; i < 100; i++) {
             Entity e = new Entity();
             float scale = (float)Math.random() + 0.2f;
@@ -128,8 +127,7 @@ public class HelloTriangle_13_variable_sizes extends HelloTriangle_Base implemen
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d*scale, -1.5d*scale, 0, scale))
             ));
 
-            e.translate(new Vector2(Math.random()*10,Math.random()*10f));
-            e.rotate(Math.random()*2*Math.PI);
+            e.translate((i % 10)*2, Math.floor(i/10f)*2);
             entities.add(e);
             w.addBody(e);
         }
