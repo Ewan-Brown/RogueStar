@@ -39,6 +39,8 @@ public class Graphics extends Graphics_Base {
     // (InstanceData is sorted by model!)
     final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
 
+    //List of the counts of instances sorted by model type
+    //Source of truth for populating the other indexes ! This must be updated before the others when adding/removing instances/models
     final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
 
     public static void main(String[] args) {
@@ -73,7 +75,7 @@ public class Graphics extends Graphics_Base {
     }
 
     {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100000; i++) {
             Entity e = new Entity(getRandomTransform(10), List.of(
                     new Pair<>(Model.TRIANGLE, buildZeroTransform()),
                     new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
@@ -265,8 +267,14 @@ public class Graphics extends Graphics_Base {
 
     }
 
+    int ticks = 0;
+    List<Long> timeBuckets = new ArrayList<>();
+
     private void updateInstanceData(GL3 gl){
 
+        List<Long> timestamps = new ArrayList<>();
+
+        timestamps.add(System.nanoTime());
         int modelCount = 0;
 
         HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
@@ -283,6 +291,7 @@ public class Graphics extends Graphics_Base {
             }
 
         }
+        timestamps.add(System.nanoTime());
 
         int indexCounter = 0;
         int instanceDataIndex = 0;
@@ -305,13 +314,36 @@ public class Graphics extends Graphics_Base {
             sortedModelCounts.put(model, sortedComponents.get(model).size());
             indexCounter += sortedComponents.get(model).size();
         }
+        timestamps.add(System.nanoTime());
 
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
         gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+        timestamps.add(System.nanoTime());
 
-        updateEntities();
+//        updateEntities();
+        timestamps.add(System.nanoTime());
+        int bucketsMissing = (timestamps.size()-1) - timeBuckets.size();
+        if(bucketsMissing > 0){
+            for (int j = 0; j < bucketsMissing; j++) {
+                timeBuckets.add(0L);
+            }
+        }
+        for (int i = 0; i < timestamps.size()-1; i++) {
+            long tDiff = timestamps.get(i+1) - timestamps.get(i);
+
+            timeBuckets.set(i, timeBuckets.get(i)+tDiff);
+        }
+        ticks++;
+
+        System.out.println();
+        if(ticks % 10 == 0){
+            for (Long timeBucket : timeBuckets) {
+                System.out.println(timeBucket);
+            }
+        }
+
     }
 
     private void initProgram(GL3 gl) {
