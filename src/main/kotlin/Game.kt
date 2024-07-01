@@ -17,7 +17,7 @@ import org.dyn4j.world.WorldCollisionData
 fun main() {
     val physicsWorld = PhysicsWorld();
     val effectsWorld = EffectsWorld();
-    val gui = Graphics();
+    val gui = Graphics(listOf(Model.TRIANGLE, Model.SQUARE1));
     val testEntity = SimpleEffectsEntity(Vector2(0.0,0.0), model = Model.TRIANGLE)
     val testPhysicsEntity = PhysicsEntity();
     testPhysicsEntity.setModels(listOf(Pair(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
