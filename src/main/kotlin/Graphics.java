@@ -8,10 +8,7 @@ import org.dyn4j.geometry.Vector2;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES3.*;
@@ -22,7 +19,7 @@ import static com.jogamp.opengl.GL3.GL_FLOAT;
 /**
  * Render stuff things
  */
-public class Graphics extends Graphics_Base {
+public class Graphics extends GraphicsBase {
 
     private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
     private IntBuffer VAOs = GLBuffers.newDirectIntBuffer(1);
@@ -43,52 +40,73 @@ public class Graphics extends Graphics_Base {
     //Source of truth for populating the other indexes ! This must be updated before the others when adding/removing instances/models
     final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
 
+    boolean firstModelUpdate = true;
+
     public static void main(String[] args) {
         Graphics gui = new Graphics();
-        gui.setup();
-    }
 
-    /*
-              /\
-             / _\__
-       0 -> / |__\|
-           /__^___\
-              0
-     */
-
-    List<Entity> entities = new ArrayList<>();
-
-    private Transform getRandomTransform(int mult){
-        return buildTransform((Math.random() - 0.5) * mult, (Math.random() - 0.5) * mult, (float)(Math.random()*2.0*Math.PI));
-    }
-
-    private Transform getRandomTransform(){
-        return getRandomTransform(1);
-    }
-
-    private Transform buildTransform(double x, double y, float a){
-        return new Transform(new Vector2(x, y), a);
-    }
-
-    private Transform buildZeroTransform(){
-        return new Transform(new Vector2(0,0), 0);
-    }
-
-    {
-        for (int i = 0; i < 100000; i++) {
-            Entity e = new Entity(getRandomTransform(10), List.of(
+        List<DrawableThing> drawables = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            DrawableThing e = new Entity(getRandomTransform(10), List.of(
                     new Pair<>(Model.TRIANGLE, buildZeroTransform()),
                     new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
                     new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))));
-            entities.add(e);
-            for (Pair<Model, Transform> model : e.models) {
-                sortedModelCounts.putIfAbsent(model.component1(), 0);
-                sortedModelCounts.put(model.component1(), sortedModelCounts.get(model.component1()) + 1);
-            }
+            drawables.add(e);
+//            thingsToDraw.add(e);
+//            for (Model m : e.getRequiredModels()) {
+//                sortedModelCounts.putIfAbsent(m, 0);
+//                sortedModelCounts.put(m, sortedModelCounts.get(m) + 1);
+//            }
         }
+
+        gui.updateDrawables(drawables);
+        gui.setup();
     }
 
-    private static class Entity{
+    public void updateDrawables(List<DrawableThing> drawables){
+        this.thingsToDraw = drawables;
+        Set<Model> currentModels = verticeIndexes.keySet();
+        for (DrawableThing drawable : drawables) {
+            List<Model> models = drawable.getRequiredModels();
+            for (Model model : models) {
+                if(!firstModelUpdate && !currentModels.contains(model)) {
+                    shouldReloadModels = true;
+                    throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
+                }
+                sortedModelCounts.putIfAbsent(model, 0);
+                sortedModelCounts.put(model, sortedModelCounts.get(model) + 1);
+            }
+        }
+        firstModelUpdate = false;
+    }
+
+
+    private boolean shouldReloadModels = false;
+
+    private List<DrawableThing> thingsToDraw = new ArrayList<>();
+
+    private static Transform getRandomTransform(int mult){
+        return buildTransform((Math.random() - 0.5) * mult, (Math.random() - 0.5) * mult, (float)(Math.random()*2.0*Math.PI));
+    }
+
+    private static Transform getRandomTransform(){
+        return getRandomTransform(1);
+    }
+
+    private static Transform buildTransform(double x, double y, float a){
+        return new Transform(new Vector2(x, y), a);
+    }
+
+    private static Transform buildZeroTransform(){
+        return new Transform(new Vector2(0,0), 0);
+    }
+
+    public interface DrawableThing{
+        public List<Pair<Model, Transform>> getTransformedComponents();
+        public List<Model> getRequiredModels();
+    }
+
+    private static class Entity implements DrawableThing{
 
         private Transform transform;
         private final List<Pair<Model, Transform>> models;
@@ -108,6 +126,15 @@ public class Graphics extends Graphics_Base {
             return result;
         }
 
+        public List<Model> getRequiredModels(){
+            List<Model> result = new ArrayList<>();
+            for (Pair<Model, Transform> model : models) {
+                if(result.contains(model.component1())) continue;
+                result.add(model.component1());
+            }
+            return result;
+        }
+
         public void updateTransform(Transform t){
             transform = t;
         }
@@ -122,9 +149,9 @@ public class Graphics extends Graphics_Base {
         }
     }
 
-    private static record Transform(Vector2 position, float angle){}
+    public record Transform(Vector2 position, float angle){}
 
-    private static class Model {
+    public static class Model {
 
         static Model TRIANGLE = new Model(new float[]{
                 -1.0f, -1.0f, 2, 1, 0, 0,
@@ -168,6 +195,8 @@ public class Graphics extends Graphics_Base {
 
         initVBOs(gl);
 
+        updateInstanceData(gl, thingsToDraw);
+
         initVAOs(gl);
 
         initProgram(gl);
@@ -206,8 +235,6 @@ public class Graphics extends Graphics_Base {
         gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
         gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
         gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-        updateInstanceData(gl);
 
         gl.glBindBufferBase(GL_UNIFORM_BUFFER, Semantic.Uniform.GLOBAL_MATRICES, VBOs.get(Buffer.GLOBAL_MATRICES));
 
@@ -251,26 +278,26 @@ public class Graphics extends Graphics_Base {
         checkError(gl, "initVao");
     }
 
-    private void updateEntities(){
-        for (Entity entity : entities) {
-            Transform transform = entity.getTransform();
-            double x = transform.position.x;
-            double y = transform.position.y;
-            double angle = transform.angle();
-
-            x += Math.cos(angle + Math.PI/2.0)/10.0;
-            y += Math.sin(angle + Math.PI/2.0)/10.0;
-            angle += 0.2/entities.indexOf(entity);
-
-            entity.updateTransform(buildTransform(x, y, (float)angle));
-        }
-
-    }
+//    private void updateEntities(){
+//        for (Entity entity : thingsToDraw) {
+//            Transform transform = entity.getTransform();
+//            double x = transform.position.x;
+//            double y = transform.position.y;
+//            double angle = transform.angle();
+//
+//            x += Math.cos(angle + Math.PI/2.0)/10.0;
+//            y += Math.sin(angle + Math.PI/2.0)/10.0;
+//            angle += 0.2/ thingsToDraw.indexOf(entity);
+//
+//            entity.updateTransform(buildTransform(x, y, (float)angle));
+//        }
+//
+//    }
 
     int ticks = 0;
     List<Long> timeBuckets = new ArrayList<>();
 
-    private void updateInstanceData(GL3 gl){
+    private void updateInstanceData(GL3 gl, List<? extends DrawableThing> drawableThings){
 
         List<Long> timestamps = new ArrayList<>();
 
@@ -278,8 +305,8 @@ public class Graphics extends Graphics_Base {
         int modelCount = 0;
 
         HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
-        for (Entity entity : entities) {
-            var components = entity.getTransformedComponents();
+        for (DrawableThing drawable : drawableThings) {
+            var components = drawable.getTransformedComponents();
             for (Pair<Model, Transform> component : components) {
                 Model model = component.component1();
                 Transform transform = component.component2();
@@ -322,7 +349,6 @@ public class Graphics extends Graphics_Base {
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
         timestamps.add(System.nanoTime());
 
-//        updateEntities();
         timestamps.add(System.nanoTime());
         int bucketsMissing = (timestamps.size()-1) - timeBuckets.size();
         if(bucketsMissing > 0){
@@ -337,12 +363,12 @@ public class Graphics extends Graphics_Base {
         }
         ticks++;
 
-        System.out.println();
-        if(ticks % 10 == 0){
-            for (Long timeBucket : timeBuckets) {
-                System.out.println(timeBucket);
-            }
-        }
+//        System.out.println();
+//        if(ticks % 10 == 0){
+//            for (Long timeBucket : timeBuckets) {
+//                System.out.println(timeBucket);
+//            }
+//        }
 
     }
 
@@ -401,7 +427,7 @@ public class Graphics extends Graphics_Base {
 
         checkError(gl, "display");
 
-        updateInstanceData(gl);
+        updateInstanceData(gl, thingsToDraw);
     }
 
     @Override

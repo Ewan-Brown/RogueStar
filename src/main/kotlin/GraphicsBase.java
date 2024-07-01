@@ -11,7 +11,7 @@ import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES2.GL_FRAGMENT_SHADER;
 import static com.jogamp.opengl.GL2ES2.GL_VERTEX_SHADER;
 
-public abstract class Graphics_Base implements GLEventListener {
+public abstract class GraphicsBase implements GLEventListener {
     private static GLWindow window;
     private static Animator animator;
 
