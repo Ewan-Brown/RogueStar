@@ -40,28 +40,34 @@ public class Graphics extends GraphicsBase {
     //Source of truth for populating the other indexes ! This must be updated before the others when adding/removing instances/models
     final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
 
+    final List<Model> allModels;
+
     boolean firstModelUpdate = true;
 
-    public static void main(String[] args) {
-        Graphics gui = new Graphics();
+    public Graphics(List<Model> preloadedModels) {
+        this.allModels = preloadedModels;
+    }
 
-        List<DrawableThing> drawables = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            DrawableThing e = new Entity(getRandomTransform(10), List.of(
-                    new Pair<>(Model.TRIANGLE, buildZeroTransform()),
-                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
-                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))));
-            drawables.add(e);
+//    public static void main(String[] args) {
+//        Graphics gui = new Graphics();
+//
+//        List<DrawableThing> drawables = new ArrayList<>();
+//        for (int i = 0; i < 100; i++) {
+//            DrawableThing e = new Entity(getRandomTransform(10), List.of(
+//                    new Pair<>(Model.TRIANGLE, buildZeroTransform()),
+//                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
+//                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))));
+//            drawables.add(e);
 //            thingsToDraw.add(e);
 //            for (Model m : e.getRequiredModels()) {
 //                sortedModelCounts.putIfAbsent(m, 0);
 //                sortedModelCounts.put(m, sortedModelCounts.get(m) + 1);
 //            }
-        }
-
-        gui.updateDrawables(drawables);
-        gui.setup();
-    }
+//        }
+//
+//        gui.updateDrawables(drawables);
+//        gui.setup();
+//    }
 
     public void updateDrawables(List<DrawableThing> drawables){
         this.thingsToDraw = drawables;
@@ -79,7 +85,6 @@ public class Graphics extends GraphicsBase {
         }
         firstModelUpdate = false;
     }
-
 
     private boolean shouldReloadModels = false;
 
@@ -210,7 +215,7 @@ public class Graphics extends GraphicsBase {
         //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
         int marker = 0;
-        for (Model value : sortedModelCounts.keySet()) {
+        for (Model value : allModels) {
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
