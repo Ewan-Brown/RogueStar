@@ -48,27 +48,6 @@ public class Graphics extends GraphicsBase {
         this.allModels = preloadedModels;
     }
 
-//    public static void main(String[] args) {
-//        Graphics gui = new Graphics();
-//
-//        List<DrawableThing> drawables = new ArrayList<>();
-//        for (int i = 0; i < 100; i++) {
-//            DrawableThing e = new Entity(getRandomTransform(10), List.of(
-//                    new Pair<>(Model.TRIANGLE, buildZeroTransform()),
-//                    new Pair<>(Model.SQUARE1, buildTransform(-0.5d, 0.0d, 0)),
-//                    new Pair<>(Model.SQUARE2, buildTransform(0.5d, 0.0d, 0))));
-//            drawables.add(e);
-//            thingsToDraw.add(e);
-//            for (Model m : e.getRequiredModels()) {
-//                sortedModelCounts.putIfAbsent(m, 0);
-//                sortedModelCounts.put(m, sortedModelCounts.get(m) + 1);
-//            }
-//        }
-//
-//        gui.updateDrawables(drawables);
-//        gui.setup();
-//    }
-
     public void updateDrawables(List<DrawableThing> drawables){
         this.thingsToDraw = drawables;
         Set<Model> currentModels = verticeIndexes.keySet();
@@ -90,68 +69,9 @@ public class Graphics extends GraphicsBase {
 
     private List<DrawableThing> thingsToDraw = new ArrayList<>();
 
-    private static Transform getRandomTransform(int mult){
-        return buildTransform((Math.random() - 0.5) * mult, (Math.random() - 0.5) * mult, (float)(Math.random()*2.0*Math.PI));
-    }
-
-    private static Transform getRandomTransform(){
-        return getRandomTransform(1);
-    }
-
-    private static Transform buildTransform(double x, double y, float a){
-        return new Transform(new Vector2(x, y), a);
-    }
-
-    private static Transform buildZeroTransform(){
-        return new Transform(new Vector2(0,0), 0);
-    }
-
     public interface DrawableThing{
         public List<Pair<Model, Transform>> getTransformedComponents();
         public List<Model> getRequiredModels();
-    }
-
-    private static class Entity implements DrawableThing{
-
-        private Transform transform;
-        private final List<Pair<Model, Transform>> models;
-
-        public List<Pair<Model, Transform>> getTransformedComponents(){
-            List<Pair<Model, Transform>> result = new ArrayList<>();
-
-            final float entityAngle = transform.angle;
-            final Vector2 entityPos = transform.position;
-
-            for (Pair<Model, Transform> component : models) {
-                Vector2 newPos = component.component2().position.copy().rotate(entityAngle).add(entityPos);
-                float newAngle = entityAngle + component.component2().angle;
-                result.add(new Pair<>(component.component1(),new Transform(newPos, newAngle)));
-            }
-
-            return result;
-        }
-
-        public List<Model> getRequiredModels(){
-            List<Model> result = new ArrayList<>();
-            for (Pair<Model, Transform> model : models) {
-                if(result.contains(model.component1())) continue;
-                result.add(model.component1());
-            }
-            return result;
-        }
-
-        public void updateTransform(Transform t){
-            transform = t;
-        }
-
-        public Transform getTransform(){
-            return transform;
-        }
-
-        public Entity(Transform initialTransform, List<Pair<Model, Transform>> m) {
-            transform = initialTransform;
-            models = m;
-        }
     }
 
     public record Transform(Vector2 position, float angle){}
@@ -282,22 +202,6 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "initVao");
     }
-
-//    private void updateEntities(){
-//        for (Entity entity : thingsToDraw) {
-//            Transform transform = entity.getTransform();
-//            double x = transform.position.x;
-//            double y = transform.position.y;
-//            double angle = transform.angle();
-//
-//            x += Math.cos(angle + Math.PI/2.0)/10.0;
-//            y += Math.sin(angle + Math.PI/2.0)/10.0;
-//            angle += 0.2/ thingsToDraw.indexOf(entity);
-//
-//            entity.updateTransform(buildTransform(x, y, (float)angle));
-//        }
-//
-//    }
 
     int ticks = 0;
     List<Long> timeBuckets = new ArrayList<>();
