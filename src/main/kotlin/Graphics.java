@@ -4,6 +4,8 @@ import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.Semantic;
 import kotlin.Pair;
+import lombok.Getter;
+import lombok.Setter;
 import org.dyn4j.geometry.Vector2;
 
 import java.nio.FloatBuffer;
@@ -29,16 +31,17 @@ public class Graphics extends GraphicsBase {
 
     private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
 
-    //Points to where the start of each model's vertex data is in the VERTEX buffer
-    final HashMap<Model, Integer> verticeIndexes = new HashMap<>(); //Can probably be attached directly to a model object (wrap the Enum in an object to make mutable fields)
+    HashMap<Model, ModelData> modelData = new HashMap<>();
 
-    //Points to where each grouping of model starts in the INSTANCE buffer
-    // (InstanceData is sorted by model!)
-    final HashMap<Model, Integer> instanceIndexes = new HashMap<>();
+    @Getter
+    @Setter
+    private class ModelData{
+        int verticeIndex;
+        int instanceIndex;
+        int instanceCount = 0;
 
-    //List of the counts of instances sorted by model type
-    //Source of truth for populating the other indexes ! This must be updated before the others when adding/removing instances/models
-    final HashMap<Model, Integer> sortedModelCounts = new HashMap<>();
+        public void incrementInstanceCount() {instanceCount++;}
+    }
 
     final List<Model> allModels;
 
@@ -46,26 +49,29 @@ public class Graphics extends GraphicsBase {
 
     public Graphics(List<Model> preloadedModels) {
         this.allModels = preloadedModels;
+        for (Model preloadedModel : preloadedModels) {
+            modelData.put(preloadedModel, new ModelData());
+        }
     }
 
     public void updateDrawables(List<DrawableThing> drawables){
         this.thingsToDraw = drawables;
-        Set<Model> currentModels = verticeIndexes.keySet();
+        Set<Model> currentModels = Set.copyOf(allModels);
+        for (Model currentModel : currentModels) {
+            modelData.get(currentModel).setInstanceCount(0);
+        }
         for (DrawableThing drawable : drawables) {
             List<Model> models = drawable.getRequiredModels();
             for (Model model : models) {
                 if(!firstModelUpdate && !currentModels.contains(model)) {
-                    shouldReloadModels = true;
                     throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
                 }
-                sortedModelCounts.putIfAbsent(model, 0);
-                sortedModelCounts.put(model, sortedModelCounts.get(model) + 1);
+                modelData.get(model).incrementInstanceCount();
             }
         }
         firstModelUpdate = false;
     }
 
-    private boolean shouldReloadModels = false;
 
     private List<DrawableThing> thingsToDraw = new ArrayList<>();
 
@@ -139,7 +145,7 @@ public class Graphics extends GraphicsBase {
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
-            verticeIndexes.put(value, marker);
+            modelData.get(value).setVerticeIndex(marker);
             marker += value.points;
         }
 
@@ -246,8 +252,8 @@ public class Graphics extends GraphicsBase {
                 instanceData[instanceDataIndex++] = (float)angle;
 
             }
-            instanceIndexes.put(model, indexCounter);
-            sortedModelCounts.put(model, sortedComponents.get(model).size());
+            modelData.get(model).setInstanceIndex(indexCounter);
+            modelData.get(model).setInstanceCount(sortedComponents.get(model).size());
             indexCounter += sortedComponents.get(model).size();
         }
         timestamps.add(System.nanoTime());
@@ -324,9 +330,11 @@ public class Graphics extends GraphicsBase {
             gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        for (Model value : sortedModelCounts.keySet()) {
-            if(sortedModelCounts.get(value) != null && sortedModelCounts.get(value) > 0) {
-                gl.glDrawArraysInstancedBaseInstance(value.drawMode, verticeIndexes.get(value), value.points, sortedModelCounts.get(value), instanceIndexes.get(value));
+        for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
+            Model model = value.getKey();
+            ModelData data = value.getValue();
+            if(data.getInstanceCount() > 0) {
+                gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
             }
         }
 
