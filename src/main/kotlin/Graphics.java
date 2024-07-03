@@ -43,44 +43,52 @@ public class Graphics extends GraphicsBase {
         public void incrementInstanceCount() {instanceCount++;}
     }
 
-    final List<Model> allModels;
-
-    boolean firstModelUpdate = true;
+    final List<Model> loadedModels;
 
     public Graphics(List<Model> preloadedModels) {
-        this.allModels = preloadedModels;
+        this.loadedModels = preloadedModels;
         for (Model preloadedModel : preloadedModels) {
             modelData.put(preloadedModel, new ModelData());
         }
     }
 
-    public void updateDrawables(List<DrawableThing> drawables){
-        this.thingsToDraw = drawables;
-        Set<Model> currentModels = Set.copyOf(allModels);
-        for (Model currentModel : currentModels) {
+    public void updateDrawables(List<DrawableInstance> drawables){
+        this.instances = drawables;
+        for (Model currentModel : loadedModels) {
             modelData.get(currentModel).setInstanceCount(0);
         }
-        for (DrawableThing drawable : drawables) {
-            List<Model> models = drawable.getRequiredModels();
-            for (Model model : models) {
-                if(!firstModelUpdate && !currentModels.contains(model)) {
-                    throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
-                }
+        for (DrawableInstance instance : drawables) {
+            Model model = instance.model;
+            if(!loadedModels.contains(model)){
+                throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
+            }else{
                 modelData.get(model).incrementInstanceCount();
             }
         }
-        firstModelUpdate = false;
     }
 
 
-    private List<DrawableThing> thingsToDraw = new ArrayList<>();
+    private List<DrawableInstance> instances = new ArrayList<>();
 
-    public interface DrawableThing{
-        public List<Pair<Model, Transform>> getTransformedComponents();
-        public List<Model> getRequiredModels();
+    public record DrawableInstance(Model model, Transform transform){}
+
+    public static class Transform{
+        private final Vector2 position;
+        private final float angle;
+
+        public Transform(Vector2 pos, float a){
+            this.position = pos.copy();
+            this.angle = a;
+        }
+
+        public Vector2 getPosition() {
+            return position;
+        }
+
+        public float getAngle() {
+            return angle;
+        }
     }
-
-    public record Transform(Vector2 position, float angle){}
 
     public static class Model {
 
@@ -126,7 +134,7 @@ public class Graphics extends GraphicsBase {
 
         initVBOs(gl);
 
-        updateInstanceData(gl, thingsToDraw);
+        updateInstanceData(gl, instances);
 
         initVAOs(gl);
 
@@ -141,7 +149,7 @@ public class Graphics extends GraphicsBase {
         //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
         int marker = 0;
-        for (Model value : allModels) {
+        for (Model value : loadedModels) {
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
@@ -212,26 +220,19 @@ public class Graphics extends GraphicsBase {
     int ticks = 0;
     List<Long> timeBuckets = new ArrayList<>();
 
-    private void updateInstanceData(GL3 gl, List<? extends DrawableThing> drawableThings){
+    private void updateInstanceData(GL3 gl, List<DrawableInstance> drawableThings){
 
         List<Long> timestamps = new ArrayList<>();
 
         timestamps.add(System.nanoTime());
         int modelCount = 0;
 
+        //TODO this should come pre-sorted...
         HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
-        for (DrawableThing drawable : drawableThings) {
-            var components = drawable.getTransformedComponents();
-            for (Pair<Model, Transform> component : components) {
-                Model model = component.component1();
-                Transform transform = component.component2();
-                if(!sortedComponents.containsKey(model)){
-                    sortedComponents.put(model, new ArrayList<>());
-                }
-                sortedComponents.get(model).add(transform);
-                modelCount++;
-            }
-
+        for (DrawableInstance instance : drawableThings) {
+            sortedComponents.putIfAbsent(instance.model, new ArrayList<>());
+            sortedComponents.get(instance.model).add(instance.transform);
+            modelCount++;
         }
         timestamps.add(System.nanoTime());
 
@@ -344,7 +345,7 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "display");
 
-        updateInstanceData(gl, thingsToDraw);
+        updateInstanceData(gl, instances);
     }
 
     @Override
