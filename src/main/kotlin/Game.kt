@@ -17,17 +17,25 @@ import org.dyn4j.world.WorldCollisionData
 fun main() {
     val physicsWorld = PhysicsWorld();
     val effectsWorld = EffectsWorld();
-    val gui = Graphics(listOf(Model.TRIANGLE, Model.SQUARE1));
+    val models = listOf(Model.TRIANGLE, Model.SQUARE1)
+    val gui = Graphics(models)
     val testEntity = SimpleEffectsEntity(Vector2(0.0,0.0), model = Model.TRIANGLE)
-    val testPhysicsEntity = PhysicsEntity();
+    val testPhysicsEntity = PhysicsEntity()
     testPhysicsEntity.setModels(listOf(Pair(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
 
     gui.setup()
     while(true){
         Thread.sleep(15)
         testEntity.position = testEntity.position.add(0.01,0.0)
-        var drawableThings : List<DrawableInstance> = testEntity.getDrawableInstances() + testPhysicsEntity.getDrawableInstances();
-        gui.updateDrawables(drawableThings)
+        val modelDataMap = hashMapOf<Model, MutableList<Graphics.Transform>>()
+        for (model in models) {
+            modelDataMap[model] = mutableListOf()
+        }
+        var drawableThings : List<DrawableInstance> = testEntity.getDrawableInstances() + testPhysicsEntity.getDrawableInstances()
+        for (drawable in drawableThings) {
+            modelDataMap[drawable.model]!!.add(drawable.transform);
+        }
+        gui.updateDrawables(modelDataMap)
     }
 }
 
