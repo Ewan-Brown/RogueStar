@@ -53,26 +53,11 @@ public class Graphics extends GraphicsBase {
         }
     }
 
-    public void updateDrawables(List<DrawableInstance> drawables){
-//        this.instances = drawables;
-        for (Model currentModel : loadedModels) {
-            modelData.get(currentModel).instanceData.clear();
+    public void updateDrawables(HashMap<Model, List<Transform>> data){
+        for (Model loadedModel : loadedModels) {
+            modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
         }
-        for (DrawableInstance drawable : drawables) {
-            modelData.get(drawable.model).instanceData.add(drawable.transform);
-        }
-//        for (DrawableInstance instance : drawables) {
-//            Model model = instance.model;
-//            if(!loadedModels.contains(model)){
-//                throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
-//            }else{
-//                modelData.get(model).incrementInstanceCount();
-//            }
-//        }
     }
-
-
-//    private List<DrawableInstance> instances = new ArrayList<>();
 
     public record DrawableInstance(Model model, Transform transform){}
 
