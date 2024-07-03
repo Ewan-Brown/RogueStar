@@ -38,9 +38,10 @@ public class Graphics extends GraphicsBase {
     private class ModelData{
         int verticeIndex;
         int instanceIndex;
-        int instanceCount = 0;
-
-        public void incrementInstanceCount() {instanceCount++;}
+        List<Transform> instanceData = new ArrayList<>();
+        public int getInstanceCount(){
+            return instanceData.size();
+        }
     }
 
     final List<Model> loadedModels;
@@ -53,22 +54,25 @@ public class Graphics extends GraphicsBase {
     }
 
     public void updateDrawables(List<DrawableInstance> drawables){
-        this.instances = drawables;
+//        this.instances = drawables;
         for (Model currentModel : loadedModels) {
-            modelData.get(currentModel).setInstanceCount(0);
+            modelData.get(currentModel).instanceData.clear();
         }
-        for (DrawableInstance instance : drawables) {
-            Model model = instance.model;
-            if(!loadedModels.contains(model)){
-                throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
-            }else{
-                modelData.get(model).incrementInstanceCount();
-            }
+        for (DrawableInstance drawable : drawables) {
+            modelData.get(drawable.model).instanceData.add(drawable.transform);
         }
+//        for (DrawableInstance instance : drawables) {
+//            Model model = instance.model;
+//            if(!loadedModels.contains(model)){
+//                throw new RuntimeException("Attempted to update drawables with models that are not yet loaded, this is not yet supported");
+//            }else{
+//                modelData.get(model).incrementInstanceCount();
+//            }
+//        }
     }
 
 
-    private List<DrawableInstance> instances = new ArrayList<>();
+//    private List<DrawableInstance> instances = new ArrayList<>();
 
     public record DrawableInstance(Model model, Transform transform){}
 
@@ -134,7 +138,7 @@ public class Graphics extends GraphicsBase {
 
         initVBOs(gl);
 
-        updateInstanceData(gl, instances);
+        updateInstanceData(gl);
 
         initVAOs(gl);
 
@@ -220,27 +224,27 @@ public class Graphics extends GraphicsBase {
     int ticks = 0;
     List<Long> timeBuckets = new ArrayList<>();
 
-    private void updateInstanceData(GL3 gl, List<DrawableInstance> drawableThings){
+    private void updateInstanceData(GL3 gl){
 
         List<Long> timestamps = new ArrayList<>();
 
         timestamps.add(System.nanoTime());
-        int modelCount = 0;
+        int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
 
         //TODO this should come pre-sorted...
-        HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
-        for (DrawableInstance instance : drawableThings) {
-            sortedComponents.putIfAbsent(instance.model, new ArrayList<>());
-            sortedComponents.get(instance.model).add(instance.transform);
-            modelCount++;
-        }
+//        HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
+//        for (DrawableInstance instance : drawableThings) {
+//            sortedComponents.putIfAbsent(instance.model, new ArrayList<>());
+//            sortedComponents.get(instance.model).add(instance.transform);
+//            modelCount++;
+//        }
         timestamps.add(System.nanoTime());
 
         int indexCounter = 0;
         int instanceDataIndex = 0;
         float[] instanceData = new float[modelCount * 3];
-        for (Model model : sortedComponents.keySet()) {
-            for (Transform transform : sortedComponents.get(model)) {
+        for (ModelData data : modelData.values()) {
+            for (Transform transform : data.getInstanceData()) {
 
                 double x = transform.position.x;
                 double y = transform.position.y;
@@ -253,9 +257,8 @@ public class Graphics extends GraphicsBase {
                 instanceData[instanceDataIndex++] = (float)angle;
 
             }
-            modelData.get(model).setInstanceIndex(indexCounter);
-            modelData.get(model).setInstanceCount(sortedComponents.get(model).size());
-            indexCounter += sortedComponents.get(model).size();
+            data.setInstanceIndex(indexCounter);
+            indexCounter += data.getInstanceCount();
         }
         timestamps.add(System.nanoTime());
 
@@ -345,7 +348,7 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "display");
 
-        updateInstanceData(gl, instances);
+        updateInstanceData(gl);
     }
 
     @Override
