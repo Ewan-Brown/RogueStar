@@ -59,8 +59,6 @@ public class Graphics extends GraphicsBase {
         }
     }
 
-    public record DrawableInstance(Model model, Transform transform){}
-
     public static class Transform{
         private final Vector2 position;
         private final float angle;

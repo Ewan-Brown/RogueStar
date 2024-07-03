@@ -1,7 +1,4 @@
-import Graphics.DrawableInstance
 import Graphics.Model
-import com.jogamp.opengl.Threading.Mode
-import jogl.instanced.HelloTriangle_12_correct_dyn4j_bodies
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.dynamics.AbstractPhysicsBody
@@ -39,11 +36,13 @@ fun main() {
     }
 }
 
-interface DrawableProvider{
+private interface DrawableProvider{
     fun getDrawableInstances() : List<DrawableInstance>
 }
 
-class PhysicsEntity : AbstractPhysicsBody(), DrawableProvider {
+private data class DrawableInstance(val model: Model, val transform: Graphics.Transform)
+
+private class PhysicsEntity : AbstractPhysicsBody(), DrawableProvider {
     private var models: List<Pair<Model, Graphics.Transform>>? = null
     private val requiredModels : MutableList<Model> = mutableListOf()
 
@@ -62,25 +61,6 @@ class PhysicsEntity : AbstractPhysicsBody(), DrawableProvider {
         return result
     }
 
-//    override fun getTransformedComponents(): MutableList<Pair<Model, Graphics.Transform>> {
-//        val result: MutableList<Pair<Model,Graphics.Transform>> = ArrayList()
-//
-//        val entityAngle = getTransform().rotationAngle.toFloat()
-//        val entityPos = this.worldCenter
-//
-//        for (component in models!!) {
-//            val newPos = component.component2().position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-//            val newAngle = entityAngle + component.component2().angle
-//            result.add(Pair(component.component1(),Graphics.Transform(newPos, newAngle)))
-//        }
-//
-//        return result
-//    }
-//
-//    override fun getRequiredModels(): MutableList<Model> {
-//        return requiredModels
-//    }
-
     //Why isn't this just part of the constructor
     fun setModels(models: List<Pair<Model,Graphics.Transform>>) {
         for (model in models) {
@@ -95,35 +75,27 @@ class PhysicsEntity : AbstractPhysicsBody(), DrawableProvider {
 
 }
 
-class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
+private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity>? {
         return null;
     }
 }
 
-abstract class EffectsEntity : DrawableProvider{}
+private abstract class EffectsEntity : DrawableProvider{}
 
-class SimpleEffectsEntity(
+private class SimpleEffectsEntity(
     var position: Vector2,
     var velocity: Vector2 = Vector2(0.0, 0.0),
     var angle: Float = 0.0f,
     var angularVelocity: Float = 0.0f,
     val model: Model,
 ) : EffectsEntity(){
-
-    //    override fun getTransformedComponents(): MutableList<Pair<Graphics.Model, Graphics.Transform>> {
-//        return mutableListOf(Pair(model, Graphics.Transform(position, angle)))
-//    }
-//
-//    override fun getRequiredModels(): MutableList<Graphics.Model> {
-//        return mutableListOf(model)
-//    }
     override fun getDrawableInstances(): List<DrawableInstance> {
         return return mutableListOf(DrawableInstance(model, Graphics.Transform(position.copy(), angle)))
     }
 
 }
 
-class EffectsWorld{
+private class EffectsWorld{
     val entities = listOf<EffectsEntity>();
 }
