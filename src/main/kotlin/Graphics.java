@@ -80,26 +80,31 @@ public class Graphics extends GraphicsBase {
     public static class Model {
 
         static Model TRIANGLE = new Model(new float[]{
-                -1.0f, -1.0f, 2, 1, 0, 0,
                 +0.0f, +2.0f, 2, 1, 0, 0,
+                -1.0f, -1.0f, 2, 1, 0, 0,
                 +1.0f, -1.0f, 2, 1, 0, 0}, GL_TRIANGLES);
         static Model SQUARE1 = new Model(new float[]{
                 -0.5f, -0.5f, 1, 0, 1, 0,
-                -0.5f, +0.5f, 1, 0, 1, 0,
+                +0.5f, -0.5f, 1, 0, 1, 0,
                 +0.5f, +0.5f, 1, 0, 1, 0,
-                +0.5f, -0.5f, 1, 0, 1, 0}, GL_TRIANGLE_FAN);
+                -0.5f, +0.5f, 1, 0, 1, 0},GL_TRIANGLE_FAN);
         static Model SQUARE2 = new Model(new float[]{
-                -0.5f, -0.5f, 1, 1, 1, 0,
-                -0.5f, +0.5f, 1, 1, 1, 0,
-                +0.5f, +0.5f, 1, 1, 1, 0,
-                +0.5f, -0.5f, 1, 1, 1, 0}, GL_TRIANGLE_FAN);
+                -0.5f, -0.5f, 1, 0, 1, 0,
+                +0.5f, -0.5f, 1, 0, 1, 0,
+                +0.5f, +0.5f, 1, 0, 1, 0,
+                -0.5f, +0.5f, 1, 0, 1, 0}, GL_TRIANGLE_FAN);
 
         final int points;
         final float[] vertexData;
         final int drawMode;
+        final Vector2[] asVectorData;
 
         Model(float[] vertexData, int dMode) {
             this.points = vertexData.length/6; //Change if vertex data size changes!
+            asVectorData = new Vector2[points];
+            for (int i = 0; i < points; i++) {
+                asVectorData[i] = new Vector2(vertexData[i*6], vertexData[i*6+1]);
+            }
             this.vertexData = vertexData;
             this.drawMode = dMode;
         }
