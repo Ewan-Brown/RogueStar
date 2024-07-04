@@ -1,26 +1,17 @@
 import Graphics.Model
-import org.dyn4j.collision.CollisionItem
-import org.dyn4j.collision.CollisionPair
-import org.dyn4j.dynamics.AbstractPhysicsBody
-import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.MassType
-import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.world.AbstractPhysicsWorld
-import org.dyn4j.world.World
-import org.dyn4j.world.WorldCollisionData
 
 
 /**
  * Test
  */
 fun main() {
-    val physicsWorld = PhysicsWorld();
-    val effectsWorld = EffectsWorld();
-    val models = listOf(Model.TRIANGLE, Model.SQUARE1)
-    val gui = Graphics(models)
 
-    val testEntity = SimpleEffectsEntity(Vector2(0.0,0.0), model = Model.TRIANGLE)
+    val models = listOf(Model.TRIANGLE, Model.SQUARE1)
+
+    val gui = Graphics(models)
+    val physicsWorld = PhysicsWorld();
 
     physicsWorld.setGravity(0.0,0.0)
 
@@ -32,8 +23,19 @@ fun main() {
     testPhysicsEntity2.setMass(MassType.NORMAL)
     physicsWorld.addBody(testPhysicsEntity2)
 
+    val effectsWorld = EffectsWorld();
+
+    val testEntity = SimpleEffectsEntity(Vector2(0.0,0.0), model = Model.TRIANGLE)
+    effectsWorld.addEntity(testEntity)
+
 
     gui.setup()
+
+    val modelDataMap = hashMapOf<Model, MutableList<Graphics.Transform>>()
+    for (model in models) {
+        modelDataMap[model] = mutableListOf()
+    }
+
     while(true){
         Thread.sleep(15)
 
@@ -41,21 +43,20 @@ fun main() {
         testEntity.angle += 0.01f;
         testPhysicsEntity1.applyForce(Vector2(1.0,1.0))
 
-        val modelDataMap = hashMapOf<Model, MutableList<Graphics.Transform>>()
-        for (model in models) {
-            modelDataMap[model] = mutableListOf()
-        }
-        var drawableThings : List<Component> = testEntity.getDrawableInstances() + testPhysicsEntity1.getDrawableInstances() + testPhysicsEntity2.getDrawableInstances()
-        for (drawable in drawableThings) {
-            modelDataMap[drawable.model]!!.add(drawable.transform);
-        }
-        gui.updateDrawables(modelDataMap)
         physicsWorld.update(1.0)
-    }
-}
 
-internal interface DrawableProvider{
-    fun getDrawableInstances() : List<Component>
+        //Reset model data map
+        for (model in models) {
+            modelDataMap[model]!!.clear()
+        }
+
+        //Let each world append data to the model data map
+        physicsWorld.populateModelMap(modelDataMap)
+        effectsWorld.populateModelMap(modelDataMap)
+
+        //Pass the model data map to UI for drawing
+        gui.updateDrawables(modelDataMap)
+    }
 }
 
 data class Component(val model: Model, val transform: Graphics.Transform)

@@ -1,3 +1,4 @@
+import Graphics.Transform
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.dynamics.AbstractPhysicsBody
@@ -15,17 +16,18 @@ class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<Phys
         return WorldCollisionData(pair);
     }
 
-
+    fun populateModelMap(map : HashMap<Graphics.Model, MutableList<Transform>>){
+        for (body in this.bodies) {
+            for (component in body.getComponents()) {
+                map[component.model]!!.add(component.transform)
+            }
+        }
+    }
 }
 
+class PhysicsEntity(private val components: List<Component>) : AbstractPhysicsBody() {
 
-class PhysicsEntity : AbstractPhysicsBody, DrawableProvider {
-
-    val components: List<Component>
-
-    constructor(components: List<Component>) : super() {
-        this.components = components
-
+    init {
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
             for (i in vertices.indices) {
@@ -37,10 +39,9 @@ class PhysicsEntity : AbstractPhysicsBody, DrawableProvider {
             val f = BodyFixture(v)
             this.addFixture(f)
         }
-
     }
 
-    override fun getDrawableInstances(): List<Component> {
+    fun getComponents(): List<Component> {
         val result: MutableList<Component> = ArrayList()
 
         val entityAngle = getTransform().rotationAngle.toFloat()
