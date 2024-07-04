@@ -8,7 +8,7 @@ import org.dyn4j.geometry.Vector2
  */
 fun main() {
 
-    val models = listOf(Model.TRIANGLE, Model.SQUARE1)
+    val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.SQUARE2)
 
     val gui = Graphics(models)
     val physicsWorld = PhysicsWorld();
@@ -19,7 +19,7 @@ fun main() {
     testPhysicsEntity1.setMass(MassType.NORMAL)
     physicsWorld.addBody(testPhysicsEntity1)
 
-    val testPhysicsEntity2 = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
+    val testPhysicsEntity2 = PhysicsEntity(listOf(Component(Model.SQUARE2, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
     testPhysicsEntity2.setMass(MassType.NORMAL)
     physicsWorld.addBody(testPhysicsEntity2)
 
