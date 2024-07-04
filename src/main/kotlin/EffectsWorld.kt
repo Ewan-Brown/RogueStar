@@ -1,10 +1,24 @@
 import org.dyn4j.geometry.Vector2
 
 class EffectsWorld{
-    val entities = listOf<EffectsEntity>();
+    private val entities = mutableListOf<EffectsEntity>();
+
+    fun populateModelMap(map : HashMap<Graphics.Model, MutableList<Graphics.Transform>>){
+        for (entity in entities) {
+            for (component in entity.getComponents()) {
+                map[component.model]!!.add(component.transform)
+            }
+        }
+    }
+
+    fun addEntity(entity : EffectsEntity){
+        entities.add(entity);
+    }
 }
 
-abstract class EffectsEntity : DrawableProvider{}
+abstract class EffectsEntity{
+    abstract fun getComponents(): List<Component>
+}
 
 class SimpleEffectsEntity(
     var position: Vector2,
@@ -13,7 +27,8 @@ class SimpleEffectsEntity(
     var angularVelocity: Float = 0.0f,
     val model: Graphics.Model,
 ) : EffectsEntity(){
-    override fun getDrawableInstances(): List<Component> {
+
+    override fun getComponents(): List<Component> {
         return return mutableListOf(Component(model, Graphics.Transform(position.copy(), angle)))
     }
 
