@@ -99,7 +99,7 @@ private class PhysicsEntity : AbstractPhysicsBody, DrawableProvider {
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
     override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
-
+        //TODO Do something with collisions, if we'd like
     }
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity>? {
         return WorldCollisionData(pair);
