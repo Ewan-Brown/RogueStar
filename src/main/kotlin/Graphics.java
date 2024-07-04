@@ -90,9 +90,9 @@ public class Graphics extends GraphicsBase {
                 -0.5f, +0.5f, 1, 0, 1, 0},GL_TRIANGLE_FAN);
         static Model SQUARE2 = new Model(new float[]{
                 -0.5f, -0.5f, 1, 0, 1, 0,
-                +0.5f, -0.5f, 1, 0, 1, 0,
+                +0.5f, -0.5f, 1, 0, 0, 1,
                 +0.5f, +0.5f, 1, 0, 1, 0,
-                -0.5f, +0.5f, 1, 0, 1, 0}, GL_TRIANGLE_FAN);
+                -0.5f, +0.5f, 1, 1, 0, 0}, GL_TRIANGLE_FAN);
 
         final int points;
         final float[] vertexData;
