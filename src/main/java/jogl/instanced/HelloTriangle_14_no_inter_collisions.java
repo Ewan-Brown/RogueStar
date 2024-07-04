@@ -61,7 +61,7 @@ public class HelloTriangle_14_no_inter_collisions extends HelloTriangle_Base imp
     World<Entity> w = new World<>(){
         @Override
         protected void detect() {
-//            super.detect();
+            super.detect();
         }
     };
 

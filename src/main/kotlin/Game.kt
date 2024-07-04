@@ -7,6 +7,7 @@ import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
+import org.dyn4j.world.World
 import org.dyn4j.world.WorldCollisionData
 
 
@@ -23,9 +24,14 @@ fun main() {
 
     physicsWorld.setGravity(0.0,0.0)
 
-    val testPhysicsEntity = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
-    testPhysicsEntity.setMass(MassType.NORMAL)
-    physicsWorld.addBody(testPhysicsEntity)
+    val testPhysicsEntity1 = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
+    testPhysicsEntity1.setMass(MassType.NORMAL)
+    physicsWorld.addBody(testPhysicsEntity1)
+
+    val testPhysicsEntity2 = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
+    testPhysicsEntity2.setMass(MassType.NORMAL)
+    physicsWorld.addBody(testPhysicsEntity2)
+
 
     gui.setup()
     while(true){
@@ -33,13 +39,13 @@ fun main() {
 
         testEntity.position = testEntity.position.add(0.01,0.0)
         testEntity.angle += 0.01f;
-        testPhysicsEntity.applyForce(Vector2(1.0,1.0))
+        testPhysicsEntity1.applyForce(Vector2(1.0,1.0))
 
         val modelDataMap = hashMapOf<Model, MutableList<Graphics.Transform>>()
         for (model in models) {
             modelDataMap[model] = mutableListOf()
         }
-        var drawableThings : List<Component> = testEntity.getDrawableInstances() + testPhysicsEntity.getDrawableInstances()
+        var drawableThings : List<Component> = testEntity.getDrawableInstances() + testPhysicsEntity1.getDrawableInstances() + testPhysicsEntity2.getDrawableInstances()
         for (drawable in drawableThings) {
             modelDataMap[drawable.model]!!.add(drawable.transform);
         }
@@ -92,9 +98,11 @@ private class PhysicsEntity : AbstractPhysicsBody, DrawableProvider {
 }
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
+    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+
+    }
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity>? {
-        println("oh it's a collision")
-        return null;
+        return WorldCollisionData(pair);
     }
 }
 
