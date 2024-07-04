@@ -54,73 +54,10 @@ fun main() {
     }
 }
 
-private interface DrawableProvider{
+internal interface DrawableProvider{
     fun getDrawableInstances() : List<Component>
 }
 
-private data class Component(val model: Model, val transform: Graphics.Transform)
+data class Component(val model: Model, val transform: Graphics.Transform)
 
-private class PhysicsEntity : AbstractPhysicsBody, DrawableProvider {
 
-    val components: List<Component>
-
-    constructor(components: List<Component>) : super() {
-        this.components = components
-
-        for (component in components) {
-            val vertices = arrayOfNulls<Vector2>(component.model.points)
-            for (i in vertices.indices) {
-                vertices[i] = component.model.asVectorData[i].copy()
-            }
-            val v = Polygon(*vertices)
-            v.translate(component.transform.position.copy())
-            v.rotate(component.transform.angle.toDouble())
-            val f = BodyFixture(v)
-            this.addFixture(f)
-        }
-
-    }
-
-    override fun getDrawableInstances(): List<Component> {
-        val result: MutableList<Component> = ArrayList()
-
-        val entityAngle = getTransform().rotationAngle.toFloat()
-        val entityPos = this.worldCenter
-
-        for (component in components) {
-            val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-            val newAngle = entityAngle + component.transform.angle
-            result.add(Component(component.model,Graphics.Transform(newPos, newAngle)))
-        }
-
-        return result
-    }
-}
-
-private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
-    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
-        //TODO Do something with collisions, if we'd like
-    }
-    override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity>? {
-        return WorldCollisionData(pair);
-    }
-}
-
-private abstract class EffectsEntity : DrawableProvider{}
-
-private class SimpleEffectsEntity(
-    var position: Vector2,
-    var velocity: Vector2 = Vector2(0.0, 0.0),
-    var angle: Float = 0.0f,
-    var angularVelocity: Float = 0.0f,
-    val model: Model,
-) : EffectsEntity(){
-    override fun getDrawableInstances(): List<Component> {
-        return return mutableListOf(Component(model, Graphics.Transform(position.copy(), angle)))
-    }
-
-}
-
-private class EffectsWorld{
-    val entities = listOf<EffectsEntity>();
-}
