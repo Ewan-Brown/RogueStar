@@ -15,16 +15,13 @@ class PhysicsLayer : Layer{
     init {
         physicsWorld.setGravity(0.0,0.0)
 
-        val testPhysicsEntity1 = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
-        testPhysicsEntity1.setMass(MassType.NORMAL)
-        physicsWorld.addBody(testPhysicsEntity1)
-
-        val testPhysicsEntity2 = PhysicsEntity(listOf(Component(Model.SQUARE2, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
-        testPhysicsEntity2.setMass(MassType.NORMAL)
-        physicsWorld.addBody(testPhysicsEntity2)
-
-        testPhysicsEntity2.applyForce(Vector2(0.0,1.0))
-        val sum = fun Int.(other: Int): Int = this + other
+//        val testPhysicsEntity1 = PhysicsEntity(listOf(Component(Model.SQUARE1, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
+//        testPhysicsEntity1.setMass(MassType.NORMAL)
+//        physicsWorld.addBody(testPhysicsEntity1)
+//
+//        val testPhysicsEntity2 = PhysicsEntity(listOf(Component(Model.SQUARE2, Graphics.Transform(Vector2(0.0,0.0), 0.0f))))
+//        testPhysicsEntity2.setMass(MassType.NORMAL)
+//        physicsWorld.addBody(testPhysicsEntity2)
 
     }
 
@@ -35,6 +32,16 @@ class PhysicsLayer : Layer{
     //TODO Can we delegate this or something
     override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
         physicsWorld.populateModelMap(modelDataMap);
+    }
+
+    fun addEntity(components: List<Component>, angle : Double, pos : Vector2) : AbstractPhysicsBody{
+        val newEntity = PhysicsEntity(components)
+        newEntity.translateToOrigin()
+        newEntity.translate(pos)
+        newEntity.rotate(angle)
+        newEntity.setMass(MassType.NORMAL)
+        physicsWorld.addBody(newEntity)
+        return newEntity
     }
 
 }
@@ -61,7 +68,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
     }
 }
 
-private class PhysicsEntity internal constructor(private val components: List<Component>) : AbstractPhysicsBody() {
+private class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
 
     init {
         for (component in components) {
