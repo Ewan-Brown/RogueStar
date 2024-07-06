@@ -18,14 +18,9 @@ fun main() {
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
-    val populateData = fun () : Unit{
+    val populateData = fun () {
         for (model in models) {
             modelDataMap[model] = mutableListOf()
-        }
-
-        //Reset model data map
-        for (model in models) {
-            modelDataMap[model]!!.clear()
         }
 
         //Let each world append data to the model data map
@@ -33,7 +28,6 @@ fun main() {
         effectsLayer.populateModelMap(modelDataMap)
         gui.updateDrawables(modelDataMap)
     }
-
 
     populateData()
     gui.setup()
