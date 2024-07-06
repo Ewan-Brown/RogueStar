@@ -1,12 +1,23 @@
 import org.dyn4j.geometry.Vector2
+import Graphics.Model
+import Graphics.Transform
 
-class EffectsWorld{
+class EffectsLayer : Layer{
     private val entities = mutableListOf<EffectsEntity>();
 
-    fun populateModelMap(map : HashMap<Graphics.Model, MutableList<Graphics.Transform>>){
+    init {
+        val testEntity = SimpleEffectsEntity(Vector2(0.0,0.0), model = Model.TRIANGLE)
+        addEntity(testEntity)
+    }
+
+    override fun update() {
+//        TODO("Not yet implemented")
+    }
+
+    override fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
         for (entity in entities) {
             for (component in entity.getComponents()) {
-                map[component.model]!!.add(component.transform)
+                modelDataMap[component.model]!!.add(component.transform)
             }
         }
     }
