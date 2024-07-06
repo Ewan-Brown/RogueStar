@@ -1,7 +1,5 @@
 import Graphics.Model
 import Graphics.Transform
-import org.dyn4j.geometry.MassType
-import org.dyn4j.geometry.Vector2
 
 
 /**
@@ -17,18 +15,13 @@ fun main() {
     val physicsLayer = PhysicsLayer()
     val effectsLayer = EffectsLayer()
 
-    gui.setup()
+    val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
-    val modelDataMap = hashMapOf<Model, MutableList<Graphics.Transform>>()
-    for (model in models) {
-        modelDataMap[model] = mutableListOf()
-    }
-
-    while(true){
-        Thread.sleep(15)
-
-        physicsLayer.update()
-        effectsLayer.update()
+    //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
+    val populateData = fun () : Unit{
+        for (model in models) {
+            modelDataMap[model] = mutableListOf()
+        }
 
         //Reset model data map
         for (model in models) {
@@ -38,9 +31,20 @@ fun main() {
         //Let each world append data to the model data map
         physicsLayer.populateModelMap(modelDataMap)
         effectsLayer.populateModelMap(modelDataMap)
-
-        //Pass the model data map to UI for drawing
         gui.updateDrawables(modelDataMap)
+    }
+
+
+    populateData()
+    gui.setup()
+
+    while(true){
+        Thread.sleep(15)
+
+        physicsLayer.update()
+        effectsLayer.update()
+
+        populateData()
     }
 }
 
@@ -49,6 +53,6 @@ interface Layer{
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>)
 }
 
-data class Component(val model: Model, val transform: Graphics.Transform)
+data class Component(val model: Model, val transform: Transform)
 
 
