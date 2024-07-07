@@ -79,19 +79,24 @@ public class Graphics extends GraphicsBase {
     public static class Model {
 
         static Model TRIANGLE = new Model(new float[]{
-                +0.0f, +2.0f, 2, 1, 0, 0,
-                -1.0f, -1.0f, 2, 1, 0, 0,
-                +1.0f, -1.0f, 2, 1, 0, 0}, GL_TRIANGLES);
+                +0.0f, +2.0f, +0.1F, 1, 0, 0,
+                -1.0f, -1.0f, +0.1F, 1, 0, 0,
+                +1.0f, -1.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES);
         static Model SQUARE1 = new Model(new float[]{
-                -0.5f, -0.5f, 1, 0, 1, 0,
-                +0.5f, -0.5f, 1, 0, 1, 0,
-                +0.5f, +0.5f, 1, 0, 1, 0,
-                -0.5f, +0.5f, 1, 0, 1, 0},GL_TRIANGLE_FAN);
+                -0.5f, -0.5f, +0.1F, 0, 1, 0,
+                +0.5f, -0.5f, +0.1F, 0, 1, 0,
+                +0.5f, +0.5f, +0.1F, 0, 1, 0,
+                -0.5f, +0.5f, +0.1F, 0, 1, 0},GL_TRIANGLE_FAN);
         static Model SQUARE2 = new Model(new float[]{
-                -0.5f, -0.5f, 1, 0, 1, 0,
-                +0.5f, -0.5f, 1, 0, 0, 1,
-                +0.5f, +0.5f, 1, 0, 1, 0,
-                -0.5f, +0.5f, 1, 1, 0, 0}, GL_TRIANGLE_FAN);
+                -0.5f, -0.5f, 3, 0, 1, 0,
+                +0.5f, -0.5f, 3, 0, 0, 1,
+                +0.5f, +0.5f, 3, 0, 1, 0,
+                -0.5f, +0.5f, 3, 1, 0, 0}, GL_TRIANGLE_FAN);
+        static Model BACKPLATE = new Model(new float[]{
+                -1, -1, +0.4f, 0, 1, 1,
+                -1, +1, +0.4f, 0, 1, 1,
+                +1, +1, +0.4f, 0, 1, 1,
+                +1, -1, +0.4f, 0, 1, 1}, GL_TRIANGLE_FAN);
 
         final int points;
         final float[] vertexData;
@@ -283,10 +288,10 @@ public class Graphics extends GraphicsBase {
 
     private void initProgram(GL3 gl) {
 
-        EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity");
+        EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity", true);
         checkError(gl, "initProgram : Entity");
 
-        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background");
+        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background", false);
         checkError(gl, "initProgram : Background");
     }
 
@@ -311,12 +316,18 @@ public class Graphics extends GraphicsBase {
         gl.glClearBufferfv(GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f));
         gl.glClearBufferfv(GL_DEPTH, 0, clearDepth.put(0, 1f));
 
-        gl.glUseProgram(EntityProgram.name);
         gl.glBindVertexArray(VAOs.get(0));
+
+        gl.glUseProgram(BackgroundProgram.name);
+        gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
+
+        gl.glUseProgram(0);
+
+        gl.glUseProgram(EntityProgram.name);
 
         // model matrix
         {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 0.1f);
+            float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 1f);
             float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
 
@@ -333,10 +344,6 @@ public class Graphics extends GraphicsBase {
                 gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
             }
         }
-
-        gl.glUseProgram(BackgroundProgram.name);
-        gl.glDrawArrays(Model.SQUARE2.drawMode, modelData.get(Model.SQUARE2).getVerticeIndex(), Model.SQUARE2.points);
-
 
         gl.glUseProgram(0);
         gl.glBindVertexArray(0);

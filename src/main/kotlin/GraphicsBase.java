@@ -50,7 +50,7 @@ public abstract class GraphicsBase implements GLEventListener {
 
         public int name, modelToWorldMatUL;
 
-        public Program(GL3 gl, Class context, String root, String vertex, String fragment) {
+        public Program(GL3 gl, Class context, String root, String vertex, String fragment, boolean linkUniforms) {
 
             ShaderCode vertShader = ShaderCode.create(gl, GL_VERTEX_SHADER, this.getClass(), root, null, vertex,
                     "vert", null, true);
@@ -68,19 +68,22 @@ public abstract class GraphicsBase implements GLEventListener {
 
             shaderProgram.link(gl, System.err);
 
-            modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
+            if(linkUniforms) {
+                modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
 
-            if (modelToWorldMatUL == -1) {
-                System.err.println("uniform 'model' not found!");
+                if (modelToWorldMatUL == -1) {
+                    System.err.println("uniform 'model' not found!");
+                }
+
+
+                int globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices");
+
+                if (globalMatricesBI == -1) {
+                    System.err.println("block index 'GlobalMatrices' not found!");
+                }
+
+                gl.glUniformBlockBinding(name, globalMatricesBI, Semantic.Uniform.GLOBAL_MATRICES);
             }
-
-
-            int globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices");
-
-            if (globalMatricesBI == -1) {
-                System.err.println("block index 'GlobalMatrices' not found!");
-            }
-            gl.glUniformBlockBinding(name, globalMatricesBI, Semantic.Uniform.GLOBAL_MATRICES);
         }
     }
 

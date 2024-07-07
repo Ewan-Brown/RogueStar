@@ -8,7 +8,6 @@ layout (location = 2) in vec3 instanced_data;
 uniform GlobalMatrices
 {
     mat4 view;
-    mat4 proj;
 };
 
 // Uniform matrix from Model Space to camera (also known as view) Space
@@ -24,7 +23,7 @@ void main() {
     vec3 instanced_pos = vec3(instanced_data.xy, position.z);
     float instanced_rot = instanced_data.z;
 
-    gl_Position = proj * (view * (model  * vec4(instanced_pos + rotate(position, instanced_rot), 1)));
+    gl_Position = (view * (model * vec4(instanced_pos + rotate(position, instanced_rot), 1)));
     interpolatedColor = color;
 }
 
