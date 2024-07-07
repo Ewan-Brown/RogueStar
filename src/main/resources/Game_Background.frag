@@ -1,11 +1,14 @@
 #version 330
 
-// Incoming interpolated (between vertices) color from the vertex shader.
-in vec3 interpolatedColor;
-// Outgoing final color.
+
+uniform vec2 u_resolution;
+
+in vec2 xyVarying;
 layout (location = 0) out vec4 outputColor;
 void main()
 {
-    // We simply pad the interpolatedColor to vec4
-    outputColor = vec4(interpolatedColor, 1);
+    // map (-1,-1)(+1,+1) to red-green ramps.
+    outputColor = vec4(xyVarying.x / 2.0 + 0.5,
+                     xyVarying.y / 2.0 + 0.5,
+                     0.0 ,1.0);
 }
