@@ -16,8 +16,8 @@ fun main() {
     val physicsLayer = PhysicsLayer()
     val effectsLayer = EffectsLayer()
 
-    physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(Math.random()*2,Math.random()*2), Math.random().toFloat()))), 0.0, Vector2(0.0, 0.0))
-    effectsLayer.addEntity(FleeingEffectEntity(Vector2(), model = Model.TRIANGLE))
+//    physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(Math.random()*2,Math.random()*2), Math.random().toFloat()))), 0.0, Vector2(0.0, 0.0))
+//    effectsLayer.addEntity(FleeingEffectEntity(Vector2(), model = Model.TRIANGLE))
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
