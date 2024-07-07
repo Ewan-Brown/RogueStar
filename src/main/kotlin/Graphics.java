@@ -3,7 +3,6 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
 import jogl.Semantic;
-import kotlin.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import org.dyn4j.geometry.Vector2;
@@ -138,8 +137,11 @@ public class Graphics extends GraphicsBase {
 
     private void initVBOs(GL3 gl) {
 
+
+
         //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
+
         int marker = 0;
         for (Model value : loadedModels) {
             for (float vertexDatum : value.vertexData) {
@@ -281,9 +283,11 @@ public class Graphics extends GraphicsBase {
 
     private void initProgram(GL3 gl) {
 
-        program = new Program(gl, getClass(), "", "hello-triangle_7", "hello-triangle_7");
+        EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity");
+        checkError(gl, "initProgram : Entity");
 
-        checkError(gl, "initProgram");
+        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background");
+        checkError(gl, "initProgram : Background");
     }
 
     @Override
@@ -307,7 +311,7 @@ public class Graphics extends GraphicsBase {
         gl.glClearBufferfv(GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f));
         gl.glClearBufferfv(GL_DEPTH, 0, clearDepth.put(0, 1f));
 
-        gl.glUseProgram(program.name);
+        gl.glUseProgram(EntityProgram.name);
         gl.glBindVertexArray(VAOs.get(0));
 
         // model matrix
@@ -319,7 +323,7 @@ public class Graphics extends GraphicsBase {
             for (int i = 0; i < 16; i++) {
                 matBuffer.put(i, modelToWorldMat[i]);
             }
-            gl.glUniformMatrix4fv(program.modelToWorldMatUL, 1, false, matBuffer);
+            gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
         }
 
         for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
@@ -329,6 +333,9 @@ public class Graphics extends GraphicsBase {
                 gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
             }
         }
+
+        gl.glUseProgram(BackgroundProgram.name);
+        gl.glDrawArrays(Model.SQUARE2.drawMode, modelData.get(Model.SQUARE2).getVerticeIndex(), Model.SQUARE2.points);
 
 
         gl.glUseProgram(0);
@@ -361,7 +368,7 @@ public class Graphics extends GraphicsBase {
 
         GL3 gl = drawable.getGL().getGL3();
 
-        gl.glDeleteProgram(program.name);
+        gl.glDeleteProgram(EntityProgram.name);
         gl.glDeleteVertexArrays(1, VAOs);
         gl.glDeleteBuffers(Buffer.MAX, VBOs);
     }

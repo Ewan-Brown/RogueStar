@@ -43,7 +43,8 @@ public abstract class GraphicsBase implements GLEventListener {
 
     }
 
-    protected Program program;
+    protected Program EntityProgram;
+    protected Program BackgroundProgram;
 
     public class Program {
 
@@ -66,7 +67,6 @@ public abstract class GraphicsBase implements GLEventListener {
             name = shaderProgram.program();
 
             shaderProgram.link(gl, System.err);
-
 
             modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
 
