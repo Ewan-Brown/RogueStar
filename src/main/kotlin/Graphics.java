@@ -361,8 +361,6 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "display");
 
-        x = (float)Math.cos(time);
-        y = (float)Math.sin(time);
         time += 0.1f;
         updateInstanceData(gl);
     }
