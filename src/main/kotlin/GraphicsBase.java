@@ -48,7 +48,8 @@ public abstract class GraphicsBase implements GLEventListener {
 
     public class Program {
 
-        public int name, modelToWorldMatUL;
+        //TODO Make the 'program' class extendable it's being overused and overburdened!
+        public int name, modelToWorldMatUL, positionInSpace, time;
 
         public Program(GL3 gl, Class context, String root, String vertex, String fragment, boolean linkUniforms) {
 
@@ -68,6 +69,7 @@ public abstract class GraphicsBase implements GLEventListener {
 
             shaderProgram.link(gl, System.err);
 
+            //TODO This is overburdened
             if(linkUniforms) {
                 modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
 
@@ -83,6 +85,16 @@ public abstract class GraphicsBase implements GLEventListener {
                 }
 
                 gl.glUniformBlockBinding(name, globalMatricesBI, Semantic.Uniform.GLOBAL_MATRICES);
+            }else{
+                positionInSpace = gl.glGetUniformLocation(name, "position");
+                if(positionInSpace == -1){
+                    System.err.println("uniform 'position' not found!");
+                }
+                time = gl.glGetUniformLocation(name, "time");
+                if(time == -1){
+                    System.err.println("uniform 'time' not found!");
+                }
+
             }
         }
     }
