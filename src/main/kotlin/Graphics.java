@@ -32,6 +32,13 @@ public class Graphics extends GraphicsBase {
 
     HashMap<Model, ModelData> modelData = new HashMap<>();
 
+    //The position to shift the background by
+    float x = 0;
+    float y = 0;
+
+    //the time for the background
+    float time = 0;
+
     @Getter
     @Setter
     private class ModelData{
@@ -319,6 +326,10 @@ public class Graphics extends GraphicsBase {
         gl.glBindVertexArray(VAOs.get(0));
 
         gl.glUseProgram(BackgroundProgram.name);
+
+        gl.glUniform2f(BackgroundProgram.positionInSpace, x, y);
+        gl.glUniform1f(BackgroundProgram.time, time);
+
         gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
 
         gl.glUseProgram(0);
@@ -350,6 +361,9 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "display");
 
+        x = (float)Math.cos(time);
+        y = (float)Math.sin(time);
+        time += 0.1f;
         updateInstanceData(gl);
     }
 
