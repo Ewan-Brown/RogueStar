@@ -298,7 +298,7 @@ public class Graphics extends GraphicsBase {
         EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity", true);
         checkError(gl, "initProgram : Entity");
 
-        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background", false);
+        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Perlin_Clouds", false);
         checkError(gl, "initProgram : Background");
     }
 
@@ -361,7 +361,9 @@ public class Graphics extends GraphicsBase {
 
         checkError(gl, "display");
 
-        time += 0.1f;
+        time += 1f;
+        x = (float) Math.cos(time*0.001);
+        y = (float) Math.sin(time*0.001);
         updateInstanceData(gl);
     }
 
