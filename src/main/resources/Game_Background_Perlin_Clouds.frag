@@ -111,27 +111,96 @@ float snoise(vec3 v)
     return 105.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
     dot(p2,x2), dot(p3,x3) ) );
 }
-float color(vec2 xy) { return 0.7 * snoise(vec3(xy, 0.3*time)); }
+
+float color(vec3 xyt) { return snoise(vec3(xyt)); }
+
+float colorCalculated(vec3 xyz, float t){
+    float n2 = color(vec3(xyz.xy*16, t/16))/16;
+    float n3 = color(vec3(xyz.xy*8, t/2.0))/8;
+    float n4 = color(vec3(xyz.xy*4, t/4.0))/4;
+    float n5 = color(vec3(xyz.xy*2, t/8.0))/2;
+    float n6 = color(vec3(xyz.xy, t/16.0));
+
+    return n2 + n3 + n4 + n5 + n6;
+}
+
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 void main()
 {
 
-    vec2 pos = xyVarying + position;
 
-    vec3 xyz = vec3(pos, 0);
+    //Varible here is the 'speed' as affected by player
+    vec2 posFar = xyVarying + position;
+    vec2 posMedium = xyVarying + position*2;
+    vec2 posClose = xyVarying + position*4;
 
-    vec2 step = vec2(1.3, 1.7);
-    float n = color(xyz.xy);
-    n += 0.5 * color(xyz.xy * 2.0 - step);
-    n += 0.25 * color(xyz.xy * 4.0 - 2.0 * step);
-    n += 0.125 * color(xyz.xy * 8.0 - 3.0 * step);
-    n += 0.0625 * color(xyz.xy * 16.0 - 4.0 * step);
-    n += 0.03125 * color(xyz.xy * 32.0 - 5.0 * step);
+    float farBig = color(vec3(posFar.xy, 0));
+    float farNormal = color(vec3(posFar.xy*2, 0));
+    float farSmall = color(vec3(posFar.xy*4, 0));
 
-    outputColor.xyz = vec3(0.5 + 0.5 * vec3(n, n, n));
+    float mediumBig = color(vec3(posMedium.xy, 100));
+    float mediumNormal = color(vec3(posMedium.xy*2, 100));
+    float mediumSmall = color(vec3(posMedium.xy*4, 100));
 
-    // map (-1,-1)(+1,+1) to red-green ramps.
-//    vec2 xyVaryingT = xyVarying + position;
-//    outputColor = vec4(xyVaryingT.x / 2.0 + 0.5,
-//                     xyVaryingT.y / 2.0 + 0.5,
-//                     0.0 ,1.0);
+    float closeBig = color(vec3(posClose.xy, 200));
+    float closeNormal = color(vec3(posClose.xy*2, 200));
+    float closeSmall = color(vec3(posClose.xy*4, 200));
+
+    float far = farBig * 2.0/3.0 + farNormal * 2.0/3.0 * 2.0/3.0 + farSmall * 2.0/3.0 * 1.0/3.0;
+    float medium = mediumBig * 2.0/3.0 + mediumNormal * 2.0/3.0 * 2.0/3.0 + mediumSmall * 2.0/3.0 * 1.0/3.0;
+    float close = closeBig * 2.0/3.0 + closeNormal * 2.0/3.0 * 2.0/3.0 + closeSmall * 2.0/3.0 * 1.0/3.0;
+
+    vec2 posStars = xyVarying*10 + position*10;
+
+    vec2 starPosition = vec2(round(posStars.x), round(posStars.y));
+
+    float x = rand(starPosition);
+    float y = rand(starPosition);
+
+    float val1 = cos(posStars.x * 3.14 + x);
+    float val2 = cos(posStars.y * 3.14 + y);
+
+    //Doesn't work, we're just shifting this raw map...
+
+    float squared = val1*val2 * val1*val2;
+
+    outputColor.xyz = vec3(squared, squared, squared * far);
+
 }
+
+//   Dots
+//vec2 pos = (xyVarying + position)*10;
+//
+//float val = cos(pos.x);
+//float val2 = sin(pos.y);
+//
+//float squared = val*val2 * val*val2 * val*val2;
+//
+//outputColor.xyz = vec3(squared, 0, 0);
+
+// Creepy
+//vec2 pos = xyVarying + position;
+//
+//vec3 xyz = vec3(pos, 0);
+//float a = colorCalculated(xyz, time) + cos(time + xyz.x/10.0)*0.1 - 0.2;
+//float b = colorCalculated(vec3(a, a, a), time);
+//outputColor.xyz = vec3(b, 0, 0)/3;
+
+// "Slice"
+//float a = colorCalculated(xyz, time);
+//if(a > MIN && a < MAX){
+//    a = 1;
+//}else {
+//    a = 0;
+//}
+
+//Blobbies
+//float a = color(vec3(pos1.xy, 1));
+//float b = color(vec3(pos2.xy, 100));
+//float c = color(vec3(pos3.xy, 200));
+//
+//float val = max(a, b);
+//val = max(val, c);
