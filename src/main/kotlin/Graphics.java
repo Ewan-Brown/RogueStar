@@ -298,7 +298,7 @@ public class Graphics extends GraphicsBase {
         EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity", true);
         checkError(gl, "initProgram : Entity");
 
-        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Perlin_Clouds", false);
+        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Stolen_Cellular", false);
         checkError(gl, "initProgram : Background");
     }
 
