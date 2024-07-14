@@ -25,7 +25,7 @@ class PhysicsLayer : Layer{
         physicsWorld.populateModelMap(modelDataMap);
     }
 
-    fun addEntity(components: List<Component>, angle : Double, pos : Vector2) : AbstractPhysicsBody{
+    fun addEntity(components: List<Component>, angle : Double, pos : Vector2) : PhysicsEntity{
         val newEntity = PhysicsEntity(components)
         newEntity.translateToOrigin()
         newEntity.translate(pos)
@@ -33,6 +33,10 @@ class PhysicsLayer : Layer{
         newEntity.setMass(MassType.NORMAL)
         physicsWorld.addBody(newEntity)
         return newEntity
+    }
+
+    fun removeEntity(entity: PhysicsEntity){
+        physicsWorld.removeBody(entity)
     }
 
 }
@@ -55,12 +59,10 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
 
     fun createAndAddEntity(components : List<Component> ){
         val entity = PhysicsEntity(components)
-
     }
 }
 
-private class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
-
+class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
     init {
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)

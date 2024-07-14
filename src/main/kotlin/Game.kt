@@ -1,6 +1,10 @@
 import Graphics.Model
 import Graphics.Transform
+import com.jogamp.newt.event.KeyEvent
+import com.jogamp.newt.event.KeyListener
 import org.dyn4j.geometry.Vector2
+import java.util.*
+import kotlin.collections.HashMap
 
 
 /**
@@ -16,9 +20,11 @@ fun main() {
     val physicsLayer = PhysicsLayer()
     val effectsLayer = EffectsLayer()
 
-    physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(-1.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
-    physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(+1.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
-    effectsLayer.addEntity(FleeingEffectEntity(Vector2(), model = Model.TRIANGLE))
+    val playerEntity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
+    val otherEntity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
+
+    otherEntity.translate(Vector2(1.0, 0.0))
+
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
@@ -33,15 +39,47 @@ fun main() {
 
         gui.updateDrawables(modelDataMap)
     }
+    val bitSet = BitSet(256);
+
+    val keyListener : KeyListener = object : KeyListener {
+
+        override fun keyPressed(e: KeyEvent?) {
+            bitSet.set(e!!.keyCode.toInt(), true);
+        }
+
+        override fun keyReleased(e: KeyEvent?) {
+            bitSet.set(e!!.keyCode.toInt(), false);
+        }
+    }
 
     populateData()
-    gui.setup()
+    gui.setup(keyListener)
 
     while(true){
         Thread.sleep(15)
 
+//        val entity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(Math.random()*3, Math.random()*3), 0f))), 0.0, Vector2(0.0, 0.0))
         physicsLayer.update()
         effectsLayer.update()
+
+        var x = 0.0;
+        var y = 0.0;
+
+
+        if(bitSet[KeyEvent.VK_W.toInt()]){
+            y++
+        }
+        if(bitSet[KeyEvent.VK_S.toInt()]){
+            y--
+        }
+        if(bitSet[KeyEvent.VK_A.toInt()]){
+            x--
+        }
+        if(bitSet[KeyEvent.VK_D.toInt()]){
+            x++
+        }
+
+        playerEntity.applyForce(Vector2(x,y))
 
         populateData()
     }

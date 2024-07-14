@@ -153,21 +153,19 @@ void main()
     float medium = mediumBig * 2.0/3.0 + mediumNormal * 2.0/3.0 * 2.0/3.0 + mediumSmall * 2.0/3.0 * 1.0/3.0;
     float close = closeBig * 2.0/3.0 + closeNormal * 2.0/3.0 * 2.0/3.0 + closeSmall * 2.0/3.0 * 1.0/3.0;
 
-    vec2 posStars = xyVarying*10 + position*10;
+    vec2 posStars = xyVarying*10;
 
     vec2 starPosition = vec2(round(posStars.x), round(posStars.y));
+    float starStrength = color(vec3(starPosition.xy, 0.0)) * color(vec3(starPosition.xy, 100.0));
 
-    float x = rand(starPosition);
-    float y = rand(starPosition);
-
-    float val1 = cos(posStars.x * 3.14 + x);
-    float val2 = cos(posStars.y * 3.14 + y);
+    float val1 = cos(((posStars.x) * 3.14)) * starStrength;
+    float val2 = cos(((posStars.y) * 3.14)) * starStrength;
 
     //Doesn't work, we're just shifting this raw map...
 
     float squared = val1*val2 * val1*val2;
 
-    outputColor.xyz = vec3(squared, squared, squared * far);
+    outputColor.xyz = vec3(squared, squared, squared);
 
 }
 

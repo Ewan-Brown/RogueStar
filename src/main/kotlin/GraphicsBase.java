@@ -1,3 +1,5 @@
+import com.jogamp.newt.event.KeyListener;
+import com.jogamp.newt.event.MouseListener;
 import com.jogamp.newt.event.WindowAdapter;
 import com.jogamp.newt.event.WindowEvent;
 import com.jogamp.newt.opengl.GLWindow;
@@ -15,7 +17,7 @@ public abstract class GraphicsBase implements GLEventListener {
     private static GLWindow window;
     private static Animator animator;
 
-    protected void setup() {
+    protected void setup(KeyListener keyListener) {
 
         GLProfile glProfile = GLProfile.get(GLProfile.GL3);
         GLCapabilities glCapabilities = new GLCapabilities(glProfile);
@@ -29,6 +31,7 @@ public abstract class GraphicsBase implements GLEventListener {
         window.setVisible(true);
 
         window.addGLEventListener(this);
+        window.addKeyListener(keyListener);
 
         animator = new Animator(window);
         animator.start();
