@@ -32,6 +32,7 @@ public abstract class GraphicsBase implements GLEventListener {
 
         window.addGLEventListener(this);
         window.addKeyListener(keyListener);
+//        window.setAut
 
         animator = new Animator(window);
         animator.start();

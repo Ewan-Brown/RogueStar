@@ -37,6 +37,8 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
     override fun update(entity: ShipEntity) {
         var x = 0.0;
         var y = 0.0;
+        var r = 0.0;
+
         if(input[KeyEvent.VK_W]){
             y++;
         }
@@ -50,6 +52,14 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
             x--;
         }
 
+        if(input[KeyEvent.VK_Q]){
+            r--;
+        }
+
+        if(input[KeyEvent.VK_E]){
+            r++;
+        }
+
         if(input[KeyEvent.VK_SPACE]){
             x = entity.linearVelocity.x
             y = entity.linearVelocity.y
@@ -58,9 +68,36 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         if(input[KeyEvent.VK_SHIFT]){
             x *= 2;
             y *= 2;
+            r *= 2;
         }
 
-        entity.applyForce(Vector2(x,y))
+        val thrust = Vector2(x, y).rotate(entity.transform.rotation)
+        val rotate = r - entity.angularVelocity
 
+        entity.applyForce(thrust)
+        entity.applyTorque(rotate)
+
+    }
+}
+
+class ChaseController : ControllerLayer.Controller<ShipEntity>(){
+
+    private var lastTarget: PhysicsEntity? = null
+
+    override fun update(entity: ShipEntity) {
+        val currentTarget: PhysicsEntity;
+        if(lastTarget == null){
+            val potentialTarget = physicsLayer.getEntities().filter { it != entity }.firstOrNull()
+            if(potentialTarget != null){
+                currentTarget = potentialTarget
+            }else{
+                return
+            }
+        }else{
+            currentTarget = lastTarget!!
+        }
+
+        val posDiff = entity.worldCenter.to(currentTarget.worldCenter)
+        entity.applyForce(posDiff.normalized)
     }
 }

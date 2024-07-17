@@ -23,33 +23,39 @@ open class DumbEntity() : PhysicsEntity(listOf(Component(Model.SQUARE1, Transfor
     }
 }
 
+val physicsLayer = PhysicsLayer()
+val effectsLayer = EffectsLayer()
+val controllerLayer = ControllerLayer()
+
 fun main() {
 
     val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.SQUARE2, Model.BACKPLATE)
 
     val gui = Graphics(models)
 
-    val physicsLayer = PhysicsLayer()
-    val effectsLayer = EffectsLayer()
-    val controllerLayer = ControllerLayer()
-
     val bitSet = BitSet(256);
 
     val keyListener : KeyListener = object : KeyListener {
 
         override fun keyPressed(e: KeyEvent?) {
-            bitSet.set(e!!.keyCode.toInt(), true);
+            if(!e!!.isAutoRepeat){
+                bitSet.set(e.keyCode.toInt(), true);
+            }
         }
 
         override fun keyReleased(e: KeyEvent?) {
-            bitSet.set(e!!.keyCode.toInt(), false);
+            if(!e!!.isAutoRepeat){
+                bitSet.set(e.keyCode.toInt(), false);
+            }
         }
+
     }
 
     val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
-    val otherEntity = physicsLayer.addEntity(DumbEntity(), 0.0, Vector2(0.0,0.0))
+    val otherEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(0.0,0.0))
+    controllerLayer.addControlledEntity(otherEntity, ChaseController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
