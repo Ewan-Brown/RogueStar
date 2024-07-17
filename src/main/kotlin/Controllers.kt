@@ -53,16 +53,16 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         }
 
         if(input[KeyEvent.VK_Q]){
-            r--;
-        }
-
-        if(input[KeyEvent.VK_E]){
             r++;
         }
 
+        if(input[KeyEvent.VK_E]){
+            r--;
+        }
+
         if(input[KeyEvent.VK_SPACE]){
-            x = entity.linearVelocity.x
-            y = entity.linearVelocity.y
+            x = -entity.linearVelocity.x
+            y = -entity.linearVelocity.y
         }
 
         if(input[KeyEvent.VK_SHIFT]){

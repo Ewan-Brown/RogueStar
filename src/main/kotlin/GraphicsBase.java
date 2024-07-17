@@ -24,7 +24,7 @@ public abstract class GraphicsBase implements GLEventListener {
 
         window = GLWindow.create(glCapabilities);
 
-        window.setTitle("Hello Triangle (simple)");
+        window.setTitle("Rogue Star");
         window.setSize(1024, 768);
 
 
