@@ -25,14 +25,13 @@ class PhysicsLayer : Layer{
         physicsWorld.populateModelMap(modelDataMap);
     }
 
-    fun addEntity(components: List<Component>, angle : Double, pos : Vector2) : PhysicsEntity{
-        val newEntity = PhysicsEntity(components)
-        newEntity.translateToOrigin()
-        newEntity.translate(pos)
-        newEntity.rotate(angle)
-        newEntity.setMass(MassType.NORMAL)
-        physicsWorld.addBody(newEntity)
-        return newEntity
+    fun <E : PhysicsEntity> addEntity(entity: E, angle : Double, pos : Vector2) : E{
+        entity.translateToOrigin()
+        entity.translate(pos)
+        entity.rotate(angle)
+        entity.setMass(MassType.NORMAL)
+        physicsWorld.addBody(entity)
+        return entity
     }
 
     fun removeEntity(entity: PhysicsEntity){
@@ -56,13 +55,12 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
             }
         }
     }
-
-    fun createAndAddEntity(components : List<Component> ){
-        val entity = PhysicsEntity(components)
-    }
 }
 
-class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
+/**
+ * Represents the physical thing, which may be swapped among controllers freely!
+ */
+abstract class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
     init {
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
@@ -76,6 +74,12 @@ class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsB
             this.addFixture(f)
         }
     }
+
+    abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>);
+
+    abstract fun isMarkedForRemoval() : Boolean;
+
+    abstract fun update();
 
     fun getComponents(): List<Component> {
         val result: MutableList<Component> = ArrayList()

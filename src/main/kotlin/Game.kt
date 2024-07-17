@@ -3,13 +3,25 @@ import Graphics.Transform
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
 import org.dyn4j.geometry.Vector2
+import org.dyn4j.world.WorldCollisionData
 import java.util.*
 import kotlin.collections.HashMap
 
+class ShipEntity() : DumbEntity() {
+    
+}
 
-/**
- * Test
- */
+open class DumbEntity() : PhysicsEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f)))) {
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+
+    }
+
+    override fun isMarkedForRemoval() : Boolean = false
+
+    override fun update() {
+
+    }
+}
 
 fun main() {
 
@@ -19,26 +31,8 @@ fun main() {
 
     val physicsLayer = PhysicsLayer()
     val effectsLayer = EffectsLayer()
+    val controllerLayer = ControllerLayer()
 
-    val playerEntity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
-    val otherEntity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f))), 0.0, Vector2(0.0, 0.0))
-
-    otherEntity.translate(Vector2(1.0, 0.0))
-
-    val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
-
-    //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
-    val populateData = fun () {
-        for (model in models) {
-            modelDataMap[model] = mutableListOf()
-        }
-
-        //Let each world append data to the model data map
-        physicsLayer.populateModelMap(modelDataMap)
-        effectsLayer.populateModelMap(modelDataMap)
-
-        gui.updateDrawables(modelDataMap)
-    }
     val bitSet = BitSet(256);
 
     val keyListener : KeyListener = object : KeyListener {
@@ -52,34 +46,37 @@ fun main() {
         }
     }
 
+    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
+    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
+
+    val otherEntity = physicsLayer.addEntity(DumbEntity(), 0.0, Vector2(0.0,0.0))
+
+    val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
+
+    //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
+    val populateData = fun () {
+        for (model in models) {
+            modelDataMap[model] = mutableListOf()
+        }
+
+        //Let each world append data to the model data map
+        physicsLayer.populateModelMap(modelDataMap)
+        effectsLayer.populateModelMap(modelDataMap)
+        controllerLayer.populateModelMap(modelDataMap)
+
+        gui.updateDrawables(modelDataMap)
+    }
+
+
     populateData()
     gui.setup(keyListener)
 
     while(true){
         Thread.sleep(15)
 
-//        val entity = physicsLayer.addEntity(listOf(Component(Model.SQUARE1, Transform(Vector2(Math.random()*3, Math.random()*3), 0f))), 0.0, Vector2(0.0, 0.0))
         physicsLayer.update()
         effectsLayer.update()
-
-        var x = 0.0;
-        var y = 0.0;
-
-
-        if(bitSet[KeyEvent.VK_W.toInt()]){
-            y++
-        }
-        if(bitSet[KeyEvent.VK_S.toInt()]){
-            y--
-        }
-        if(bitSet[KeyEvent.VK_A.toInt()]){
-            x--
-        }
-        if(bitSet[KeyEvent.VK_D.toInt()]){
-            x++
-        }
-
-        playerEntity.applyForce(Vector2(x,y))
+        controllerLayer.update()
 
         populateData()
     }
