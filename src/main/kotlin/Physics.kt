@@ -16,6 +16,12 @@ class PhysicsLayer : Layer{
         physicsWorld.setGravity(0.0,0.0)
     }
 
+    //TODO Find a way to prevent leaking references when entities are marked for removal.
+    // Maybe use an ID system or something similar
+    fun getEntities() : List<PhysicsEntity>{
+        return physicsWorld.bodies
+    }
+
     override fun update() {
         physicsWorld.update(1.0)
     }
@@ -41,6 +47,7 @@ class PhysicsLayer : Layer{
 }
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
+
     override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
         //TODO Do something with collisions, if we'd like
     }
