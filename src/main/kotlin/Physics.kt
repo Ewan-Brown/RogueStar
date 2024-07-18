@@ -9,6 +9,7 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import Graphics.Model
+import org.dyn4j.geometry.Mass
 
 class PhysicsLayer : Layer{
     private val physicsWorld = PhysicsWorld();
@@ -36,6 +37,7 @@ class PhysicsLayer : Layer{
         entity.translate(pos)
         entity.rotate(angle)
         entity.setMass(MassType.NORMAL)
+        entity.updateComponents()
         physicsWorld.addBody(entity)
         return entity
     }
@@ -48,9 +50,9 @@ class PhysicsLayer : Layer{
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
 
-    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+//    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
         //TODO Do something with collisions, if we'd like
-    }
+//    }
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
         return WorldCollisionData(pair);
     }
@@ -72,13 +74,20 @@ abstract class PhysicsEntity (private val components: List<Component>) : Abstrac
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
             for (i in vertices.indices) {
-                vertices[i] = component.model.asVectorData[i].copy()
+                vertices[i] = component.model.asVectorData[i].copy().multiply(component.transform.scale.toDouble())
             }
             val v = Polygon(*vertices)
             v.translate(component.transform.position.copy())
             v.rotate(component.transform.angle.toDouble())
             val f = BodyFixture(v)
             this.addFixture(f)
+        }
+    }
+
+    //Need to update the 'center'
+    fun updateComponents(){
+        for (component in components) {
+            component.transform.position.subtract(this.getMass().center)
         }
     }
 
@@ -97,7 +106,7 @@ abstract class PhysicsEntity (private val components: List<Component>) : Abstrac
         for (component in components) {
             val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
             val newAngle = entityAngle + component.transform.angle
-            result.add(Component(component.model,Graphics.Transform(newPos, newAngle)))
+            result.add(Component(component.model,Graphics.Transform(newPos, newAngle, component.transform.scale)))
         }
 
         return result

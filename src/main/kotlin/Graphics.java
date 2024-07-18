@@ -68,10 +68,12 @@ public class Graphics extends GraphicsBase {
     public static class Transform{
         private final Vector2 position;
         private final float angle;
+        private final float scale;
 
-        public Transform(Vector2 pos, float a){
+        public Transform(Vector2 pos, float a, float s){
             this.position = pos.copy();
             this.angle = a;
+            this.scale = s;
         }
 
         public Vector2 getPosition() {
@@ -81,6 +83,7 @@ public class Graphics extends GraphicsBase {
         public float getAngle() {
             return angle;
         }
+        public float getScale(){return scale;}
     }
 
     public static class Model {
@@ -209,10 +212,10 @@ public class Graphics extends GraphicsBase {
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
             gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE,
-                    3,
+                    4,
                     GL_FLOAT,
                     false,
-                    3 * Float.BYTES,
+                    4 * Float.BYTES,
                     0);
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -223,28 +226,14 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "initVao");
     }
 
-    int ticks = 0;
-    List<Long> timeBuckets = new ArrayList<>();
 
     private void updateInstanceData(GL3 gl){
 
-        List<Long> timestamps = new ArrayList<>();
-
-        timestamps.add(System.nanoTime());
         int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
-
-        //TODO this should come pre-sorted...
-//        HashMap<Model, List<Transform>> sortedComponents = new HashMap<>();
-//        for (DrawableInstance instance : drawableThings) {
-//            sortedComponents.putIfAbsent(instance.model, new ArrayList<>());
-//            sortedComponents.get(instance.model).add(instance.transform);
-//            modelCount++;
-//        }
-        timestamps.add(System.nanoTime());
 
         int indexCounter = 0;
         int instanceDataIndex = 0;
-        float[] instanceData = new float[modelCount * 3];
+        float[] instanceData = new float[modelCount * 4];
         for (ModelData data : modelData.values()) {
             for (Transform transform : data.getInstanceData()) {
 
@@ -252,44 +241,20 @@ public class Graphics extends GraphicsBase {
                 double y = transform.position.y;
                 double angle = transform.angle;
 
-//                System.out.println("x, y, angle : " + x + ", " + y + ", " + angle);
-
                 instanceData[instanceDataIndex++] = (float)x;
                 instanceData[instanceDataIndex++] = (float)y;
                 instanceData[instanceDataIndex++] = (float)angle;
+                instanceData[instanceDataIndex++] = transform.scale;
 
             }
             data.setInstanceIndex(indexCounter);
             indexCounter += data.getInstanceCount();
         }
-        timestamps.add(System.nanoTime());
 
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
         gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-        timestamps.add(System.nanoTime());
-
-        timestamps.add(System.nanoTime());
-        int bucketsMissing = (timestamps.size()-1) - timeBuckets.size();
-        if(bucketsMissing > 0){
-            for (int j = 0; j < bucketsMissing; j++) {
-                timeBuckets.add(0L);
-            }
-        }
-        for (int i = 0; i < timestamps.size()-1; i++) {
-            long tDiff = timestamps.get(i+1) - timestamps.get(i);
-
-            timeBuckets.set(i, timeBuckets.get(i)+tDiff);
-        }
-        ticks++;
-
-//        System.out.println();
-//        if(ticks % 10 == 0){
-//            for (Long timeBucket : timeBuckets) {
-//                System.out.println(timeBucket);
-//            }
-//        }
 
     }
 

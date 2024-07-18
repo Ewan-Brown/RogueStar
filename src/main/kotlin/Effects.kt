@@ -43,7 +43,7 @@ class FleeingEffectEntity(
     private val speed = Vector2(Math.random() - 0.5, Math.random() - 0.5).multiply(0.05)
 
     override fun getComponents(): List<Component> {
-        return mutableListOf(Component(model, Transform(position.copy(), angle)))
+        return mutableListOf(Component(model, Transform(position.copy(), angle, 1.0f)))
     }
 
     override fun update() {
