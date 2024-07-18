@@ -71,7 +71,10 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
             r *= 2;
         }
 
-        val thrust = Vector2(x, y).rotate(entity.transform.rotation)
+        val thrust = Vector2(x, y);
+        if(!input[KeyEvent.VK_SPACE]){
+            thrust.rotate(entity.transform.rotation)
+        }
         val rotate = r - entity.angularVelocity
 
         entity.applyForce(thrust)
