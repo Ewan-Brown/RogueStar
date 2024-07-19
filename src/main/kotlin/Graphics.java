@@ -303,7 +303,7 @@ public class Graphics extends GraphicsBase {
 
         // model matrix
         {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.1f, 0.1f, 1f);
+            float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
             float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
 

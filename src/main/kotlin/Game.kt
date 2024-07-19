@@ -16,15 +16,11 @@ open class DumbEntity() : PhysicsEntity(listOf(
     Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f, 0.5f)),
             Component(Model.SQUARE1, Transform(Vector2(1.0,0.0), 0f, 1.0f))
 )) {
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-
-    }
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
     override fun isMarkedForRemoval() : Boolean = false
 
-    override fun update() {
-
-    }
+    override fun update() {}
 }
 
 val physicsLayer = PhysicsLayer()
@@ -52,15 +48,13 @@ fun main() {
                 bitSet.set(e.keyCode.toInt(), false);
             }
         }
-
     }
 
     val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
     val otherEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(0.0,2.0))
-    otherEntity.setMass(MassType.INFINITE)
-//    controllerLayer.addControlledEntity(otherEntity, ChaseController())
+    controllerLayer.addControlledEntity(otherEntity, ChaseController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
@@ -96,7 +90,7 @@ fun main() {
 //TODO Maybe these two should be the same call, to avoid looping over things doubly?
 interface Layer{
     fun update()
-    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>)
+//    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>)
 }
 
 data class Component(val model: Model, val transform: Transform)
