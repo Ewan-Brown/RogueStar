@@ -28,7 +28,7 @@ class ControllerLayer : Layer{
         }
     }
 
-    override fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
+    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
         //Add renderables for player perspective?? Interesting idea
     }
 }

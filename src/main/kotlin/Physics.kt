@@ -28,7 +28,7 @@ class PhysicsLayer : Layer{
     }
 
     //TODO Can we delegate this or something
-    override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
         physicsWorld.populateModelMap(modelDataMap);
     }
 

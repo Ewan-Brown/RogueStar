@@ -11,7 +11,7 @@ class EffectsLayer : Layer{
         }
     }
 
-    override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
         for (entity in entities) {
             for (component in entity.getComponents()) {
                 modelDataMap[component.model]!!.add(component.transform)
