@@ -55,6 +55,6 @@ void main() {
     // Draw point center
     color += 1.-step(.02, m_dist);
 
-//    outputColor = vec4(color,1.0);
-    outputColor = vec4(0.0,0.0,0.0,1.0);
+    outputColor = vec4(color,1.0);
+//    outputColor = vec4(0.0,0.0,0.0,1.0);
 }

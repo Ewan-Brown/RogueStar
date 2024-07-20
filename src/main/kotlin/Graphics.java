@@ -30,7 +30,7 @@ public class Graphics extends GraphicsBase {
 
     private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
 
-    HashMap<Model, ModelData> modelData = new HashMap<>();
+    private HashMap<Model, ModelData> modelData = new HashMap<>();
 
     //The position to shift the background by
     float x = 0;
@@ -60,8 +60,10 @@ public class Graphics extends GraphicsBase {
     }
 
     public void updateDrawables(HashMap<Model, List<Transform>> data){
-        for (Model loadedModel : loadedModels) {
-            modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
+        synchronized (modelData) {
+            for (Model loadedModel : loadedModels) {
+                modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
+            }
         }
     }
 
@@ -98,9 +100,9 @@ public class Graphics extends GraphicsBase {
                 +0.5f, +0.5f, +0.1F, 0, 1, 0,
                 -0.5f, +0.5f, +0.1F, 0, 1, 0},GL_TRIANGLE_FAN);
         static Model SQUARE2 = new Model(new float[]{
-                -0.5f, -0.5f, 3, 0, 1, 0,
-                +0.5f, -0.5f, 3, 0, 0, 1,
-                +0.5f, +0.5f, 3, 0, 1, 0,
+                -0.5f, -0.5f, 3, 1, 0, 0,
+                +0.5f, -0.5f, 3, 1, 0, 0,
+                +0.5f, +0.5f, 3, 1, 0, 0,
                 -0.5f, +0.5f, 3, 1, 0, 0}, GL_TRIANGLE_FAN);
         static Model BACKPLATE = new Model(new float[]{
                 -1, -1, +0.4f, 0, 1, 1,
@@ -229,8 +231,10 @@ public class Graphics extends GraphicsBase {
 
     private void updateInstanceData(GL3 gl){
 
+
         int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
 
+        System.out.println("modelCount: " + modelCount +", vertices: " + modelCount*4);
         int indexCounter = 0;
         int instanceDataIndex = 0;
         float[] instanceData = new float[modelCount * 4];
@@ -263,7 +267,7 @@ public class Graphics extends GraphicsBase {
         EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity", true);
         checkError(gl, "initProgram : Entity");
 
-        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Stolen_Cellular", false);
+        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Perlin_Clouds", false);
         checkError(gl, "initProgram : Background");
     }
 
@@ -329,7 +333,9 @@ public class Graphics extends GraphicsBase {
         time += 1f;
         x = (float) Math.cos(time*0.001);
         y = (float) Math.sin(time*0.001);
-        updateInstanceData(gl);
+        synchronized (modelData) {
+            updateInstanceData(gl);
+        }
     }
 
     @Override

@@ -7,6 +7,15 @@ class ControllerLayer : Layer{
 
     abstract class Controller<in E : PhysicsEntity>(){
         abstract fun update(entity : E)
+        fun emitThrustParticles(entity: E, thrust : Vector2){
+            if(thrust.magnitude > 0){
+
+                val adjustedThrust = thrust.copy().rotate((Math.random()-0.5)/3)
+                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
+                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
+                ), dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
+            }
+        }
     }
 
     fun <E : PhysicsEntity> addControlledEntity(entity: E, controller: Controller<E>){
@@ -20,12 +29,18 @@ class ControllerLayer : Layer{
         }
     }
     private val controllerList = mutableListOf<ControllerEntityEntry<*>>()
+    private val entityRequestBuffer = mutableListOf<PhysicsEntity>()
 
     override fun update() {
+        entityRequestBuffer.clear()
         controllerList.removeIf { t -> t.entity.isMarkedForRemoval() }
         for (controllerEntityEntry in controllerList) {
             controllerEntityEntry.update()
         }
+    }
+
+    fun getNewEntityRequests() : List<PhysicsEntity>{
+        return entityRequestBuffer
     }
 
     fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
@@ -38,6 +53,8 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         var x = 0.0;
         var y = 0.0;
         var r = 0.0;
+
+
 
         if(input[KeyEvent.VK_W]){
             y++;
@@ -72,11 +89,11 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         }
 
         val thrust = Vector2(x, y);
-        if(!input[KeyEvent.VK_SPACE]){
+        if(!input[KeyEvent.VK_SHIFT]){
             thrust.rotate(entity.transform.rotation)
         }
         val rotate = r - entity.angularVelocity
-
+        emitThrustParticles(entity, thrust)
         entity.applyForce(thrust)
         entity.applyTorque(rotate)
 
@@ -101,6 +118,8 @@ class ChaseController : ControllerLayer.Controller<ShipEntity>(){
         }
 
         val posDiff = entity.worldCenter.to(currentTarget.worldCenter)
-        entity.applyForce(posDiff.normalized)
+        val thrust = posDiff.normalized
+        emitThrustParticles(entity, thrust)
+        entity.applyForce(thrust)
     }
 }
