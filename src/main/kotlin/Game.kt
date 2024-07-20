@@ -13,8 +13,7 @@ class ShipEntity() : DumbEntity() {
 }
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f, 0.5f)),
-            Component(Model.SQUARE1, Transform(Vector2(1.0,0.0), 0f, 1.0f))
+    Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f, 1.0f))
 )) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
@@ -50,11 +49,13 @@ fun main() {
         }
     }
 
-    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
-    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
+//    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
+//    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
-    val otherEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(0.0,2.0))
-    controllerLayer.addControlledEntity(otherEntity, ChaseController())
+//    for(i in 0..100) {
+//        val otherEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0))
+//        controllerLayer.addControlledEntity(otherEntity, ChaseController())
+//    }
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
@@ -68,6 +69,11 @@ fun main() {
         physicsLayer.populateModelMap(modelDataMap)
         effectsLayer.populateModelMap(modelDataMap)
         controllerLayer.populateModelMap(modelDataMap)
+
+        //New entities created from controllers, like projectiles or summoned ships
+        val controllerEntityRequestList = controllerLayer.getNewEntityRequests();
+
+        //Graphical entities created by physics logic, like from collisions or destructions
 
         gui.updateDrawables(modelDataMap)
     }
@@ -90,7 +96,6 @@ fun main() {
 //TODO Maybe these two should be the same call, to avoid looping over things doubly?
 interface Layer{
     fun update()
-//    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>)
 }
 
 data class Component(val model: Model, val transform: Transform)

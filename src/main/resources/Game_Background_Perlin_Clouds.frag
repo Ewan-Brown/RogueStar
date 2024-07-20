@@ -165,7 +165,7 @@ void main()
 
     float squared = val1*val2 * val1*val2;
 
-    outputColor.xyz = vec3(squared, squared, squared);
+    outputColor.xyz = vec3(far, medium, close);
 
 }
 

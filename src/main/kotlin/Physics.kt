@@ -50,9 +50,13 @@ class PhysicsLayer : Layer{
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
 
-//    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+        iterator.forEach {
+            it.pair.first.body.onCollide(it)
+            it.pair.second.body.onCollide(it)
+        }
         //TODO Do something with collisions, if we'd like
-//    }
+    }
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
         return WorldCollisionData(pair);
     }
