@@ -132,10 +132,12 @@ void main()
 {
 
 
+    //TODO ADD Z COMPONENT
+
     //Varible here is the 'speed' as affected by player
-    vec2 posFar = xyVarying + position;
-    vec2 posMedium = xyVarying + position*2;
-    vec2 posClose = xyVarying + position*4;
+    vec2 posFar = xyVarying + position/64;
+    vec2 posMedium = xyVarying + position/32;
+    vec2 posClose = xyVarying + position/16;
 
     float farBig = color(vec3(posFar.xy, 0));
     float farNormal = color(vec3(posFar.xy*2, 0));
@@ -165,7 +167,8 @@ void main()
 
     float squared = val1*val2 * val1*val2;
 
-    outputColor.xyz = vec3(far, medium, close);
+//    outputColor.xyz = vec3(far, medium, close);
+    outputColor.xyz = vec3(0.0,0.0,0.0);
 
 }
 

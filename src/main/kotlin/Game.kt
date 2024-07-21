@@ -2,18 +2,16 @@ import Graphics.Model
 import Graphics.Transform
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
-import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 import java.util.*
-import kotlin.collections.HashMap
 
 class ShipEntity() : DumbEntity() {
     
 }
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.SQUARE1, Transform(Vector2(0.0,0.0), 0f, 1.0f))
+    Component(Model.TRIANGLE, Transform(Vector2(0.0,0.0), 0f, 1.0f))
 )) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
@@ -25,6 +23,7 @@ open class DumbEntity() : PhysicsEntity(listOf(
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
 val controllerLayer = ControllerLayer()
+var cameraPos = Vector2()
 
 fun main() {
 
@@ -49,13 +48,14 @@ fun main() {
         }
     }
 
-//    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
-//    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
+    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
+    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
-//    for(i in 0..100) {
-//        val otherEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0))
-//        controllerLayer.addControlledEntity(otherEntity, ChaseController())
-//    }
+    val entities = mutableListOf<PhysicsEntity>()
+    for(i in 1..20){
+        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+    }
+    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.BasicMultiController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
@@ -75,6 +75,7 @@ fun main() {
 
         //Graphical entities created by physics logic, like from collisions or destructions
 
+        cameraPos = shipEntity.worldCenter
         gui.updateDrawables(modelDataMap)
     }
 
