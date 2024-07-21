@@ -33,8 +33,8 @@ public class Graphics extends GraphicsBase {
     private HashMap<Model, ModelData> modelData = new HashMap<>();
 
     //The position to shift the background by
-    float x = 0;
-    float y = 0;
+    float cameraX = 0;
+    float cameraY = 0;
 
     //the time for the background
     float time = 0;
@@ -91,9 +91,9 @@ public class Graphics extends GraphicsBase {
     public static class Model {
 
         static Model TRIANGLE = new Model(new float[]{
-                +0.0f, +2.0f, +0.1F, 1, 0, 0,
+                -1.0f, +1.0f, +0.1F, 1, 0, 0,
                 -1.0f, -1.0f, +0.1F, 1, 0, 0,
-                +1.0f, -1.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES);
+                +1.0f, +0.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES);
         static Model SQUARE1 = new Model(new float[]{
                 -0.5f, -0.5f, +0.1F, 0, 1, 0,
                 +0.5f, -0.5f, +0.1F, 0, 1, 0,
@@ -234,7 +234,6 @@ public class Graphics extends GraphicsBase {
 
         int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
 
-        System.out.println("modelCount: " + modelCount +", vertices: " + modelCount*4);
         int indexCounter = 0;
         int instanceDataIndex = 0;
         float[] instanceData = new float[modelCount * 4];
@@ -296,7 +295,7 @@ public class Graphics extends GraphicsBase {
 
         gl.glUseProgram(BackgroundProgram.name);
 
-        gl.glUniform2f(BackgroundProgram.positionInSpace, x, y);
+        gl.glUniform2f(BackgroundProgram.positionInSpace, cameraX, cameraY);
         gl.glUniform1f(BackgroundProgram.time, time);
 
         gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
@@ -305,11 +304,14 @@ public class Graphics extends GraphicsBase {
 
         gl.glUseProgram(EntityProgram.name);
 
+        cameraX = (float) GameKt.getCameraPos().x;
+        cameraY = (float) GameKt.getCameraPos().y;
         // model matrix
         {
             float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
-            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
-            float[] modelToWorldMat = FloatUtil.multMatrix(scale, zRotation);
+//            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
+            float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, -cameraX, -cameraY, 0);
+            float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
 
             for (int i = 0; i < 16; i++) {
                 matBuffer.put(i, modelToWorldMat[i]);
@@ -331,8 +333,9 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "display");
 
         time += 1f;
-        x = (float) Math.cos(time*0.001);
-        y = (float) Math.sin(time*0.001);
+//        x = (float) Math.cos(time*0.001);
+//        y = (float) Math.sin(time*0.001);
+
         synchronized (modelData) {
             updateInstanceData(gl);
         }

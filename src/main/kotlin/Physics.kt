@@ -37,6 +37,8 @@ class PhysicsLayer : Layer{
         entity.translate(pos)
         entity.rotate(angle)
         entity.setMass(MassType.NORMAL)
+        entity.linearDamping = 0.0
+        entity.angularDamping = 0.0
         entity.updateComponents()
         physicsWorld.addBody(entity)
         return entity
