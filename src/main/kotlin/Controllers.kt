@@ -55,7 +55,6 @@ class ControllerLayer : Layer{
 //                            entity.applyForce(entity.linearVelocity.multiply(-0.3))
                             val orientationVector = entity.transform.rotation.toVector()
                             val velocity = entity.linearVelocity
-
                             val dotProduct = velocity.dot(orientationVector)
 
                             val sideslip = velocity.difference(orientationVector.product(dotProduct))
