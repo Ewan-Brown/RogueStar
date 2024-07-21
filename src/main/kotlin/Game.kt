@@ -23,7 +23,6 @@ open class DumbEntity() : PhysicsEntity(listOf(
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
 val controllerLayer = ControllerLayer()
-var cameraPos = Vector2()
 
 fun main() {
 
@@ -75,8 +74,8 @@ fun main() {
 
         //Graphical entities created by physics logic, like from collisions or destructions
 
-        cameraPos = shipEntity.worldCenter
-        gui.updateDrawables(modelDataMap)
+//        cameraTargetPos = shipEntity.worldCenter
+        gui.updateDrawables(modelDataMap, shipEntity.worldCenter.copy())
     }
 
 

@@ -33,8 +33,10 @@ public class Graphics extends GraphicsBase {
     private HashMap<Model, ModelData> modelData = new HashMap<>();
 
     //The position to shift the background by
-    float cameraX = 0;
-    float cameraY = 0;
+    //TODO camera is possessed?
+    Vector2 cameraPos = new Vector2();
+    Vector2 cameraVelocity = new Vector2();
+    Vector2 cameraTargetPos = new Vector2();
 
     //the time for the background
     float time = 0;
@@ -59,11 +61,12 @@ public class Graphics extends GraphicsBase {
         }
     }
 
-    public void updateDrawables(HashMap<Model, List<Transform>> data){
+    public void updateDrawables(HashMap<Model, List<Transform>> data, Vector2 cameraTarget){
         synchronized (modelData) {
             for (Model loadedModel : loadedModels) {
                 modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
             }
+            this.cameraTargetPos = cameraTarget;
         }
     }
 
@@ -270,6 +273,7 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "initProgram : Background");
     }
 
+
     @Override
     public void display(GLAutoDrawable drawable) {
 
@@ -295,7 +299,7 @@ public class Graphics extends GraphicsBase {
 
         gl.glUseProgram(BackgroundProgram.name);
 
-        gl.glUniform2f(BackgroundProgram.positionInSpace, cameraX, cameraY);
+        gl.glUniform2f(BackgroundProgram.positionInSpace, (float)cameraPos.x, (float)cameraPos.y);
         gl.glUniform1f(BackgroundProgram.time, time);
 
         gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
@@ -304,13 +308,22 @@ public class Graphics extends GraphicsBase {
 
         gl.glUseProgram(EntityProgram.name);
 
-        cameraX = (float) GameKt.getCameraPos().x;
-        cameraY = (float) GameKt.getCameraPos().y;
+        cameraPos = cameraTargetPos;
+//        cameraPos.add(cameraVelocity);
+//        cameraPos = GameKt.getCameraTargetPos().copy();
+//        cameraPos = GameKt.getPlayerShipEntity().getWorldCenter();
+
+//        Vector2 cameraTargetPos = GameKt.getCameraTargetPos();
+//        Vector2 cameraDiff = cameraTargetPos.difference(cameraPos);
+//
+//        cameraVelocity.add(cameraDiff.multiply(0.1));
+//        cameraVelocity.multiply(0.9);
+
         // model matrix
         {
             float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
 //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
-            float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, -cameraX, -cameraY, 0);
+            float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
 
             for (int i = 0; i < 16; i++) {
