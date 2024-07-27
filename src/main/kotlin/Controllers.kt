@@ -44,13 +44,13 @@ class ControllerLayer : Layer{
                     val angularVelocity = entity.angularVelocity
                     val desiredVelocity = -angleDiff
                     val angularVelocityDiff = desiredVelocity - angularVelocity;
-                    entity.applyTorque(-angleDiff*10 + angularVelocityDiff*10)
+                    entity.applyTorque(-angleDiff*20 + angularVelocityDiff*10)
                     if(angleDiff < 0.01){
                         val dist = vecToTarget.normalize()
                         if(dist < MIN_DIST){
                             entity.applyForce(vecToTarget.multiply(-1.0))
                         }else if (dist > MAX_DIST){
-                            entity.applyForce(vecToTarget)
+                            entity.applyForce(vecToTarget.multiply(3.0))
                         }else{
 //                            entity.applyForce(entity.linearVelocity.multiply(-0.3))
                             val orientationVector = entity.transform.rotation.toVector()
@@ -157,7 +157,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
 
         val desiredVelocity = Vector2(x, y).rotate(entity.transform.rotation);
 
-        val thrust = desiredVelocity.product(10.0)
+        val thrust = desiredVelocity.product(20.0)
 
 //        emitThrustParticles(entity, thrust)
         entity.applyForce(thrust)

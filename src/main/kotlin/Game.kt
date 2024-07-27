@@ -56,7 +56,7 @@ fun main() {
     }
     controllerLayer.addMultiControlledEntities(entities, ControllerLayer.BasicMultiController())
 
-    val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
+    var modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
     val populateData = fun () {
@@ -69,12 +69,6 @@ fun main() {
         effectsLayer.populateModelMap(modelDataMap)
         controllerLayer.populateModelMap(modelDataMap)
 
-        //New entities created from controllers, like projectiles or summoned ships
-        val controllerEntityRequestList = controllerLayer.getNewEntityRequests();
-
-        //Graphical entities created by physics logic, like from collisions or destructions
-
-//        cameraTargetPos = shipEntity.worldCenter
         gui.updateDrawables(modelDataMap, shipEntity.worldCenter.copy())
     }
 
@@ -84,6 +78,8 @@ fun main() {
 
     while(true){
         Thread.sleep(15)
+
+        modelDataMap = hashMapOf()
 
         physicsLayer.update()
         effectsLayer.update()

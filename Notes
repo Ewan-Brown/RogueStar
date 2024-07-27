@@ -1,5 +1,5 @@
-- Get a working OpenGL 3.0 demo that can render X number of static models in dynamic positions
-- Get a simple Dyn4J world running
-- Define Ships, Planets, and Debris
-- Get a simple control interface up
-- Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
+Visual bug :
+
+WHen moving at high speeds the player and entities flicker, seemingly in the (forward? opposite?) direction of the camera speed.
+
+It looks like the background does too. Note the flicker seems to be related to the derivative of Graphics.camera_speed w.r.t display()

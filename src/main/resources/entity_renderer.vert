@@ -5,6 +5,7 @@
 layout (location = 0) in vec2 position;
 // Incoming vertex color
 layout (location = 1) in vec3 color;
+
 //layout (location = 2) in vec3 instanceData;
 
 uniform GlobalMatrices

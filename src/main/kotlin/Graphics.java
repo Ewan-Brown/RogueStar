@@ -273,6 +273,7 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "initProgram : Background");
     }
 
+    Vector2 lastPos = new Vector2();
 
     @Override
     public void display(GLAutoDrawable drawable) {
@@ -320,23 +321,28 @@ public class Graphics extends GraphicsBase {
 //        cameraVelocity.multiply(0.9);
 
         // model matrix
-        {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
+        float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
 //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
-            float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
-            float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
+//        System.out.println("cameraPos = " + cameraPos);
+//        float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
+        float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) 0, (float) 0, 0);
+        float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
 
-            for (int i = 0; i < 16; i++) {
-                matBuffer.put(i, modelToWorldMat[i]);
-            }
-            gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
+        System.out.println(lastPos.to(cameraPos)); // CHECK THE DERIVATIVE, THIS AINT RIGHT?
+        lastPos = cameraPos.copy();
+
+        for (int i = 0; i < 16; i++) {
+            matBuffer.put(i, modelToWorldMat[i]);
         }
+        gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
 
-        for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
-            Model model = value.getKey();
-            ModelData data = value.getValue();
-            if(data.getInstanceCount() > 0) {
-                gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
+        synchronized (modelData) {
+            for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
+                Model model = value.getKey();
+                ModelData data = value.getValue();
+                if (data.getInstanceCount() > 0) {
+                    gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
+                }
             }
         }
 
