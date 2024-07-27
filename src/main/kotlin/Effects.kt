@@ -43,7 +43,8 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
 
         val entityAngle = rotation;
         val entityPos = Vector2(x, y)
-        val variableScale = Math.min(1.0, Vector2(dx, dy).magnitude*10) * scale;
+        val variableScale = scale;
+//        val variableScale = Math.min(1.0, Vector2(dx, dy).magnitude*10) * scale;
         if(variableScale < 0.01){
             isDead = true
         }
@@ -52,7 +53,7 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
             val m = baseComponent.model
             val t = baseComponent.transform
 
-            val newPos = baseComponent.transform.position.copy().multiply(scale).rotate(entityAngle.toDouble()).add(entityPos)
+            val newPos = baseComponent.transform.position.copy().multiply(scale).rotate(entityAngle.toDouble()).add(entityPos).add(Vector2(1.0,1.0))
             val newAngle = entityAngle + baseComponent.transform.angle
             components.add(Component(baseComponent.model,Graphics.Transform(newPos, newAngle.toFloat(), baseComponent.transform.scale*variableScale.toFloat())))
 
@@ -69,6 +70,7 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
         dx -= dx/100.0
         dy -= dy/100.0
         drotation -= drotation/100.0
+//        isDead = lifetime > 5;
     }
     override fun isMarkedForRemoval(): Boolean{
         return lifetime > 1000 || isDead

@@ -1,5 +1,8 @@
-- Get a working OpenGL 3.0 demo that can render X number of static models in dynamic positions
-- Get a simple Dyn4J world running
-- Define Ships, Planets, and Debris
-- Get a simple control interface up
-- Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
+Solved flickering by making sure that the camera position is updated only when instance data is also updated.
+
+- Working on particle issue. Regardless of particle settings, there is _sometimes_ an extra blue square that gets rendered
+    at the players location+rotation.
+- The more particles that exist at once, the more likely this will appear.
+- I think it's because the draw call for blue squares is picking up the player entity data, maybe because the # of
+    particles is off, and it grabs the next data available which happens to be the player
+- The extra square ONLY appears while entity count is increasing!!!

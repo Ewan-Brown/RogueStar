@@ -11,12 +11,16 @@ class ControllerLayer : Layer{
 
         //TODO move this...
         fun emitThrustParticles(entity: E, thrust : Vector2){
-            if(thrust.magnitude > 0){
+//            if(thrust.magnitude > 0){
                 val adjustedThrust = thrust.copy().rotate((Math.random()-0.5)/3)
+//                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
+//                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 1.0f))
+//                ), scale = 0.1, dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
+
                 effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
-                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
-                ), dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
-            }
+                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(1.0, 1.0), 0f, 0.1f))
+                )));
+//            }
         }
     }
 
@@ -159,8 +163,8 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
 
         val thrust = desiredVelocity.product(10.0)
 
-//        emitThrustParticles(entity, thrust)
-        entity.applyForce(thrust)
+        emitThrustParticles(entity, thrust.normalized)
+//        entity.applyForce(thrust)
 
         val rotate = r - entity.angularVelocity
         entity.applyTorque(rotate*10.0)

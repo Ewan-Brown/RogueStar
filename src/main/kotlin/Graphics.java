@@ -30,12 +30,11 @@ public class Graphics extends GraphicsBase {
 
     private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
 
-    private HashMap<Model, ModelData> modelData = new HashMap<>();
+    private HashMap<Model, ModelData> mostRecentModelData = new HashMap<>();
 
     //The position to shift the background by
     //TODO camera is possessed?
     Vector2 cameraPos = new Vector2();
-    Vector2 cameraVelocity = new Vector2();
     Vector2 cameraTargetPos = new Vector2();
 
     //the time for the background
@@ -57,14 +56,14 @@ public class Graphics extends GraphicsBase {
     public Graphics(List<Model> preloadedModels) {
         this.loadedModels = preloadedModels;
         for (Model preloadedModel : preloadedModels) {
-            modelData.put(preloadedModel, new ModelData());
+            mostRecentModelData.put(preloadedModel, new ModelData());
         }
     }
 
     public void updateDrawables(HashMap<Model, List<Transform>> data, Vector2 cameraTarget){
-        synchronized (modelData) {
+        synchronized (mostRecentModelData) {
             for (Model loadedModel : loadedModels) {
-                modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
+                mostRecentModelData.get(loadedModel).setInstanceData(data.get(loadedModel));
             }
             this.cameraTargetPos = cameraTarget;
         }
@@ -96,29 +95,30 @@ public class Graphics extends GraphicsBase {
         static Model TRIANGLE = new Model(new float[]{
                 -1.0f, +1.0f, +0.1F, 1, 0, 0,
                 -1.0f, -1.0f, +0.1F, 1, 0, 0,
-                +1.0f, +0.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES);
+                +1.0f, +0.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES, "RED_TRIANGLE");
         static Model SQUARE1 = new Model(new float[]{
                 -0.5f, -0.5f, +0.1F, 0, 1, 0,
                 +0.5f, -0.5f, +0.1F, 0, 1, 0,
                 +0.5f, +0.5f, +0.1F, 0, 1, 0,
-                -0.5f, +0.5f, +0.1F, 0, 1, 0},GL_TRIANGLE_FAN);
+                -0.5f, +0.5f, +0.1F, 0, 1, 0},GL_TRIANGLE_FAN, "GREEN_SQUARE");
         static Model SQUARE2 = new Model(new float[]{
-                -0.5f, -0.5f, 3, 1, 0, 0,
-                +0.5f, -0.5f, 3, 1, 0, 0,
-                +0.5f, +0.5f, 3, 1, 0, 0,
-                -0.5f, +0.5f, 3, 1, 0, 0}, GL_TRIANGLE_FAN);
+                -0.5f, -0.5f, 3, 0, 0, 1,
+                +0.5f, -0.5f, 3, 0, 0, 1,
+                +0.5f, +0.5f, 3, 0, 0, 1,
+                -0.5f, +0.5f, 3, 0, 0, 1}, GL_TRIANGLE_FAN, "BLUE_SQUARE");
         static Model BACKPLATE = new Model(new float[]{
                 -1, -1, +0.4f, 0, 1, 1,
                 -1, +1, +0.4f, 0, 1, 1,
                 +1, +1, +0.4f, 0, 1, 1,
-                +1, -1, +0.4f, 0, 1, 1}, GL_TRIANGLE_FAN);
+                +1, -1, +0.4f, 0, 1, 1}, GL_TRIANGLE_FAN, "BACKPLATE");
 
         final int points;
         final float[] vertexData;
         final int drawMode;
         final Vector2[] asVectorData;
+        final String name;
 
-        Model(float[] vertexData, int dMode) {
+        Model(float[] vertexData, int dMode, String n) {
             this.points = vertexData.length/6; //Change if vertex data size changes!
             asVectorData = new Vector2[points];
             for (int i = 0; i < points; i++) {
@@ -126,6 +126,7 @@ public class Graphics extends GraphicsBase {
             }
             this.vertexData = vertexData;
             this.drawMode = dMode;
+            this.name = n;
         }
     };
 
@@ -167,7 +168,7 @@ public class Graphics extends GraphicsBase {
             for (float vertexDatum : value.vertexData) {
                 verticeList.add(vertexDatum);
             }
-            modelData.get(value).setVerticeIndex(marker);
+            mostRecentModelData.get(value).setVerticeIndex(marker);
             marker += value.points;
         }
 
@@ -236,12 +237,13 @@ public class Graphics extends GraphicsBase {
 
         cameraPos = cameraTargetPos;
 
-        int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
+        int modelCount = mostRecentModelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
+        System.out.println(modelCount);
 
         int indexCounter = 0;
         int instanceDataIndex = 0;
         float[] instanceData = new float[modelCount * 4];
-        for (ModelData data : modelData.values()) {
+        for (ModelData data : mostRecentModelData.values()) {
             for (Transform transform : data.getInstanceData()) {
 
                 double x = transform.position.x;
@@ -257,6 +259,7 @@ public class Graphics extends GraphicsBase {
             data.setInstanceIndex(indexCounter);
             indexCounter += data.getInstanceCount();
         }
+
 
         FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
         gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
@@ -303,7 +306,7 @@ public class Graphics extends GraphicsBase {
         gl.glUniform2f(BackgroundProgram.positionInSpace, (float)cameraPos.x, (float)cameraPos.y);
         gl.glUniform1f(BackgroundProgram.time, time);
 
-        gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
+        gl.glDrawArrays(Model.BACKPLATE.drawMode, mostRecentModelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
 
         gl.glUseProgram(0);
 
@@ -322,7 +325,7 @@ public class Graphics extends GraphicsBase {
 
         // model matrix
         {
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
+            float[] scale = FloatUtil.makeScale(new float[16], true, 0.05f, 0.05f, 0.05f);
 //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
@@ -333,10 +336,10 @@ public class Graphics extends GraphicsBase {
             gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
         }
 
-        for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
+        for (Map.Entry<Model, ModelData> value : mostRecentModelData.entrySet()) {
             Model model = value.getKey();
             ModelData data = value.getValue();
-            if(data.getInstanceCount() > 0) {
+            if(data.getInstanceCount() > 0 && model == Model.SQUARE2) {
                 gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
             }
         }
@@ -347,10 +350,8 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "display");
 
         time += 1f;
-//        x = (float) Math.cos(time*0.001);
-//        y = (float) Math.sin(time*0.001);
 
-        synchronized (modelData) {
+        synchronized (mostRecentModelData) {
             updateInstanceData(gl);
         }
     }
