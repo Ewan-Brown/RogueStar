@@ -234,6 +234,7 @@ public class Graphics extends GraphicsBase {
 
     private void updateInstanceData(GL3 gl){
 
+        cameraPos = cameraTargetPos;
 
         int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
 
@@ -308,7 +309,7 @@ public class Graphics extends GraphicsBase {
 
         gl.glUseProgram(EntityProgram.name);
 
-        cameraPos = cameraTargetPos;
+//        cameraPos = cameraTargetPos;
 //        cameraPos.add(cameraVelocity);
 //        cameraPos = GameKt.getCameraTargetPos().copy();
 //        cameraPos = GameKt.getPlayerShipEntity().getWorldCenter();
