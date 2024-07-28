@@ -283,6 +283,11 @@ public class Graphics extends GraphicsBase {
 
         GL3 gl = drawable.getGL().getGL3();
 
+        //THIS MUST BE CALLED BEFORE DRAW STUFF, I'm NOT SURE WHY
+        synchronized (mostRecentModelData) {
+            updateInstanceData(gl);
+        }
+
         // view matrix
         {
             float[] view = new float[16];
@@ -350,10 +355,6 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "display");
 
         time += 1f;
-
-        synchronized (mostRecentModelData) {
-            updateInstanceData(gl);
-        }
     }
 
     @Override
