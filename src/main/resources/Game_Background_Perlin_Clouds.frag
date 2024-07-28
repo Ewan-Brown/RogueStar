@@ -172,9 +172,9 @@ void main()
     float m = max(sin(pos.x/0.03),cos(pos.y/0.03));
     float v = 0;
     if(m > 0.99){
-        v = 0.6;
+        v = 0.1;
     }
-    outputColor.xyz = vec3(0,  v, 0);
+    outputColor.xyz = vec3(far,  v, medium);
 
 }
 

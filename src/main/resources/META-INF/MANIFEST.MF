@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: jogl.instanced.HelloTriangle_8_dynamic_instances_individual_
+ transform_matrices
+
