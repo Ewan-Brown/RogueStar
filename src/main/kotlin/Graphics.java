@@ -94,9 +94,9 @@ public class Graphics extends GraphicsBase {
     public static class Model {
 
         static Model TRIANGLE = new Model(new float[]{
-                -1.0f, +1.0f, +0.1F, 1, 0, 0,
-                -1.0f, -1.0f, +0.1F, 1, 0, 0,
-                +1.0f, +0.0f, +0.1F, 1, 0, 0}, GL_TRIANGLES);
+                -1.0f, +1.0f, +0.1F, 0, 0, 1,
+                -1.0f, -1.0f, +0.1F, 0, 0, 1,
+                +1.0f, +0.0f, +0.1F, 0, 0, 1}, GL_TRIANGLES);
         static Model SQUARE1 = new Model(new float[]{
                 -0.5f, -0.5f, +0.1F, 0, 1, 0,
                 +0.5f, -0.5f, +0.1F, 0, 1, 0,
