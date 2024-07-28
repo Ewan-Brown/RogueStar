@@ -3,6 +3,29 @@ import Graphics.Model
 import Graphics.Transform
 import java.util.function.Predicate
 
+class EffectsUtils{
+    companion object {
+        fun emitThrustParticles(entity: PhysicsEntity, thrust: Vector2) {
+            if (thrust.magnitude > 0) {
+                val adjustedThrust = thrust.product(-0.002).rotate((Math.random() - 0.5) / 3)
+                effectsLayer.addEntity(
+                    TangibleEffectsEntity(
+                        entity.worldCenter.x,
+                        entity.worldCenter.y,
+                        Math.random(),
+                        listOf(
+                            Component(Model.SQUARE2, Transform(Vector2(0.0, 0.0), 0f, 0.2f))
+                        ),
+                        dx = entity.linearVelocity.x / 100.0 + adjustedThrust.x,
+                        dy = entity.linearVelocity.y / 100.0 + adjustedThrust.y,
+                        drotation = (Math.random() - 0.5) * 10
+                    )
+                )
+            }
+        }
+    }
+}
+
 class EffectsLayer : Layer{
     private val entities = mutableListOf<EffectsEntity>();
 
