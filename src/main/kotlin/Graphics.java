@@ -284,6 +284,7 @@ public class Graphics extends GraphicsBase {
             updateInstanceData(gl);
         }
 
+
         // view matrix
         {
             float[] view = new float[16];

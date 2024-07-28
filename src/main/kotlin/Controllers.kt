@@ -26,6 +26,19 @@ class ControllerLayer : Layer{
     abstract class MultiController<in E : PhysicsEntity>(){
 
         abstract fun update(entities : List<E>)
+
+        //TODO move this...
+        fun emitThrustParticles(entity: E, thrust : Vector2){
+            if(thrust.magnitude > 0){
+                val adjustedThrust = thrust.product(-0.002).rotate((Math.random()-0.5)/3)
+//                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
+//                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
+//                ), dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
+                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
+                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
+                ), dx = entity.linearVelocity.x/100.0 + adjustedThrust.x, dy = entity.linearVelocity.y/100.0 + adjustedThrust.y, drotation = (Math.random()-0.5)*10))
+            }
+        }
     }
 
     class BasicMultiController<in E : PhysicsEntity>() : MultiController<E>(){
@@ -47,14 +60,19 @@ class ControllerLayer : Layer{
                     val angularVelocity = entity.angularVelocity
                     val desiredVelocity = -angleDiff
                     val angularVelocityDiff = desiredVelocity - angularVelocity;
-                    entity.applyTorque(-angleDiff*10 + angularVelocityDiff*10)
+                    entity.applyTorque(-angleDiff*20 + angularVelocityDiff*10)
                     if(angleDiff < 0.01){
                         val dist = vecToTarget.normalize()
                         if(dist < MIN_DIST){
-                            entity.applyForce(vecToTarget.multiply(-1.0))
+                            val thrust = vecToTarget.multiply(-20.0)
+                            emitThrustParticles(entity, thrust)
+                            entity.applyForce(thrust)
                         }else if (dist > MAX_DIST){
-                            entity.applyForce(vecToTarget)
+                            val thrust = vecToTarget.multiply(10.0)
+                            emitThrustParticles(entity, thrust)
+                            entity.applyForce(thrust)
                         }else{
+
 //                            entity.applyForce(entity.linearVelocity.multiply(-0.3))
                             val orientationVector = entity.transform.rotation.toVector()
                             val velocity = entity.linearVelocity
