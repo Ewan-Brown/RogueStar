@@ -280,6 +280,10 @@ public class Graphics extends GraphicsBase {
 
         GL3 gl = drawable.getGL().getGL3();
 
+        synchronized (modelData) {
+            updateInstanceData(gl);
+        }
+
         // view matrix
         {
             float[] view = new float[16];
@@ -350,9 +354,6 @@ public class Graphics extends GraphicsBase {
 //        x = (float) Math.cos(time*0.001);
 //        y = (float) Math.sin(time*0.001);
 
-        synchronized (modelData) {
-            updateInstanceData(gl);
-        }
     }
 
     @Override
