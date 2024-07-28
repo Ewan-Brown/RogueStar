@@ -168,7 +168,13 @@ void main()
     float squared = val1*val2 * val1*val2;
 
 //    outputColor.xyz = vec3(far, medium, close);
-    outputColor.xyz = vec3(0.0,0.0,0.0);
+    vec2 pos = xyVarying + position*0.03;
+    float m = max(sin(pos.x/0.03),cos(pos.y/0.03));
+    float v = 0;
+    if(m > 0.99){
+        v = 0.6;
+    }
+    outputColor.xyz = vec3(0,  v, 0);
 
 }
 
