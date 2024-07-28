@@ -1,3 +1,4 @@
+import EffectsUtils.Companion.emitThrustParticles
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
@@ -6,39 +7,16 @@ import java.util.function.Predicate
 //TODO Generalized PID utilities
 class ControllerLayer : Layer{
 
-    abstract class Controller<in E : PhysicsEntity>(){
+    abstract class Controller<in E : PhysicsEntity> {
         abstract fun update(entity : E)
-
-        //TODO move this...
-        fun emitThrustParticles(entity: E, thrust : Vector2){
-            if(thrust.magnitude > 0){
-                val adjustedThrust = thrust.product(-0.002).rotate((Math.random()-0.5)/3)
-//                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
-//                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
-//                ), dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
-                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
-                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
-                ), dx = entity.linearVelocity.x/100.0 + adjustedThrust.x, dy = entity.linearVelocity.y/100.0 + adjustedThrust.y, drotation = (Math.random()-0.5)*10))
-            }
-        }
     }
 
-    abstract class MultiController<in E : PhysicsEntity>(){
+    abstract class MultiController<in E : PhysicsEntity> {
 
         abstract fun update(entities : List<E>)
 
         //TODO move this...
-        fun emitThrustParticles(entity: E, thrust : Vector2){
-            if(thrust.magnitude > 0){
-                val adjustedThrust = thrust.product(-0.002).rotate((Math.random()-0.5)/3)
-//                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
-//                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
-//                ), dx = -adjustedThrust.x/5.0, dy = -adjustedThrust.y/5.0, drotation = (Math.random()-0.5)*10))
-                effectsLayer.addEntity(TangibleEffectsEntity(entity.worldCenter.x, entity.worldCenter.y, Math.random(), listOf(
-                    Component(Graphics.Model.SQUARE2, Graphics.Transform(Vector2(0.0, 0.0), 0f, 0.2f))
-                ), dx = entity.linearVelocity.x/100.0 + adjustedThrust.x, dy = entity.linearVelocity.y/100.0 + adjustedThrust.y, drotation = (Math.random()-0.5)*10))
-            }
-        }
+
     }
 
     class BasicMultiController<in E : PhysicsEntity>() : MultiController<E>(){
@@ -122,7 +100,7 @@ class ControllerLayer : Layer{
             controllerEntityEntry.update()
         }
         for (controllerEntityEntry in multiControllerList) {
-            if(controllerEntityEntry.entities.stream().anyMatch(Predicate { t -> t.isMarkedForRemoval() })){
+            if(controllerEntityEntry.entities.stream().anyMatch(PhysicsEntity::isMarkedForRemoval)){
                 error("Entity under a multi controller is marked for removal... Controller should deal with this?")
             }
             controllerEntityEntry.update()
