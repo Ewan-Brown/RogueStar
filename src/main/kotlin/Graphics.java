@@ -282,11 +282,8 @@ public class Graphics extends GraphicsBase {
 
         synchronized (modelData) {
             updateInstanceData(gl);
-        }
 
-
-        // view matrix
-        {
+            // view matrix
             float[] view = new float[16];
             FloatUtil.makeIdentity(view);
 
@@ -296,39 +293,26 @@ public class Graphics extends GraphicsBase {
             gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
             gl.glBufferSubData(GL_UNIFORM_BUFFER, 16 * Float.BYTES, 16 * Float.BYTES, matBuffer);
             gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
-        }
 
-        gl.glClearBufferfv(GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f));
-        gl.glClearBufferfv(GL_DEPTH, 0, clearDepth.put(0, 1f));
+            gl.glClearBufferfv(GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f));
+            gl.glClearBufferfv(GL_DEPTH, 0, clearDepth.put(0, 1f));
 
-        gl.glBindVertexArray(VAOs.get(0));
+            gl.glBindVertexArray(VAOs.get(0));
 
-        gl.glUseProgram(BackgroundProgram.name);
+            gl.glUseProgram(BackgroundProgram.name);
 
-        gl.glUniform2f(BackgroundProgram.positionInSpace, (float)cameraPos.x, (float)cameraPos.y);
-        gl.glUniform1f(BackgroundProgram.time, time);
+            gl.glUniform2f(BackgroundProgram.positionInSpace, (float)cameraPos.x, (float)cameraPos.y);
+            gl.glUniform1f(BackgroundProgram.time, time);
 
-        gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
+            gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
 
-        gl.glUseProgram(0);
+            gl.glUseProgram(0);
 
-        gl.glUseProgram(EntityProgram.name);
+            gl.glUseProgram(EntityProgram.name);
 
-//        cameraPos = cameraTargetPos;
-//        cameraPos.add(cameraVelocity);
-//        cameraPos = GameKt.getCameraTargetPos().copy();
-//        cameraPos = GameKt.getPlayerShipEntity().getWorldCenter();
-
-//        Vector2 cameraTargetPos = GameKt.getCameraTargetPos();
-//        Vector2 cameraDiff = cameraTargetPos.difference(cameraPos);
-//
-//        cameraVelocity.add(cameraDiff.multiply(0.1));
-//        cameraVelocity.multiply(0.9);
-
-        // model matrix
-        {
+            // model matrix
             float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
-//            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
+    //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
             float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
             float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
 
@@ -336,13 +320,13 @@ public class Graphics extends GraphicsBase {
                 matBuffer.put(i, modelToWorldMat[i]);
             }
             gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
-        }
 
-        for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
-            Model model = value.getKey();
-            ModelData data = value.getValue();
-            if(data.getInstanceCount() > 0) {
-                gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
+            for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
+                Model model = value.getKey();
+                ModelData data = value.getValue();
+                if(data.getInstanceCount() > 0) {
+                    gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
+                }
             }
         }
 
@@ -352,8 +336,6 @@ public class Graphics extends GraphicsBase {
         checkError(gl, "display");
 
         time += 1f;
-//        x = (float) Math.cos(time*0.001);
-//        y = (float) Math.sin(time*0.001);
 
     }
 
