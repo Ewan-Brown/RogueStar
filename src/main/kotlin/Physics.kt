@@ -9,21 +9,26 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import Graphics.Model
-import org.dyn4j.geometry.Mass
+import org.dyn4j.dynamics.PhysicsBody
 
 class PhysicsLayer : Layer{
     private val physicsWorld = PhysicsWorld();
+    private var time = 0.0;
     init {
         physicsWorld.setGravity(0.0,0.0)
     }
 
-    //TODO Find a way to prevent leaking references when entities are marked for removal.
-    // Maybe use an ID system or something similar
-    fun getEntities() : List<PhysicsEntity>{
-        return physicsWorld.bodies
+    fun getEntities() : List<Pair<Int, PhysicsBodyData>>{
+        return physicsWorld.bodies.map { it -> it.uuid to PhysicsBodyData(it) }
+    }
+
+    //TODO benchmark and see if a cachemap ;) is necessary
+    fun getEntity(uuid : Int) : PhysicsBody? {
+        return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
     }
 
     override fun update() {
+        time++;
         physicsWorld.update(1.0)
     }
 
@@ -50,6 +55,10 @@ class PhysicsLayer : Layer{
 
 }
 
+data class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val angle: Double, val traceRadius: Double){
+    constructor(body: PhysicsBody) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius);
+}
+
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
 
     override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
@@ -59,6 +68,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
         }
         //TODO Do something with collisions, if we'd like
     }
+
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
         return WorldCollisionData(pair);
     }
@@ -70,12 +80,17 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
             }
         }
     }
+
+//    fun getPhysicsBodies() : List<PhysicsBodyData>{
+//        return getBodies()
+//    }
 }
 
 /**
  * Represents the physical thing, which may be swapped among controllers freely!
  */
 abstract class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
+    val uuid = 0;
     init {
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
