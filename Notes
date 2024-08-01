@@ -6,14 +6,18 @@ X Setup background shader
 
 \ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
 
-- Write 'spectator' multiplayer code
+= Write a group AI that organizes AIs in a list around the player
+-    Circle
+-
+-    Square
+= Write 'spectator' multiplayer code
 -  First get a single whole frame
 -  Then define patch type updates
 -  Maybe effects can be done client side if wished... As long as layers stay separate this should be easy, but will require its own sort of websocket to get updates
--      Websocket... Maybe this data can be processed an entire separate thread from the rest of game... Leave this layer as synchronized data access for Effect threaded data
+.      Websocket... Maybe this data can be processed an entire separate thread from the rest of game... Leave this layer as synchronized data access for Effect threaded data
 -  Maybe give a go at rewriting the keyframe/patch with basic predictive (e.x store metadata like velocity)
-- Write 'client' multiplayer code
-- Write recorder for each layer? Allows reversing/jumping in time?
+= Write 'client' multiplayer code (controls...)
+= Write recorder for each layer? Allows reversing/jumping in time?
 
 
 
