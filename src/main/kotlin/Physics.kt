@@ -10,6 +10,9 @@ import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import Graphics.Model
 import org.dyn4j.dynamics.PhysicsBody
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class PhysicsLayer : Layer{
     private val physicsWorld = PhysicsWorld();
@@ -23,8 +26,9 @@ class PhysicsLayer : Layer{
     }
 
     //TODO benchmark and see if a cachemap ;) is necessary
-    fun getEntity(uuid : Int) : PhysicsBody? {
-        return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
+    fun getEntity(uuid : Int) : PhysicsBodyData? {
+        val body = physicsWorld.bodies.firstOrNull { it.uuid == uuid }
+        return body?.let { PhysicsBodyData(it) }
     }
 
     override fun update() {
@@ -42,8 +46,8 @@ class PhysicsLayer : Layer{
         entity.translate(pos)
         entity.rotate(angle)
         entity.setMass(MassType.NORMAL)
-        entity.linearDamping = 0.0
-        entity.angularDamping = 0.0
+        entity.linearDamping = 0.1
+        entity.angularDamping = 0.1
         entity.updateComponents()
         physicsWorld.addBody(entity)
         return entity
@@ -90,7 +94,10 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
  * Represents the physical thing, which may be swapped among controllers freely!
  */
 abstract class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
-    val uuid = 0;
+    private companion object {
+        private var UUID_COUNTER = 0;
+    }
+    val uuid = UUID_COUNTER++;
     init {
         for (component in components) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
