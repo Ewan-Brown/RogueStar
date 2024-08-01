@@ -1,6 +1,6 @@
 X Get a working OpenGL 3.0 demo that can render X number of static models in dynamic positions
 X Get a simple Dyn4J world running
-X Define Ships, Planets, and Debris
+X Define Ships, Planets, and Debris(Effects)
 X Get a simple control interface up
 X Setup background shader
 
