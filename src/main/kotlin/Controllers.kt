@@ -25,11 +25,14 @@ class ControllerLayer : Layer{
         val MAX_DIST = 8.0
 
         override fun update(entities: List<E>) {
-            val potentialTarget = physicsLayer.getEntities().firstOrNull { !entities.contains(it) }
-            if(potentialTarget != null){
-                //Attempt to surround the target
+            val result = physicsLayer.getEntities().firstOrNull { it.first == 0 }
+            if(result != null){
 
-                val targetLoc = potentialTarget.worldCenter
+                val uuid = result.first;
+                val data = result.second;
+
+                //Attempt to surround the target
+                val targetLoc = data.position
                 for (entity in entities) {
                     val vecToTarget = entity.worldCenter.to(targetLoc)
                     val currentDirection = entity.transform.rotation.toVector()
@@ -174,14 +177,14 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
 
 class ChaseController : ControllerLayer.Controller<ShipEntity>(){
 
-    private var lastTarget: PhysicsEntity? = null
+    private var lastTarget: Int? = null
 
     override fun update(entity: ShipEntity) {
-        val currentTarget: PhysicsEntity;
+        val currentTarget: Int;
         if(lastTarget == null){
-            val potentialTarget = physicsLayer.getEntities().filter { it != entity }.firstOrNull()
+            val potentialTarget = physicsLayer.getEntities().filter { it.first != entity.uuid}.firstOrNull()
             if(potentialTarget != null){
-                currentTarget = potentialTarget
+                currentTarget = potentialTarget.first
             }else{
                 return
             }
@@ -189,9 +192,12 @@ class ChaseController : ControllerLayer.Controller<ShipEntity>(){
             currentTarget = lastTarget!!
         }
 
-        val posDiff = entity.worldCenter.to(currentTarget.worldCenter)
-        val thrust = posDiff.normalized
-        emitThrustParticles(entity, thrust)
-        entity.applyForce(thrust)
+        if(currentTarget != null) {
+            val bodyData = physicsLayer.getEntity(currentTarget);
+            val posDiff = entity.worldCenter.to(bodyData?.worldCenter)
+            val thrust = posDiff.normalized
+            emitThrustParticles(entity, thrust)
+            entity.applyForce(thrust)
+        }
     }
 }
