@@ -89,8 +89,8 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
         y += dy
         rotation += drotation
 
-//        dx -= dx/10.0
-//        dy -= dy/10.0
+        dx -= dx/100.0
+        dy -= dy/100.0
         drotation -= drotation/100.0
     }
     override fun isMarkedForRemoval(): Boolean{
