@@ -8,7 +8,6 @@ X Setup background shader
 
 = Write a group AI that organizes AIs in a list around the player
 -    Circle
--
 -    Square
 = Write 'spectator' multiplayer code
 -  First get a single whole frame
