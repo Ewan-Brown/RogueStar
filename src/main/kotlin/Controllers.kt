@@ -2,7 +2,7 @@ import EffectsUtils.Companion.emitThrustParticles
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
-import java.util.function.Predicate
+import kotlin.math.abs
 
 //TODO Generalized PID utilities
 class ControllerLayer : Layer{
@@ -19,7 +19,65 @@ class ControllerLayer : Layer{
 
     }
 
-    class BasicMultiController<in E : PhysicsEntity>() : MultiController<E>(){
+    class EncircleMultiController<in E : PhysicsEntity>() : MultiController<E>(){
+
+        //TODO This should be immutable
+        private var angleMap: MutableMap<Int, Double>? = null
+
+        override fun update(entities: List<E>) {
+            val target = physicsLayer.getEntities().firstOrNull { it.first == 0 }
+            if(target != null) {
+                val angleSeparation = Math.PI * 2 / entities.size;
+
+                //Check if the angleMap either
+                // is null
+                // is not of same size as passed entities
+                // does not have matching elements to entities
+                if (angleMap == null || entities.size != angleMap!!.size || !entities.map { it -> it.uuid }
+                        .all { angleMap!!.containsKey(it) }) {
+                    angleMap = mutableMapOf();
+                    var angle = 0.0
+                    for (entity in entities.sortedBy { it.uuid }) {
+                        angleMap!![entity.uuid] = angle;
+                        angle += angleSeparation
+                    }
+                } else {
+                    for(e in entities){
+                        val angle = angleMap!![e.uuid] ?: throw NullPointerException("angle")
+                        val targetPos: Vector2 = Vector2(target.second.position)//.add(Vector2(angle).product(10.0))
+                        val vecToTarget: Vector2 = e.worldCenter.to(targetPos)
+
+                        val velocityVector = e.linearVelocity;
+                        val angleVector = Vector2(e.transform.rotationAngle)
+
+                        val FORWARD_ANGLE_THRESHOLD = Math.PI/8;
+
+
+                        val orientationToTargetDiff = angleVector.getAngleBetween(vecToTarget)
+
+                        val angleDiff = vecToTarget.getAngleBetween(angleVector)
+                        val angularVelocity = e.angularVelocity
+                        val desiredVelocity = -angleDiff
+                        val angularVelocityDiff = desiredVelocity - angularVelocity;
+
+                        if(abs(orientationToTargetDiff) > FORWARD_ANGLE_THRESHOLD) {
+
+                            e.applyTorque(-angleDiff*20 + angularVelocityDiff*10)
+                        }else{
+                            e.applyTorque(-angleDiff*10 + angularVelocityDiff*5)
+                            val thrust = vecToTarget.normalized.product(5.0)
+                            e.applyForce(thrust)
+                            emitThrustParticles(e, thrust)
+                        }
+
+                    }
+                }
+            }
+
+        }
+    }
+
+    class ChaseMultiController<in E : PhysicsEntity>() : MultiController<E>(){
 
         val MIN_DIST = 7.0
         val MAX_DIST = 8.0
@@ -194,7 +252,7 @@ class ChaseController : ControllerLayer.Controller<ShipEntity>(){
 
         if(currentTarget != null) {
             val bodyData = physicsLayer.getEntity(currentTarget);
-            val posDiff = entity.worldCenter.to(bodyData?.worldCenter)
+            val posDiff = entity.worldCenter.to(bodyData?.position)
             val thrust = posDiff.normalized
             emitThrustParticles(entity, thrust)
             entity.applyForce(thrust)
