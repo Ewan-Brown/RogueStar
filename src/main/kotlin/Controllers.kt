@@ -44,8 +44,9 @@ class ControllerLayer : Layer{
                 } else {
                     for(e in entities){
                         val angle = angleMap!![e.uuid] ?: throw NullPointerException("angle")
-                        val targetPos: Vector2 = Vector2(target.second.position)//.add(Vector2(angle).product(10.0))
+                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
                         val vecToTarget: Vector2 = e.worldCenter.to(targetPos)
+                        val vecToTargetHost: Vector2 = e.worldCenter.to(target.second.position)
 
                         val velocityVector = e.linearVelocity;
                         val angleVector = Vector2(e.transform.rotationAngle)
@@ -55,20 +56,34 @@ class ControllerLayer : Layer{
 
                         val orientationToTargetDiff = angleVector.getAngleBetween(vecToTarget)
 
-                        val angleDiff = vecToTarget.getAngleBetween(angleVector)
-                        val angularVelocity = e.angularVelocity
-                        val desiredVelocity = -angleDiff
-                        val angularVelocityDiff = desiredVelocity - angularVelocity;
 
-                        if(abs(orientationToTargetDiff) > FORWARD_ANGLE_THRESHOLD) {
-
-                            e.applyTorque(-angleDiff*20 + angularVelocityDiff*10)
-                        }else{
-                            e.applyTorque(-angleDiff*10 + angularVelocityDiff*5)
-                            val thrust = vecToTarget.normalized.product(5.0)
-                            e.applyForce(thrust)
-                            emitThrustParticles(e, thrust)
+                        val calcTorqueToTurnTo : (Vector2) -> Double = fun(desiredAngleVec) : Double{
+                            val angularVelocity = e.angularVelocity
+                            val angleDiff = desiredAngleVec.getAngleBetween(e.transform.rotationAngle)
+                            val desiredVelocity = -angleDiff
+                            val velocityOffset = desiredVelocity - angularVelocity;
+                            return -angleDiff + velocityOffset * 2
                         }
+
+                        val thrust : Vector2
+                        var torque : Double
+                        if(vecToTarget.magnitude < 1){
+                            thrust = e.linearVelocity.product(-5.0)
+                            torque = calcTorqueToTurnTo(vecToTargetHost)*2
+                        }else {
+
+                            if (abs(orientationToTargetDiff) > FORWARD_ANGLE_THRESHOLD) {
+                                torque = calcTorqueToTurnTo(vecToTarget)*2
+                                thrust = vecToTarget.normalized.product(2.5)
+
+                            } else {
+                                torque = calcTorqueToTurnTo(vecToTarget)
+                                thrust = vecToTarget.normalized.product(5.0)
+                            }
+                        }
+                        e.applyTorque(torque)
+                        e.applyForce(thrust)
+                        emitThrustParticles(e, thrust)
 
                     }
                 }
