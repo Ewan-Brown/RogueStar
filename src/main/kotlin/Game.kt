@@ -51,10 +51,10 @@ fun main() {
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
     val entities = mutableListOf<PhysicsEntity>()
-    for(i in 1..20){
+    for(i in 1..1){
         entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
     }
-    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.BasicMultiController())
+    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
