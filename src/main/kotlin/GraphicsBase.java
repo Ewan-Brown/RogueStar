@@ -7,7 +7,6 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.glsl.ShaderCode;
 import com.jogamp.opengl.util.glsl.ShaderProgram;
-import jogl.Semantic;
 
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL2ES2.GL_FRAGMENT_SHADER;
@@ -88,7 +87,7 @@ public abstract class GraphicsBase implements GLEventListener {
                     System.err.println("block index 'GlobalMatrices' not found!");
                 }
 
-                gl.glUniformBlockBinding(name, globalMatricesBI, Semantic.Uniform.GLOBAL_MATRICES);
+                gl.glUniformBlockBinding(name, globalMatricesBI, 4);
             }else{
                 positionInSpace = gl.glGetUniformLocation(name, "position");
                 if(positionInSpace == -1){

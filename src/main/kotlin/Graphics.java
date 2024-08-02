@@ -2,7 +2,6 @@ import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.GLBuffers;
-import jogl.Semantic;
 import lombok.Getter;
 import lombok.Setter;
 import org.dyn4j.geometry.Vector2;
@@ -189,7 +188,7 @@ public class Graphics extends GraphicsBase {
         gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
         gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        gl.glBindBufferBase(GL_UNIFORM_BUFFER, Semantic.Uniform.GLOBAL_MATRICES, VBOs.get(Buffer.GLOBAL_MATRICES));
+        gl.glBindBufferBase(GL_UNIFORM_BUFFER, 4, VBOs.get(Buffer.GLOBAL_MATRICES));
 
         checkError(gl, "initBuffers");
     }
