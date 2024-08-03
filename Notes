@@ -5,12 +5,12 @@ X Get a simple control interface up
 X Setup background shader
 
 \ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
+\ Write POC projectile
 
-\ Write a group AI that organizes AIs in a list around the player
-  -    Circle
-  * need to have the controller target not only position but a velocity that matches the target's velocity!!! This will need to be added to body data DTO
-
+= Add shader code for HUD
+= Add support for individualized model colors/opacity
 = Write a group AI that organizes AIs in a list around the player
+  * need to have the controller target not only position but a velocity that matches the target's velocity!!! This will need to be added to body data DTO
 -    Square
 = Write 'spectator' multiplayer code
 -  First get a single whole frame
