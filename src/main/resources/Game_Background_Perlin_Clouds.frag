@@ -174,7 +174,7 @@ void main()
     if(m > 0.99){
         v = 0.1;
     }
-    outputColor.xyz = vec3(far,  v, medium);
+    outputColor.xyz = vec3(0,  v,0);
 
 }
 
