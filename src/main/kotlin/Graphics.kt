@@ -1,418 +1,394 @@
-import com.jogamp.opengl.GL3;
-import com.jogamp.opengl.GLAutoDrawable;
-import com.jogamp.opengl.math.FloatUtil;
-import com.jogamp.opengl.util.GLBuffers;
-import lombok.Getter;
-import lombok.Setter;
-import org.dyn4j.geometry.Vector2;
+import com.jogamp.opengl.*
+import com.jogamp.opengl.math.FloatUtil
+import com.jogamp.opengl.util.GLBuffers
+import lombok.Getter
+import lombok.Setter
+import org.dyn4j.geometry.Vector2
+import java.nio.FloatBuffer
+import java.nio.IntBuffer
+import java.util.function.ToIntFunction
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.*;
+class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
+    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
+    private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
-import static com.jogamp.opengl.GL.*;
-import static com.jogamp.opengl.GL2ES3.*;
-import static com.jogamp.opengl.GL3.GL_ARRAY_BUFFER;
-import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
-import static com.jogamp.opengl.GL3.GL_FLOAT;
+    private val clearColor: FloatBuffer = GLBuffers.newDirectFloatBuffer(4)
+    private val clearDepth: FloatBuffer = GLBuffers.newDirectFloatBuffer(1)
 
-/**
- * TODO Kotlinize this
- */
-public class Graphics extends GraphicsBase {
+    private val matBuffer: FloatBuffer = GLBuffers.newDirectFloatBuffer(16)
 
-    private IntBuffer VBOs = GLBuffers.newDirectIntBuffer(Buffer.MAX);
-    private IntBuffer VAOs = GLBuffers.newDirectIntBuffer(1);
-
-    private FloatBuffer clearColor = GLBuffers.newDirectFloatBuffer(4);
-    private FloatBuffer clearDepth = GLBuffers.newDirectFloatBuffer(1);
-
-    private FloatBuffer matBuffer = GLBuffers.newDirectFloatBuffer(16);
-
-    private HashMap<Model, ModelData> modelData = new HashMap<>();
+    private val modelData = mutableMapOf<Model, ModelData>()
 
     //The position to shift the background by
-    //TODO camera is possessed?
-    Vector2 cameraPos = new Vector2();
-    Vector2 cameraVelocity = new Vector2();
-    Vector2 cameraTargetPos = new Vector2();
+    var cameraPos: Vector2 = Vector2()
+    var cameraTargetPos: Vector2 = Vector2()
 
     //the time for the background
-    float time = 0;
+    var time: Float = 0f
 
-    @Getter
-    @Setter
-    private class ModelData{
-        int verticeIndex;
-        int instanceIndex;
-        List<Transform> instanceData = new ArrayList<>();
-        public int getInstanceCount(){
-            return instanceData.size();
-        }
+    private inner class ModelData {
+        var verticeIndex: Int = 0
+        var instanceIndex: Int = 0
+        var instanceData: List<Transform> = ArrayList()
+        val instanceCount: Int
+            get() = instanceData.size
     }
 
-    final List<Model> loadedModels;
-
-    public Graphics(List<Model> preloadedModels) {
-        this.loadedModels = preloadedModels;
-        for (Model preloadedModel : preloadedModels) {
-            modelData.put(preloadedModel, new ModelData());
-        }
-    }
-
-    public void updateDrawables(HashMap<Model, List<Transform>> data, Vector2 cameraTarget){
-        synchronized (modelData) {
-            for (Model loadedModel : loadedModels) {
-                modelData.get(loadedModel).setInstanceData(data.get(loadedModel));
+    fun updateDrawables(data: Map<Model, List<Transform>>, cameraTarget: Vector2) {
+        synchronized(modelData) {
+            for (loadedModel in loadedModels) {
+//                modelData[loadedModel].setInstanceData(data[loadedModel])
+                modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
-            this.cameraTargetPos = cameraTarget;
+            this.cameraTargetPos = cameraTarget
         }
     }
 
-    public static class Transform{
-        private final Vector2 position;
-        private final float angle;
-        private final float scale;
-        private final float red;
-        private final float green;
-        private final float blue;
-        private final float alpha;
-
-        public Transform(Vector2 pos, float a, float s, float r, float g, float b, float al){
-            this.position = pos.copy();
-            this.angle = a;
-            this.scale = s;
-            red = r;
-            green = g;
-            blue = b;
-            alpha = al;
-        }
-
-        public Vector2 getPosition() {
-            return position;
-        }
-
-        public float getAngle() {
-            return angle;
-        }
-
-        public float getScale() {
-            return scale;
-        }
-
-        public float getRed() {
-            return red;
-        }
-
-        public float getGreen() {
-            return green;
-        }
-
-        public float getBlue() {
-            return blue;
-        }
-
-        public float getAlpha() {
-            return alpha;
-        }
+    class Transform(
+        pos: Vector2,
+        val angle: Float,
+        val scale: Float,
+        val red: Float,
+        val green: Float,
+        val blue: Float,
+        val alpha: Float
+    ) {
+        val position: Vector2 = pos.copy()
     }
 
-    public static class Model {
-
-        static Model TRIANGLE = new Model(new float[]{
-                -1.0f, +1.0f, +0.1F, 0, 0, 1,
-                -1.0f, -1.0f, +0.1F, 0, 0, 1,
-                +1.0f, +0.0f, +0.1F, 0, 0, 1}, GL_TRIANGLES);
-        static Model SQUARE1 = new Model(new float[]{
-                -0.5f, -0.5f, +0.1F, 0, 1, 0,
-                +0.5f, -0.5f, +0.1F, 0, 1, 0,
-                +0.5f, +0.5f, +0.1F, 0, 1, 0,
-                -0.5f, +0.5f, +0.1F, 0, 1, 0},GL_TRIANGLE_FAN);
-        static Model SQUARE2 = new Model(new float[]{
-                -0.5f, -0.5f, 3, 1, 0, 0,
-                +0.5f, -0.5f, 3, 1, 0, 0,
-                +0.5f, +0.5f, 3, 1, 0, 0,
-                -0.5f, +0.5f, 3, 1, 0, 0}, GL_TRIANGLE_FAN);
-        static Model BACKPLATE = new Model(new float[]{
-                -1, -1, +0.4f, 0, 1, 1,
-                -1, +1, +0.4f, 0, 1, 1,
-                +1, +1, +0.4f, 0, 1, 1,
-                +1, -1, +0.4f, 0, 1, 1}, GL_TRIANGLE_FAN);
-
-        final int points;
-        final float[] vertexData;
-        final int drawMode;
-        final Vector2[] asVectorData;
-
-        Model(float[] vertexData, int dMode) {
-            this.points = vertexData.length/6; //Change if vertex data size changes!
-            asVectorData = new Vector2[points];
-            for (int i = 0; i < points; i++) {
-                asVectorData[i] = new Vector2(vertexData[i*6], vertexData[i*6+1]);
-            }
-            this.vertexData = vertexData;
-            this.drawMode = dMode;
+    class Model internal constructor(val vertexData: FloatArray, dMode: Int) {
+        val points: Int = vertexData.size / 6 //Change if vertex data size changes!
+        val drawMode: Int = dMode
+        val asVectorData: List<Vector2> = List(points){
+            Vector2(vertexData[it * 6].toDouble(), vertexData[it * 6 + 1].toDouble())
         }
-    };
+
+        companion object {
+            var TRIANGLE: Model = Model(
+                floatArrayOf(
+                    -1.0f, +1.0f, +0.1f, 0f, 0f, 1f,
+                    -1.0f, -1.0f, +0.1f, 0f, 0f, 1f,
+                    +1.0f, +0.0f, +0.1f, 0f, 0f, 1f
+                ), GL.GL_TRIANGLES
+            )
+            var SQUARE1: Model = Model(
+                floatArrayOf(
+                    -0.5f, -0.5f, +0.1f, 0f, 1f, 0f,
+                    +0.5f, -0.5f, +0.1f, 0f, 1f, 0f,
+                    +0.5f, +0.5f, +0.1f, 0f, 1f, 0f,
+                    -0.5f, +0.5f, +0.1f, 0f, 1f, 0f
+                ), GL.GL_TRIANGLE_FAN
+            )
+            var SQUARE2: Model = Model(
+                floatArrayOf(
+                    -0.5f, -0.5f, 3f, 1f, 0f, 0f,
+                    +0.5f, -0.5f, 3f, 1f, 0f, 0f,
+                    +0.5f, +0.5f, 3f, 1f, 0f, 0f,
+                    -0.5f, +0.5f, 3f, 1f, 0f, 0f
+                ), GL.GL_TRIANGLE_FAN
+            )
+            var BACKPLATE: Model = Model(
+                floatArrayOf(
+                    -1f, -1f, +0.4f, 0f, 1f, 1f,
+                    -1f, +1f, +0.4f, 0f, 1f, 1f,
+                    +1f, +1f, +0.4f, 0f, 1f, 1f,
+                    +1f, -1f, +0.4f, 0f, 1f, 1f
+                ), GL.GL_TRIANGLE_FAN
+            )
+        }
+    }
 
     private interface Buffer {
-
-        int VERTEX = 1;
-        int INSTANCED_POSITIONS = 2;
-        int INSTANCED_COLORS = 3;
-        int GLOBAL_MATRICES = 4;
-        int MAX = 5;
+        companion object {
+            const val VERTEX: Int = 1
+            const val INSTANCED_POSITIONS: Int = 2
+            const val INSTANCED_COLORS: Int = 3
+            const val GLOBAL_MATRICES: Int = 4
+            const val MAX: Int = 5
+        }
     }
 
 
-    @Override
-    public void init(GLAutoDrawable drawable) {
+    override fun init(drawable: GLAutoDrawable) {
+        val gl = drawable.gl.gL3
 
-        GL3 gl = drawable.getGL().getGL3();
+        initVBOs(gl)
 
-        initVBOs(gl);
+        updateInstanceData(gl)
 
-        updateInstanceData(gl);
+        initVAOs(gl)
 
-        initVAOs(gl);
+        initProgram(gl)
 
-        initProgram(gl);
-
-        gl.glEnable(GL_DEPTH_TEST);
-
+        gl.glEnable(GL.GL_DEPTH_TEST)
     }
 
-    private void initVBOs(GL3 gl) {
-
+    private fun initVBOs(gl: GL3) {
         //Generate vertex data and store offsets for models
-        List<Float> verticeList = new ArrayList<>();
 
-        int marker = 0;
-        for (Model value : loadedModels) {
-            for (float vertexDatum : value.vertexData) {
-                verticeList.add(vertexDatum);
+        val verticeList: MutableList<Float> = ArrayList()
+
+        var marker = 0
+        for (value in loadedModels) {
+            for (vertexDatum in value.vertexData) {
+                verticeList.add(vertexDatum)
             }
-            modelData.get(value).setVerticeIndex(marker);
-            marker += value.points;
+            modelData.getValue(value).verticeIndex = marker
+            marker += value.points
         }
 
-        float[] verticeArray = new float[verticeList.size()];
-        for (int i = 0; i < verticeList.size(); i++) {
-            verticeArray[i] = verticeList.get(i);
+        val verticeArray = FloatArray(verticeList.size)
+        for (i in verticeList.indices) {
+            verticeArray[i] = verticeList[i]
         }
 
-        FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray);
+        val vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray)
 
-        gl.glGenBuffers(Buffer.MAX, VBOs); // Create VBOs (n = Buffer.max)
+        gl.glGenBuffers(Buffer.MAX, VBOs) // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) vertexBuffer.capacity() * Float.BYTES, vertexBuffer, GL_STATIC_DRAW);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            vertexBuffer,
+            GL.GL_STATIC_DRAW
+        )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
-        gl.glBufferData(GL_UNIFORM_BUFFER, 16 * Float.BYTES * 2, null, GL_STREAM_DRAW);
-        gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
+        gl.glBufferData(
+            GL2ES3.GL_UNIFORM_BUFFER,
+            (16 * java.lang.Float.BYTES * 2).toLong(),
+            null,
+            GL2ES2.GL_STREAM_DRAW
+        )
+        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
-        gl.glBindBufferBase(GL_UNIFORM_BUFFER, 4, VBOs.get(Buffer.GLOBAL_MATRICES));
+        gl.glBindBufferBase(GL2ES3.GL_UNIFORM_BUFFER, 4, VBOs[Buffer.GLOBAL_MATRICES])
 
-        checkError(gl, "initBuffers");
+        checkError(gl, "initBuffers")
     }
 
-    static int POSITION_ATTRIB_INDICE = 0;
-    static int COLOR_ATTRIB_INDICE = 1;//TODO REMOVEME?
-    static int INSTANCE_POSITION_ATTRIB_INDICE = 2;
-    static int INSTANCE_COLOR_ATTRIB_INDICE = 3;
-
-
-    private void initVAOs(GL3 gl) {
-        gl.glGenVertexArrays(1, VAOs); // Create VAO
-        gl.glBindVertexArray(VAOs.get(0));
-        {
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.VERTEX));
-            int stride = (3 + 3) * Float.BYTES;
-            int offset = 0;
-
-            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
-
-            offset = 3 * Float.BYTES;
-            gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
-
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_POSITIONS));
-            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE,
-                    4,
-                    GL_FLOAT,
-                    false,
-                    4 * Float.BYTES,
-                    0);
-
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_COLORS));
-            gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE);
-            gl.glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_INDICE,
-                    4,
-                    GL_FLOAT,
-                    false,
-                    4 * Float.BYTES,
-                    0);
-
-            gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1);
-            gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
-
+    init {
+        for (preloadedModel in loadedModels) {
+            modelData[preloadedModel] = ModelData()
         }
-        gl.glBindVertexArray(0);
+    }
 
-        checkError(gl, "initVao");
+    private fun initVAOs(gl: GL3) {
+        gl.glGenVertexArrays(1, VAOs) // Create VAO
+        gl.glBindVertexArray(VAOs[0])
+        run {
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
+            val stride = (3 + 3) * java.lang.Float.BYTES
+            var offset = 0
+
+            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
+
+            offset = 3 * java.lang.Float.BYTES
+            gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
+            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(
+                INSTANCE_POSITION_ATTRIB_INDICE,
+                4,
+                GL.GL_FLOAT,
+                false,
+                4 * java.lang.Float.BYTES,
+                0
+            )
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
+            gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(
+                INSTANCE_COLOR_ATTRIB_INDICE,
+                4,
+                GL.GL_FLOAT,
+                false,
+                4 * java.lang.Float.BYTES,
+                0
+            )
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+            gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
+            gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
+        }
+        gl.glBindVertexArray(0)
+
+        checkError(gl, "initVao")
     }
 
 
-    private void updateInstanceData(GL3 gl){
+    private fun updateInstanceData(gl: GL3) {
+        cameraPos = cameraTargetPos
 
-        cameraPos = cameraTargetPos;
-
-        int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
+        val modelCount =
+            modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
+                .sum()
 
         //TODO Clean this up.
-        int indexCounter = 0;
-        int instancePositionDataIndex = 0;
-        int instanceColorDataIndex = 0;
-        float[] instanceColorData = new float[modelCount * 4];
-        float[] instancePositionData = new float[modelCount * 4];
-        for (ModelData data : modelData.values()) {
-            for (Transform transform : data.getInstanceData()) {
-                double x = transform.position.x;
-                double y = transform.position.y;
-                double angle = transform.angle;
-                double r = transform.red;
-                double g = transform.green;
-                double b = transform.blue;
-                double a = transform.alpha;
-                instancePositionData[instancePositionDataIndex++] = (float)x;
-                instancePositionData[instancePositionDataIndex++] = (float)y;
-                instancePositionData[instancePositionDataIndex++] = (float)angle;
-                instancePositionData[instancePositionDataIndex++] = transform.scale;
-                instanceColorData[instanceColorDataIndex++] = (float)r;
-                instanceColorData[instanceColorDataIndex++] = (float)g;
-                instanceColorData[instanceColorDataIndex++] = (float)b;
-                instanceColorData[instanceColorDataIndex++] = (float)a;
+        var indexCounter = 0
+        var instancePositionDataIndex = 0
+        var instanceColorDataIndex = 0
+        val instanceColorData = FloatArray(modelCount * 4)
+        val instancePositionData = FloatArray(modelCount * 4)
+        for (data in modelData.values) {
+            for (transform in data.instanceData) {
+                val x = transform.position.x
+                val y = transform.position.y
+                val angle = transform.angle.toDouble()
+                val r = transform.red.toDouble()
+                val g = transform.green.toDouble()
+                val b = transform.blue.toDouble()
+                val a = transform.alpha.toDouble()
+                instancePositionData[instancePositionDataIndex++] = x.toFloat()
+                instancePositionData[instancePositionDataIndex++] = y.toFloat()
+                instancePositionData[instancePositionDataIndex++] = angle.toFloat()
+                instancePositionData[instancePositionDataIndex++] = transform.scale
+                instanceColorData[instanceColorDataIndex++] = r.toFloat()
+                instanceColorData[instanceColorDataIndex++] = g.toFloat()
+                instanceColorData[instanceColorDataIndex++] = b.toFloat()
+                instanceColorData[instanceColorDataIndex++] = a.toFloat()
             }
-            data.setInstanceIndex(indexCounter);
-            indexCounter += data.getInstanceCount();
+            data.instanceIndex = indexCounter
+            indexCounter += data.instanceCount
         }
 
-        FloatBuffer instanceBuffer1 = GLBuffers.newDirectFloatBuffer(instancePositionData);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_POSITIONS));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer1.capacity() * Float.BYTES, instanceBuffer1, GL_DYNAMIC_DRAW);
+        val instanceBuffer1 = GLBuffers.newDirectFloatBuffer(instancePositionData)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            instanceBuffer1.capacity().toLong() * java.lang.Float.BYTES,
+            instanceBuffer1,
+            GL.GL_DYNAMIC_DRAW
+        )
 
-        FloatBuffer instanceBuffer2 = GLBuffers.newDirectFloatBuffer(instanceColorData);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_COLORS));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer2.capacity() * Float.BYTES, instanceBuffer2, GL_DYNAMIC_DRAW);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+        val instanceBuffer2 = GLBuffers.newDirectFloatBuffer(instanceColorData)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            instanceBuffer2.capacity().toLong() * java.lang.Float.BYTES,
+            instanceBuffer2,
+            GL.GL_DYNAMIC_DRAW
+        )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     }
 
-    private void initProgram(GL3 gl) {
+    private fun initProgram(gl: GL3) {
+        EntityProgram = Program(gl, javaClass, "", "Game_Entity", "Game_Entity", true)
+        checkError(gl, "initProgram : Entity")
 
-        EntityProgram = new Program(gl, getClass(), "", "Game_Entity", "Game_Entity", true);
-        checkError(gl, "initProgram : Entity");
-
-        BackgroundProgram = new Program(gl, getClass(), "", "Game_Background", "Game_Background_Perlin_Clouds", false);
-        checkError(gl, "initProgram : Background");
+        BackgroundProgram = Program(gl, javaClass, "", "Game_Background", "Game_Background_Perlin_Clouds", false)
+        checkError(gl, "initProgram : Background")
     }
 
 
-    @Override
-    public void display(GLAutoDrawable drawable) {
+    override fun display(drawable: GLAutoDrawable) {
+        val gl = drawable.gl.gL3
 
-        GL3 gl = drawable.getGL().getGL3();
-
-        synchronized (modelData) {
-            updateInstanceData(gl);
-
+        synchronized(modelData) {
+            updateInstanceData(gl)
             // view matrix
-            float[] view = new float[16];
-            FloatUtil.makeIdentity(view);
+            val view = FloatArray(16)
+            FloatUtil.makeIdentity(view)
 
-            for (int i = 0; i < 16; i++) {
-                matBuffer.put(i, view[i]);
+            for (i in 0..15) {
+                matBuffer.put(i, view[i])
             }
-            gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
-            gl.glBufferSubData(GL_UNIFORM_BUFFER, 16 * Float.BYTES, 16 * Float.BYTES, matBuffer);
-            gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
+            gl.glBufferSubData(
+                GL2ES3.GL_UNIFORM_BUFFER,
+                (16 * java.lang.Float.BYTES).toLong(),
+                (16 * java.lang.Float.BYTES).toLong(),
+                matBuffer
+            )
+            gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
-            gl.glClearBufferfv(GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f));
-            gl.glClearBufferfv(GL_DEPTH, 0, clearDepth.put(0, 1f));
+            gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
+            gl.glClearBufferfv(GL2ES3.GL_DEPTH, 0, clearDepth.put(0, 1f))
 
-            gl.glBindVertexArray(VAOs.get(0));
+            gl.glBindVertexArray(VAOs[0])
 
-            gl.glUseProgram(BackgroundProgram.name);
+            gl.glUseProgram(BackgroundProgram.name)
 
-            gl.glUniform2f(BackgroundProgram.positionInSpace, (float)cameraPos.x, (float)cameraPos.y);
-            gl.glUniform1f(BackgroundProgram.time, time);
+            gl.glUniform2f(BackgroundProgram.positionInSpace, cameraPos.x.toFloat(), cameraPos.y.toFloat())
+            gl.glUniform1f(BackgroundProgram.time, time)
 
-            gl.glDrawArrays(Model.BACKPLATE.drawMode, modelData.get(Model.BACKPLATE).getVerticeIndex(), Model.BACKPLATE.points);
+            gl.glDrawArrays(
+                Model.BACKPLATE.drawMode,
+//                modelData[Model.BACKPLATE].getVerticeIndex(),
+                modelData.getValue(Model.BACKPLATE).verticeIndex,
+                Model.BACKPLATE.points
+            )
 
-            gl.glUseProgram(0);
+            gl.glUseProgram(0)
 
-            gl.glUseProgram(EntityProgram.name);
+            gl.glUseProgram(EntityProgram.name)
 
             // model matrix
-            float[] scale = FloatUtil.makeScale(new float[16], true, 0.03f, 0.03f, 0.03f);
-    //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
-            float[] translate = FloatUtil.makeTranslation(new float[16], 0, true, (float) -cameraPos.x, (float) -cameraPos.y, 0);
-            float[] modelToWorldMat = FloatUtil.multMatrix(scale, translate);
+            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
+            //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
+            val translate =
+                FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
+            val modelToWorldMat = FloatUtil.multMatrix(scale, translate)
 
-            for (int i = 0; i < 16; i++) {
-                matBuffer.put(i, modelToWorldMat[i]);
+            for (i in 0..15) {
+                matBuffer.put(i, modelToWorldMat[i])
             }
-            gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer);
-
-            for (Map.Entry<Model, ModelData> value : modelData.entrySet()) {
-                Model model = value.getKey();
-                ModelData data = value.getValue();
-                if(data.getInstanceCount() > 0) {
-                    gl.glDrawArraysInstancedBaseInstance(model.drawMode, data.getVerticeIndex(), model.points, data.getInstanceCount(), data.getInstanceIndex());
+            gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer)
+            for ((model, data) in modelData) {
+                if (data.instanceCount > 0) {
+                    gl.glDrawArraysInstancedBaseInstance(
+                        model.drawMode,
+                        data.verticeIndex,
+                        model.points,
+                        data.instanceCount,
+                        data.instanceIndex
+                    )
                 }
             }
         }
 
-        gl.glUseProgram(0);
-        gl.glBindVertexArray(0);
+        gl.glUseProgram(0)
+        gl.glBindVertexArray(0)
 
-        checkError(gl, "display");
+        checkError(gl, "display")
 
-        time += 1f;
-
+        time += 1f
     }
 
-    @Override
-    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
+        val gl = drawable.gl.gL3
 
-        GL3 gl = drawable.getGL().getGL3();
-
-        float[] ortho = new float[16];
-        FloatUtil.makeOrtho(ortho, 0, false, -1, 1, -1, 1, 1, -1);
-        for (int i = 0; i < 16; i++) {
-            matBuffer.put(i, ortho[i]);
+        val ortho = FloatArray(16)
+        FloatUtil.makeOrtho(ortho, 0, false, -1f, 1f, -1f, 1f, 1f, -1f)
+        for (i in 0..15) {
+            matBuffer.put(i, ortho[i])
         }
-        gl.glBindBuffer(GL_UNIFORM_BUFFER, VBOs.get(Buffer.GLOBAL_MATRICES));
-        gl.glBufferSubData(GL_UNIFORM_BUFFER, 0, 16 * Float.BYTES, matBuffer);
-        gl.glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
+        gl.glBufferSubData(GL2ES3.GL_UNIFORM_BUFFER, 0, (16 * java.lang.Float.BYTES).toLong(), matBuffer)
+        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
-        gl.glViewport(x, y, width, height);
+        gl.glViewport(x, y, width, height)
     }
 
-    @Override
-    public void dispose(GLAutoDrawable drawable) {
+    override fun dispose(drawable: GLAutoDrawable) {
+        val gl = drawable.gl.gL3
 
-        GL3 gl = drawable.getGL().getGL3();
+        gl.glDeleteProgram(EntityProgram.name)
+        gl.glDeleteVertexArrays(1, VAOs)
+        gl.glDeleteBuffers(Buffer.MAX, VBOs)
+    }
 
-        gl.glDeleteProgram(EntityProgram.name);
-        gl.glDeleteVertexArrays(1, VAOs);
-        gl.glDeleteBuffers(Buffer.MAX, VBOs);
+    companion object {
+        var POSITION_ATTRIB_INDICE: Int = 0
+        var COLOR_ATTRIB_INDICE: Int = 1 //TODO REMOVEME?
+        var INSTANCE_POSITION_ATTRIB_INDICE: Int = 2
+        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 3
     }
 }
