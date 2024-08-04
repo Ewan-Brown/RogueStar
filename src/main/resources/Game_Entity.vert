@@ -1,9 +1,8 @@
 #version 330
 
 layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 color;
-layout (location = 2) in vec4 instanced_pos;
-layout (location = 3) in vec4 instanced_color;
+layout (location = 1) in vec4 instanced_pos;
+layout (location = 2) in vec4 instanced_color;
 
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
