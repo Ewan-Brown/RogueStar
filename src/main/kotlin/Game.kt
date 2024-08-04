@@ -12,7 +12,7 @@ class ShipEntity() : DumbEntity() {
 }
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 1.0f, 0.0f, 0.2f, 1.0f))
+    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f))
 )) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
