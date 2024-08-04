@@ -37,7 +37,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     fun updateDrawables(data: Map<Model, List<Transform>>, cameraTarget: Vector2) {
         synchronized(modelData) {
             for (loadedModel in loadedModels) {
-//                modelData[loadedModel].setInstanceData(data[loadedModel])
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
             this.cameraTargetPos = cameraTarget
@@ -57,42 +56,42 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     class Model internal constructor(val vertexData: FloatArray, dMode: Int) {
-        val points: Int = vertexData.size / 6 //Change if vertex data size changes!
+        val points: Int = vertexData.size / 3 //Change if vertex data size changes!
         val drawMode: Int = dMode
         val asVectorData: List<Vector2> = List(points){
-            Vector2(vertexData[it * 6].toDouble(), vertexData[it * 6 + 1].toDouble())
+            Vector2(vertexData[it * 3].toDouble(), vertexData[it * 3 + 1].toDouble())
         }
 
         companion object {
             var TRIANGLE: Model = Model(
                 floatArrayOf(
-                    -1.0f, +1.0f, +0.1f, 0f, 0f, 1f,
-                    -1.0f, -1.0f, +0.1f, 0f, 0f, 1f,
-                    +1.0f, +0.0f, +0.1f, 0f, 0f, 1f
+                    -1.0f, +1.0f, +0.1f,
+                    -1.0f, -1.0f, +0.1f,
+                    +1.0f, +0.0f, +0.1f
                 ), GL.GL_TRIANGLES
             )
             var SQUARE1: Model = Model(
                 floatArrayOf(
-                    -0.5f, -0.5f, +0.1f, 0f, 1f, 0f,
-                    +0.5f, -0.5f, +0.1f, 0f, 1f, 0f,
-                    +0.5f, +0.5f, +0.1f, 0f, 1f, 0f,
-                    -0.5f, +0.5f, +0.1f, 0f, 1f, 0f
+                    -0.5f, -0.5f, +0.1f,
+                    +0.5f, -0.5f, +0.1f,
+                    +0.5f, +0.5f, +0.1f,
+                    -0.5f, +0.5f, +0.1f
                 ), GL.GL_TRIANGLE_FAN
             )
             var SQUARE2: Model = Model(
                 floatArrayOf(
-                    -0.5f, -0.5f, 3f, 1f, 0f, 0f,
-                    +0.5f, -0.5f, 3f, 1f, 0f, 0f,
-                    +0.5f, +0.5f, 3f, 1f, 0f, 0f,
-                    -0.5f, +0.5f, 3f, 1f, 0f, 0f
+                    -0.5f, -0.5f, 3f,
+                    +0.5f, -0.5f, 3f,
+                    +0.5f, +0.5f, 3f,
+                    -0.5f, +0.5f, 3f
                 ), GL.GL_TRIANGLE_FAN
             )
             var BACKPLATE: Model = Model(
                 floatArrayOf(
-                    -1f, -1f, +0.4f, 0f, 1f, 1f,
-                    -1f, +1f, +0.4f, 0f, 1f, 1f,
-                    +1f, +1f, +0.4f, 0f, 1f, 1f,
-                    +1f, -1f, +0.4f, 0f, 1f, 1f
+                    -1f, -1f, +0.4f,
+                    -1f, +1f, +0.4f,
+                    +1f, +1f, +0.4f,
+                    +1f, -1f, +0.4f
                 ), GL.GL_TRIANGLE_FAN
             )
         }
@@ -181,16 +180,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         gl.glBindVertexArray(VAOs[0])
         run {
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
-            val stride = (3 + 3) * java.lang.Float.BYTES
+            val stride = 3 * java.lang.Float.BYTES
             var offset = 0
 
             gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
             gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
-
-            offset = 3 * java.lang.Float.BYTES
-            gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
-
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
             gl.glVertexAttribPointer(
@@ -321,7 +315,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             gl.glDrawArrays(
                 Model.BACKPLATE.drawMode,
-//                modelData[Model.BACKPLATE].getVerticeIndex(),
                 modelData.getValue(Model.BACKPLATE).verticeIndex,
                 Model.BACKPLATE.points
             )
@@ -387,8 +380,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     companion object {
         var POSITION_ATTRIB_INDICE: Int = 0
-        var COLOR_ATTRIB_INDICE: Int = 1 //TODO REMOVEME?
-        var INSTANCE_POSITION_ATTRIB_INDICE: Int = 2
-        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 3
+        var INSTANCE_POSITION_ATTRIB_INDICE: Int = 1
+        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 2
     }
 }
