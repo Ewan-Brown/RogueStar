@@ -12,10 +12,7 @@ class ControllerLayer : Layer{
     }
 
     abstract class MultiController<in E : PhysicsEntity> {
-
         abstract fun update(entities : List<E>)
-
-        //TODO move this...
 
     }
 
@@ -158,6 +155,7 @@ class ControllerLayer : Layer{
         }
     }
 
+    //TODO This 'entry' thing is fine but why do we need two types for single vs multi?
     private data class MultiControllerEntityEntry<E : PhysicsEntity>(val controller: MultiController<E>,  var entities: List<E>){
         //TODO Add a clean exit/recovery case for when one or more entities inevitably die off
         fun update() {
@@ -181,10 +179,17 @@ class ControllerLayer : Layer{
             }
             controllerEntityEntry.update()
         }
+        for (physicsEntity in entityRequestBuffer) {
+            physicsLayer.addEntity(physicsEntity)
+        }
     }
 
     fun getNewEntityRequests() : List<PhysicsEntity>{
         return entityRequestBuffer
+    }
+
+    internal fun addEntityRequest(entity : PhysicsEntity){
+        entityRequestBuffer.add(entity)
     }
 
     fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
@@ -222,15 +227,16 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         var needsRotation = true;
 
         if(input[KeyEvent.VK_SPACE]){
-            x = -entity.changeInPosition.x
-            y = -entity.changeInPosition.y
+            x = -entity.linearVelocity.x/10.0
+            y = -entity.linearVelocity.y/10.0
             needsRotation = false;
         }
 
-        if(input[KeyEvent.VK_SHIFT]){
-            x *= 2;
-            y *= 2;
-            r *= 2;
+        if(input[KeyEvent.VK_X]){
+            //TODO Maybe make this a little more abstracted, I don't like having to directly affect kinematics from this layer when we can avoid it...
+            val newEntity = ProjectileEntity();
+            var addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter)
+            addedEntity.applyForce(entity.linearVelocity.product(2.0))
         }
 
         val desiredVelocity = Vector2(x, y)

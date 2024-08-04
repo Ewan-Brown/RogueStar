@@ -11,16 +11,6 @@ class ShipEntity() : DumbEntity() {
     
 }
 
-open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f))
-)) {
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
-
-    override fun isMarkedForRemoval() : Boolean = false
-
-    override fun update() {}
-}
-
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
 val controllerLayer = ControllerLayer()
@@ -52,10 +42,10 @@ fun main() {
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
     val entities = mutableListOf<PhysicsEntity>()
-//    for(i in 1..10){
-//        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-//    }
-//    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
+    for(i in 1..10){
+        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+    }
+    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 
