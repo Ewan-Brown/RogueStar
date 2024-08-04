@@ -42,9 +42,17 @@ class PhysicsLayer : Layer{
     }
 
     fun <E : PhysicsEntity> addEntity(entity: E, angle : Double, pos : Vector2) : E{
-        entity.translateToOrigin()
-        entity.translate(pos)
         entity.rotate(angle)
+        entity.translate(pos)
+        entity.setMass(MassType.NORMAL)
+        entity.linearDamping = 0.1
+        entity.angularDamping = 0.1
+        entity.updateComponents()
+        physicsWorld.addBody(entity)
+        return entity
+    }
+
+    fun <E : PhysicsEntity> addEntity(entity: E) : E{
         entity.setMass(MassType.NORMAL)
         entity.linearDamping = 0.1
         entity.angularDamping = 0.1
@@ -93,7 +101,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
 /**
  * Represents the physical thing, which may be swapped among controllers freely!
  */
-abstract class PhysicsEntity (private val components: List<Component>) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(private val components: List<Component>) : AbstractPhysicsBody() {
     private companion object {
         private var UUID_COUNTER = 0;
     }
@@ -140,4 +148,25 @@ abstract class PhysicsEntity (private val components: List<Component>) : Abstrac
 
         return result
     }
+}
+
+
+open class DumbEntity() : PhysicsEntity(listOf(
+    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f))
+)) {
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
+
+    override fun isMarkedForRemoval() : Boolean = false
+
+    override fun update() {}
+}
+
+ class ProjectileEntity() : PhysicsEntity(listOf(
+    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 0.3f, 0.0f, 1.0f, 0.0f, 1.0f))
+)) {
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
+
+    override fun isMarkedForRemoval() : Boolean = false
+
+    override fun update() {}
 }
