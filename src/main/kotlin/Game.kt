@@ -65,6 +65,7 @@ fun main() {
             modelDataMap[model] = mutableListOf()
         }
 
+
         //Let each world append data to the model data map
         physicsLayer.populateModelMap(modelDataMap)
         effectsLayer.populateModelMap(modelDataMap)
