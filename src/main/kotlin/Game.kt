@@ -2,6 +2,7 @@ import Graphics.Model
 import Graphics.Transform
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import lombok.Getter
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 import java.util.*
@@ -11,7 +12,7 @@ class ShipEntity() : DumbEntity() {
 }
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE, Transform(Vector2(0.0,0.0), 0f, 1.0f))
+    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 1.0f, 0.0f, 0.2f, 1.0f))
 )) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
@@ -51,10 +52,10 @@ fun main() {
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
     val entities = mutableListOf<PhysicsEntity>()
-    for(i in 1..10){
-        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-    }
-    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
+//    for(i in 1..10){
+//        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+//    }
+//    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Transform>>()
 

@@ -17,7 +17,7 @@ import static com.jogamp.opengl.GL3.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL3.GL_FLOAT;
 
 /**
- * Render stuff things
+ * TODO Kotlinize this
  */
 public class Graphics extends GraphicsBase {
 
@@ -73,11 +73,19 @@ public class Graphics extends GraphicsBase {
         private final Vector2 position;
         private final float angle;
         private final float scale;
+        private final float red;
+        private final float green;
+        private final float blue;
+        private final float alpha;
 
-        public Transform(Vector2 pos, float a, float s){
+        public Transform(Vector2 pos, float a, float s, float r, float g, float b, float al){
             this.position = pos.copy();
             this.angle = a;
             this.scale = s;
+            red = r;
+            green = g;
+            blue = b;
+            alpha = al;
         }
 
         public Vector2 getPosition() {
@@ -87,7 +95,26 @@ public class Graphics extends GraphicsBase {
         public float getAngle() {
             return angle;
         }
-        public float getScale(){return scale;}
+
+        public float getScale() {
+            return scale;
+        }
+
+        public float getRed() {
+            return red;
+        }
+
+        public float getGreen() {
+            return green;
+        }
+
+        public float getBlue() {
+            return blue;
+        }
+
+        public float getAlpha() {
+            return alpha;
+        }
     }
 
     public static class Model {
@@ -131,9 +158,10 @@ public class Graphics extends GraphicsBase {
     private interface Buffer {
 
         int VERTEX = 1;
-        int INSTANCED_STUFF = 2;
-        int GLOBAL_MATRICES = 3;
-        int MAX = 4;
+        int INSTANCED_POSITIONS = 2;
+        int INSTANCED_COLORS = 3;
+        int GLOBAL_MATRICES = 4;
+        int MAX = 5;
     }
 
 
@@ -155,8 +183,6 @@ public class Graphics extends GraphicsBase {
     }
 
     private void initVBOs(GL3 gl) {
-
-
 
         //Generate vertex data and store offsets for models
         List<Float> verticeList = new ArrayList<>();
@@ -194,8 +220,9 @@ public class Graphics extends GraphicsBase {
     }
 
     static int POSITION_ATTRIB_INDICE = 0;
-    static int COLOR_ATTRIB_INDICE = 1;
+    static int COLOR_ATTRIB_INDICE = 1;//TODO REMOVEME?
     static int INSTANCE_POSITION_ATTRIB_INDICE = 2;
+    static int INSTANCE_COLOR_ATTRIB_INDICE = 3;
 
 
     private void initVAOs(GL3 gl) {
@@ -213,7 +240,7 @@ public class Graphics extends GraphicsBase {
             gl.glEnableVertexAttribArray(COLOR_ATTRIB_INDICE);
             gl.glVertexAttribPointer(COLOR_ATTRIB_INDICE, 3, GL_FLOAT, false, stride, offset);
 
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_POSITIONS));
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE);
             gl.glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_INDICE,
                     4,
@@ -221,9 +248,21 @@ public class Graphics extends GraphicsBase {
                     false,
                     4 * Float.BYTES,
                     0);
+
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_COLORS));
+            gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE);
+            gl.glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_INDICE,
+                    4,
+                    GL_FLOAT,
+                    false,
+                    4 * Float.BYTES,
+                    0);
+
             gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+            gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1);
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1);
+
         }
         gl.glBindVertexArray(0);
 
@@ -237,29 +276,41 @@ public class Graphics extends GraphicsBase {
 
         int modelCount = modelData.values().stream().mapToInt(ModelData::getInstanceCount).sum();
 
+        //TODO Clean this up.
         int indexCounter = 0;
-        int instanceDataIndex = 0;
-        float[] instanceData = new float[modelCount * 4];
+        int instancePositionDataIndex = 0;
+        int instanceColorDataIndex = 0;
+        float[] instanceColorData = new float[modelCount * 4];
+        float[] instancePositionData = new float[modelCount * 4];
         for (ModelData data : modelData.values()) {
             for (Transform transform : data.getInstanceData()) {
-
                 double x = transform.position.x;
                 double y = transform.position.y;
                 double angle = transform.angle;
-
-                instanceData[instanceDataIndex++] = (float)x;
-                instanceData[instanceDataIndex++] = (float)y;
-                instanceData[instanceDataIndex++] = (float)angle;
-                instanceData[instanceDataIndex++] = transform.scale;
-
+                double r = transform.red;
+                double g = transform.green;
+                double b = transform.blue;
+                double a = transform.alpha;
+                instancePositionData[instancePositionDataIndex++] = (float)x;
+                instancePositionData[instancePositionDataIndex++] = (float)y;
+                instancePositionData[instancePositionDataIndex++] = (float)angle;
+                instancePositionData[instancePositionDataIndex++] = transform.scale;
+                instanceColorData[instanceColorDataIndex++] = (float)r;
+                instanceColorData[instanceColorDataIndex++] = (float)g;
+                instanceColorData[instanceColorDataIndex++] = (float)b;
+                instanceColorData[instanceColorDataIndex++] = (float)a;
             }
             data.setInstanceIndex(indexCounter);
             indexCounter += data.getInstanceCount();
         }
 
-        FloatBuffer instanceBuffer = GLBuffers.newDirectFloatBuffer(instanceData);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_STUFF));
-        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer.capacity() * Float.BYTES, instanceBuffer, GL_DYNAMIC_DRAW);
+        FloatBuffer instanceBuffer1 = GLBuffers.newDirectFloatBuffer(instancePositionData);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_POSITIONS));
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer1.capacity() * Float.BYTES, instanceBuffer1, GL_DYNAMIC_DRAW);
+
+        FloatBuffer instanceBuffer2 = GLBuffers.newDirectFloatBuffer(instanceColorData);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs.get(Buffer.INSTANCED_COLORS));
+        gl.glBufferData(GL_ARRAY_BUFFER, (long) instanceBuffer2.capacity() * Float.BYTES, instanceBuffer2, GL_DYNAMIC_DRAW);
         gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     }

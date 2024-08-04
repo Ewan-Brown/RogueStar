@@ -14,7 +14,7 @@ class EffectsUtils{
                         entity.worldCenter.y,
                         Math.random(),
                         listOf(
-                            Component(Model.SQUARE2, Transform(Vector2(0.0, 0.0), 0f, 0.2f))
+                            Component(Model.SQUARE2, Transform(Vector2(0.0, 0.0), 0f, 0.2f, 1.0f, 1.0f, 1.0f, 1.0f))
                         ),
                         dx = entity.linearVelocity.x / 100.0 + adjustedThrust.x,
                         dy = entity.linearVelocity.y / 100.0 + adjustedThrust.y,
@@ -77,7 +77,7 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
 
             val newPos = baseComponent.transform.position.copy().multiply(scale).rotate(entityAngle.toDouble()).add(entityPos)
             val newAngle = entityAngle + baseComponent.transform.angle
-            components.add(Component(baseComponent.model,Graphics.Transform(newPos, newAngle.toFloat(), baseComponent.transform.scale*variableScale.toFloat())))
+            components.add(Component(baseComponent.model,Graphics.Transform(newPos, newAngle.toFloat(), baseComponent.transform.scale*variableScale.toFloat(), 1.0f, 1.0f, 1.0f, 1.0f)))
 
         }
 

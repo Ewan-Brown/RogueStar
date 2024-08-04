@@ -1,18 +1,19 @@
 #version 330
 
-// Incoming vertex position
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 color;
-layout (location = 2) in vec4 instanced_data;
+layout (location = 2) in vec4 instanced_pos;
+layout (location = 3) in vec4 instanced_color;
+
+//x,y,rotation,scale (z is baked into model)
+//r,g,b,a
 
 uniform GlobalMatrices
 {
     mat4 view;
 };
 
-// Uniform matrix from Model Space to camera (also known as view) Space
 uniform mat4 model;
-// Outgoing color for the next shader (fragment in this case)
 out vec3 interpolatedColor;
 
 vec3 rotate(vec3 pos, float a) {
@@ -20,12 +21,12 @@ vec3 rotate(vec3 pos, float a) {
 }
 
 void main() {
-    vec3 instanced_pos = vec3(instanced_data.xy, position.z);
-    float instanced_rot = instanced_data.z;
-    float scale = instanced_data.w;
+    vec3 pos = vec3(instanced_pos.xy, position.z);
+    float instanced_rot = instanced_pos.z;
+    float scale = instanced_pos.w;
     vec3 scaledPosition = position * scale;
 
-    gl_Position = (view * (model * vec4(instanced_pos + rotate(scaledPosition, instanced_rot), 1)));
-    interpolatedColor = color;
+    gl_Position = (view * (model * vec4(pos + rotate(scaledPosition, instanced_rot), 1)));
+    interpolatedColor = instanced_color.xyz;
 }
 

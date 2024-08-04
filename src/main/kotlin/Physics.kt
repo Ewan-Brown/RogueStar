@@ -134,7 +134,8 @@ abstract class PhysicsEntity (private val components: List<Component>) : Abstrac
         for (component in components) {
             val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
             val newAngle = entityAngle + component.transform.angle
-            result.add(Component(component.model,Graphics.Transform(newPos, newAngle, component.transform.scale)))
+
+            result.add(Component(component.model,Transform(newPos, newAngle, component.transform.scale, component.transform.red, component.transform.green, component.transform.blue, component.transform.alpha)))
         }
 
         return result
