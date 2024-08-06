@@ -91,12 +91,13 @@ data class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val a
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
 
     override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
-        super.processCollisions(iterator);
-        iterator.forEach {
+        super.processCollisions(iterator)
+        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
+        contactCollisions.forEach {
             it.pair.first.body.onCollide(it)
             it.pair.second.body.onCollide(it)
         }
-        //TODO Do something with collisions, if we'd like
+
     }
 
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
@@ -185,18 +186,29 @@ open class DumbEntity() : PhysicsEntity(listOf(
     override fun update() {}
 }
 
- class ProjectileEntity() : PhysicsEntity(listOf(
+//TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
+//  Maybe could collect these explosions and pass them to shader to do cool stuff...
+// TODO Does this need a controller attached to it, if it is homing it _definitely_ should
+class ProjectileEntity() : PhysicsEntity(listOf(
     Component(Model.TRIANGLE,
         Transform(Vector2(0.0, 0.0), 0f, 0.3f, 0.0f, 1.0f, 0.0f, 1.0f))),
      PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE,
      PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits) {
      var hasCollided = false
 
+    init {
+        this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))
+    }
+
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+        data.body2.applyImpulse(Vector2(this.transform.rotationAngle).product(2.0))
+        data.body2.applyTorque((Math.random()-0.5) * 1000)
         hasCollided = true
     }
 
     override fun isMarkedForRemoval() : Boolean = hasCollided
 
-    override fun update() {}
+    override fun update() {
+        this.applyForce(Vector2(transform.rotationAngle).product(2.0))
+    }
 }
