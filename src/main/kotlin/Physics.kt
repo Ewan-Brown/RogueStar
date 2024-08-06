@@ -9,12 +9,17 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import Graphics.Model
+import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.dynamics.PhysicsBody
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class PhysicsLayer : Layer{
+    enum class CollisionCategory(val bits: Long){
+        CATEGORY_SHIP(      0b0001),
+        CATEGORY_PROJECTILE(0b0010),
+        CATEGORY_SHIELD(    0b0100)
+    }
     private val physicsWorld = PhysicsWorld();
     private var time = 0.0;
     init {
@@ -31,9 +36,21 @@ class PhysicsLayer : Layer{
         return body?.let { PhysicsBodyData(it) }
     }
 
+    //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
+    //therefore onCollide should simply flag things and store data, allowing .update() to clean up.
     override fun update() {
         time++;
         physicsWorld.update(1.0)
+        var i = physicsWorld.bodies.size;
+        while(i > 0){
+            i--;
+            val body = physicsWorld.bodies[i]
+            body.update()
+            if(body.isMarkedForRemoval()){
+                physicsWorld.removeBody(body)
+                i--;
+            }
+        }
     }
 
     //TODO Can we delegate this or something
@@ -74,6 +91,7 @@ data class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val a
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
 
     override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+        super.processCollisions(iterator);
         iterator.forEach {
             it.pair.first.body.onCollide(it)
             it.pair.second.body.onCollide(it)
@@ -101,13 +119,18 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
 /**
  * Represents the physical thing, which may be swapped among controllers freely!
  */
-abstract class PhysicsEntity protected constructor(private val components: List<Component>) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(componentsAndCategories: List<Pair<Component, PhysicsLayer.CollisionCategory>>, val mask : Long) : AbstractPhysicsBody() {
     private companion object {
         private var UUID_COUNTER = 0;
     }
+    constructor(comps: List<Component>, category: PhysicsLayer.CollisionCategory, mask: Long) : this(comps.map { Pair(it, category)}, mask) {
+    }
+
     val uuid = UUID_COUNTER++;
+    private val components: List<Component> = componentsAndCategories.map { it->it.first }
+
     init {
-        for (component in components) {
+        for ((component, category) in componentsAndCategories) {
             val vertices = arrayOfNulls<Vector2>(component.model.points)
             for (i in vertices.indices) {
                 vertices[i] = component.model.asVectorData[i].copy().multiply(component.transform.scale.toDouble())
@@ -116,6 +139,7 @@ abstract class PhysicsEntity protected constructor(private val components: List<
             v.translate(component.transform.position.copy())
             v.rotate(component.transform.angle.toDouble())
             val f = BodyFixture(v)
+            f.setFilter (CategoryFilter(category.bits, mask))
             this.addFixture(f)
         }
     }
@@ -153,7 +177,7 @@ abstract class PhysicsEntity protected constructor(private val components: List<
 
 open class DumbEntity() : PhysicsEntity(listOf(
     Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f))
-)) {
+), PhysicsLayer.CollisionCategory.CATEGORY_SHIP, PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
     override fun isMarkedForRemoval() : Boolean = false
@@ -162,11 +186,17 @@ open class DumbEntity() : PhysicsEntity(listOf(
 }
 
  class ProjectileEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 0.3f, 0.0f, 1.0f, 0.0f, 1.0f))
-)) {
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
+    Component(Model.TRIANGLE,
+        Transform(Vector2(0.0, 0.0), 0f, 0.3f, 0.0f, 1.0f, 0.0f, 1.0f))),
+     PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE,
+     PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits) {
+     var hasCollided = false
 
-    override fun isMarkedForRemoval() : Boolean = false
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+        hasCollided = true
+    }
+
+    override fun isMarkedForRemoval() : Boolean = hasCollided
 
     override fun update() {}
 }

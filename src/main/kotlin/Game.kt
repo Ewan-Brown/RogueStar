@@ -7,9 +7,6 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 import java.util.*
 
-class ShipEntity() : DumbEntity() {
-    
-}
 
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
@@ -38,12 +35,12 @@ fun main() {
         }
     }
 
-    val shipEntity = physicsLayer.addEntity(ShipEntity(), 0.0, Vector2())
+    val shipEntity = physicsLayer.addEntity(DumbEntity(), 0.0, Vector2())
     controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
 
     val entities = mutableListOf<PhysicsEntity>()
     for(i in 1..10){
-        entities.add(physicsLayer.addEntity(ShipEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+        entities.add(physicsLayer.addEntity(DumbEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
     }
     controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
 
@@ -85,7 +82,6 @@ fun main() {
     }
 }
 
-//TODO Maybe these two should be the same call, to avoid looping over things doubly?
 interface Layer{
     fun update()
 }

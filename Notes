@@ -6,6 +6,9 @@ X Setup background shader
 
 \ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
 \ Write POC projectile
+  * Got a simple one working but fixing up a system for Collision filtering by Category/Mask.
+
+= Clean up Components vs Transform vs Category etc etc.
 
 = Add shader code for HUD
 = Add support for individualized model colors/opacity
