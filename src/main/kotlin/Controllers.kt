@@ -197,8 +197,8 @@ class ControllerLayer : Layer{
     }
 }
 
-class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntity>(){
-    override fun update(entity: ShipEntity) {
+class PlayerController(val input: BitSet) : ControllerLayer.Controller<DumbEntity>(){
+    override fun update(entity: DumbEntity) {
         var x = 0.0;
         var y = 0.0;
         var r = 0.0;
@@ -235,8 +235,8 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
         if(input[KeyEvent.VK_X]){
             //TODO Maybe make this a little more abstracted, I don't like having to directly affect kinematics from this layer when we can avoid it...
             val newEntity = ProjectileEntity();
-            var addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter)
-            addedEntity.applyForce(entity.linearVelocity.product(2.0))
+            val addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter.sum(Vector2(entity.transform.rotation.toVector().product(entity.rotationDiscRadius+1))))
+            addedEntity.linearVelocity = entity.linearVelocity.copy()
         }
 
         val desiredVelocity = Vector2(x, y)
@@ -254,11 +254,11 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
     }
 }
 
-class ChaseController : ControllerLayer.Controller<ShipEntity>(){
+class ChaseController : ControllerLayer.Controller<DumbEntity>(){
 
     private var lastTarget: Int? = null
 
-    override fun update(entity: ShipEntity) {
+    override fun update(entity: DumbEntity) {
         val currentTarget: Int;
         if(lastTarget == null){
             val potentialTarget = physicsLayer.getEntities().filter { it.first != entity.uuid}.firstOrNull()
