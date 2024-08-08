@@ -1,6 +1,5 @@
 import org.dyn4j.geometry.Vector2
 import Graphics.Model
-import java.util.function.Predicate
 
 class EffectsUtils{
     companion object {
@@ -13,11 +12,11 @@ class EffectsUtils{
                         entity.worldCenter.y,
                         Math.random(),
                         listOf(
-//                            Component(Model.SQUARE2, Transform(Vector2(0.0, 0.0), 0f, 0.2f, 1.0f, 0.0f, 0.0f, 1.0f))
+                            RenderableComponent(Model.SQUARE1, Transformation(), GraphicalData(1.0f, 0.0f, 0.0f, +10.0f))
                         ),
-                        dx = entity.linearVelocity.x / 100.0 + adjustedThrust.x,
-                        dy = entity.linearVelocity.y / 100.0 + adjustedThrust.y,
-                        drotation = (Math.random() - 0.5) * 10
+                        dx = entity.linearVelocity.x// / 10.0 + adjustedThrust.x,
+                            ,dy = entity.linearVelocity.y// / 10.0 + adjustedThrust.y,
+                        ,//drotation = (Math.random() - 0.5) * 10
                     )
                 )
             }
@@ -78,8 +77,8 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
             val newPos = t.position.copy().multiply(scale).rotate(entityAngle).add(entityPos)
             val newAngle = entityAngle + t.rotation.toRadians()
             components.add(RenderableComponent(baseComponent.model,
-                Transformation(newPos, newAngle, t.scale*variableScale),
-                    GraphicalData(g.red, g.green, g.blue, 0.0f))
+                Transformation(newPos, t.scale*variableScale, newAngle),
+                    GraphicalData(g.red, g.green, g.blue, g.z))
             )
 
         }
@@ -92,8 +91,8 @@ class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Doubl
         y += dy
         rotation += drotation
 
-        dx -= dx/100.0
-        dy -= dy/100.0
+        dx -= dx/10.0
+        dy -= dy/10.0
         drotation -= drotation/100.0
     }
     override fun isMarkedForRemoval(): Boolean{

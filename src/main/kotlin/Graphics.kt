@@ -40,19 +40,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         }
     }
 
-
-//    class Transform(
-//        pos: Vector2,
-//        val angle: Float,
-//        val scale: Float,
-//        val red: Float,
-//        val green: Float,
-//        val blue: Float,
-//        val alpha: Float
-//    ) {
-//        val position: Vector2 = pos.copy()
-//    }
-
     class Model internal constructor(val vertexData: FloatArray, dMode: Int) {
         val points: Int = vertexData.size / 3 //Change if vertex data size changes!
         val drawMode: Int = dMode
@@ -76,14 +63,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                     -0.5f, +0.5f, +0.1f
                 ), GL.GL_TRIANGLE_FAN
             )
-            var SQUARE2: Model = Model(
-                floatArrayOf(
-                    -0.5f, -0.5f, 3f,
-                    +0.5f, -0.5f, 3f,
-                    +0.5f, +0.5f, 3f,
-                    -0.5f, +0.5f, 3f
-                ), GL.GL_TRIANGLE_FAN
-            )
             var BACKPLATE: Model = Model(
                 floatArrayOf(
                     -1f, -1f, +0.4f,
@@ -99,9 +78,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         companion object {
             const val VERTEX: Int = 1
             const val INSTANCED_POSITIONS: Int = 2
-            const val INSTANCED_COLORS: Int = 3
-            const val GLOBAL_MATRICES: Int = 4
-            const val MAX: Int = 5
+            const val INSTANCED_ROTATIONS: Int = 3
+            const val INSTANCED_SCALES: Int = 4
+            const val INSTANCED_COLORS: Int = 5
+            const val GLOBAL_MATRICES: Int = 6
+            const val MAX: Int = 7
         }
     }
 
@@ -183,14 +164,37 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
             gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
+
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
             gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
             gl.glVertexAttribPointer(
                 INSTANCE_POSITION_ATTRIB_INDICE,
-                4,
+                3,
                 GL.GL_FLOAT,
                 false,
-                4 * java.lang.Float.BYTES,
+                3 * java.lang.Float.BYTES,
+                0
+            )
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
+            gl.glEnableVertexAttribArray(INSTANCE_ROTATION_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(
+                INSTANCE_ROTATION_ATTRIB_INDICE,
+                1,
+                GL.GL_FLOAT,
+                false,
+                1 * java.lang.Float.BYTES,
+                0
+            )
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
+            gl.glEnableVertexAttribArray(INSTANCE_SCALE_ATTRIB_INCIDE)
+            gl.glVertexAttribPointer(
+                INSTANCE_SCALE_ATTRIB_INCIDE,
+                1,
+                GL.GL_FLOAT,
+                false,
+                1 * java.lang.Float.BYTES,
                 0
             )
 
@@ -209,6 +213,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
+            gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
+            gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
         }
         gl.glBindVertexArray(0)
 
@@ -227,45 +233,71 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var indexCounter = 0
         var instancePositionDataIndex = 0
         var instanceColorDataIndex = 0
-        val instanceColorData = FloatArray(modelCount * 3)
+        var instanceRotationDataIndex = 0
+        var instanceScaleDataIndex = 0
         val instancePositionData = FloatArray(modelCount * 4)
+        val instanceColorData = FloatArray(modelCount * 3)
+        val instanceRotationData = FloatArray(modelCount * 1)
+        val instanceScaleData = FloatArray(modelCount * 1)
         for (data in modelData.values) {
             for ((transform, graphicalData) in data.instanceData) {
                 val x = transform.position.x
                 val y = transform.position.y
-                val angle = transform.rotation.toRadians()
-                val r = graphicalData.red.toDouble()
-                val g = graphicalData.green.toDouble()
-                val b = graphicalData.blue.toDouble()
+                val z = graphicalData.z
+                val angle = transform.rotation.toRadians().toFloat()
+                val r = graphicalData.red
+                val g = graphicalData.green
+                val b = graphicalData.blue
+                val scale = transform.scale
                 instancePositionData[instancePositionDataIndex++] = x.toFloat()
                 instancePositionData[instancePositionDataIndex++] = y.toFloat()
-                instancePositionData[instancePositionDataIndex++] = angle.toFloat()
-                instancePositionData[instancePositionDataIndex++] = transform.scale.toFloat()
-                instanceColorData[instanceColorDataIndex++] = r.toFloat()
-                instanceColorData[instanceColorDataIndex++] = g.toFloat()
-                instanceColorData[instanceColorDataIndex++] = b.toFloat()
+                instancePositionData[instancePositionDataIndex++] = z
+                instanceColorData[instanceColorDataIndex++] = r
+                instanceColorData[instanceColorDataIndex++] = g
+                instanceColorData[instanceColorDataIndex++] = b
+                instanceRotationData[instanceRotationDataIndex++] = angle;
+                instanceScaleData[instanceScaleDataIndex++] = scale.toFloat()
             }
             data.instanceIndex = indexCounter
             indexCounter += data.instanceCount
         }
 
-        val instanceBuffer1 = GLBuffers.newDirectFloatBuffer(instancePositionData)
+        val positionBuffer = GLBuffers.newDirectFloatBuffer(instancePositionData)
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
-            instanceBuffer1.capacity().toLong() * java.lang.Float.BYTES,
-            instanceBuffer1,
+            positionBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            positionBuffer,
             GL.GL_DYNAMIC_DRAW
         )
 
-        val instanceBuffer2 = GLBuffers.newDirectFloatBuffer(instanceColorData)
+        val colorBuffer = GLBuffers.newDirectFloatBuffer(instanceColorData)
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
-            instanceBuffer2.capacity().toLong() * java.lang.Float.BYTES,
-            instanceBuffer2,
+            colorBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            colorBuffer,
             GL.GL_DYNAMIC_DRAW
         )
+
+        val rotationBuffer = GLBuffers.newDirectFloatBuffer(instanceRotationData)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            rotationBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            rotationBuffer,
+            GL.GL_DYNAMIC_DRAW
+        )
+
+        val scaleBuffer = GLBuffers.newDirectFloatBuffer(instanceScaleData)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            scaleBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            scaleBuffer,
+            GL.GL_DYNAMIC_DRAW
+        )
+
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     }
 
@@ -377,6 +409,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     companion object {
         var POSITION_ATTRIB_INDICE: Int = 0
         var INSTANCE_POSITION_ATTRIB_INDICE: Int = 1
-        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 2
+        var INSTANCE_ROTATION_ATTRIB_INDICE: Int = 2
+        var INSTANCE_SCALE_ATTRIB_INCIDE: Int = 3
+        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 4
     }
 }

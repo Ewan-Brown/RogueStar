@@ -1,8 +1,10 @@
 #version 330
 
 layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 instanced_pos;
-layout (location = 2) in vec3 instanced_color;
+layout (location = 1) in vec3 instanced_pos;
+layout (location = 2) in float instanced_rotation;
+layout (location = 3) in float instanced_scale;
+layout (location = 4) in vec3 instanced_color;
 
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
@@ -20,12 +22,10 @@ vec3 rotate(vec3 pos, float a) {
 }
 
 void main() {
-    vec3 pos = vec3(instanced_pos.xy, position.z);
-    float instanced_rot = instanced_pos.z;
-    float scale = instanced_pos.w;
-    vec3 scaledPosition = position * scale;
+    vec3 pos = instanced_pos;
+    vec3 scaledPosition = position * instanced_scale;
 
-    gl_Position = (view * (model * vec4(pos + rotate(scaledPosition, instanced_rot), 1)));
+    gl_Position = (view * (model * vec4(pos + rotate(scaledPosition, instanced_rotation), 1)));
     interpolatedColor = instanced_color;
 }
 

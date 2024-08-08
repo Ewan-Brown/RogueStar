@@ -113,7 +113,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
     }
 }
 
-abstract class PhysicsEntity protected constructor(compDefinitions: List<ComponentDefinition>) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>) : AbstractPhysicsBody() {
     private companion object {
         private var UUID_COUNTER = 0;
     }
@@ -171,12 +171,18 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Compone
 
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    ComponentDefinition(
+    PhysicalComponentDefinition(
         Model.TRIANGLE,
         Transformation(Vector2(0.0, 0.0), 1.0, 0.0),
-        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f),
+        GraphicalData(0.0f, 0.5f, 0.5f, 0.0f),
     PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
-    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) ) {
+    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits),
+    PhysicalComponentDefinition(
+        Model.SQUARE1,
+        Transformation(Vector2(-1.0, 0.0), 1.0, 0.0),
+        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f),
+        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
+        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) ) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
     override fun isMarkedForRemoval() : Boolean = false
@@ -188,7 +194,7 @@ open class DumbEntity() : PhysicsEntity(listOf(
 //  Maybe could collect these explosions and pass them to shader to do cool stuff...
 // TODO Does this need a controller attached to it, if it is homing it _definitely_ should
 class ProjectileEntity() : PhysicsEntity(listOf(
-    ComponentDefinition(
+    PhysicalComponentDefinition(
         Model.TRIANGLE,
         Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
         GraphicalData(1.0f, 0.0f, 0.0f, 0.0f),
