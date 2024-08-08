@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec4 instanced_pos;
-layout (location = 2) in vec4 instanced_color;
+layout (location = 2) in vec3 instanced_color;
 
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
@@ -26,6 +26,6 @@ void main() {
     vec3 scaledPosition = position * scale;
 
     gl_Position = (view * (model * vec4(pos + rotate(scaledPosition, instanced_rot), 1)));
-    interpolatedColor = instanced_color.xyz;
+    interpolatedColor = instanced_color;
 }
 
