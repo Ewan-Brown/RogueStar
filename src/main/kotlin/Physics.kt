@@ -1,4 +1,3 @@
-import Graphics.Transform
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.dynamics.AbstractPhysicsBody
@@ -11,6 +10,7 @@ import org.dyn4j.world.WorldCollisionData
 import Graphics.Model
 import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.dynamics.PhysicsBody
+import org.dyn4j.geometry.Rotation
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -54,7 +54,7 @@ class PhysicsLayer : Layer{
     }
 
     //TODO Can we delegate this or something
-    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Transform>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         physicsWorld.populateModelMap(modelDataMap);
     }
 
@@ -64,7 +64,7 @@ class PhysicsLayer : Layer{
         entity.setMass(MassType.NORMAL)
         entity.linearDamping = 0.1
         entity.angularDamping = 0.1
-        entity.updateComponents()
+        entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity
     }
@@ -73,7 +73,7 @@ class PhysicsLayer : Layer{
         entity.setMass(MassType.NORMAL)
         entity.linearDamping = 0.1
         entity.angularDamping = 0.1
-        entity.updateComponents()
+        entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity
     }
@@ -88,9 +88,9 @@ data class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val a
     constructor(body: PhysicsBody) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius);
 }
 
-private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>(){
+private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
 
-    override fun processCollisions(iterator : Iterator<WorldCollisionData<PhysicsEntity>>) {
+    override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
         super.processCollisions(iterator)
         //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
         contactCollisions.forEach {
@@ -104,51 +104,44 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
         return WorldCollisionData(pair);
     }
 
-    fun populateModelMap(map : HashMap<Model, MutableList<Transform>>){
+    fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         for (body in this.bodies) {
             for (component in body.getComponents()) {
-                map[component.model]!!.add(component.transform)
+                map[component.model]!!.add(Pair<Transformation, GraphicalData>(component.transform, component.graphicalData))
             }
         }
     }
-
-//    fun getPhysicsBodies() : List<PhysicsBodyData>{
-//        return getBodies()
-//    }
 }
 
-/**
- * Represents the physical thing, which may be swapped among controllers freely!
- */
-abstract class PhysicsEntity protected constructor(componentsAndCategories: List<Pair<Component, PhysicsLayer.CollisionCategory>>, val mask : Long) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(compDefinitions: List<ComponentDefinition>) : AbstractPhysicsBody() {
     private companion object {
         private var UUID_COUNTER = 0;
     }
-    constructor(comps: List<Component>, category: PhysicsLayer.CollisionCategory, mask: Long) : this(comps.map { Pair(it, category)}, mask) {
-    }
 
     val uuid = UUID_COUNTER++;
-    private val components: List<Component> = componentsAndCategories.map { it->it.first }
+    private val renderables: List<RenderableComponent> = compDefinitions.map {
+        RenderableComponent(it.model, it.localTransform, it.graphicalData)
+    }
 
     init {
-        for ((component, category) in componentsAndCategories) {
-            val vertices = arrayOfNulls<Vector2>(component.model.points)
+        for (componentDefinition in compDefinitions) {
+            val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
             for (i in vertices.indices) {
-                vertices[i] = component.model.asVectorData[i].copy().multiply(component.transform.scale.toDouble())
+                vertices[i] = componentDefinition.model.asVectorData[i].copy().multiply(componentDefinition.localTransform.scale.toDouble())
             }
             val v = Polygon(*vertices)
-            v.translate(component.transform.position.copy())
-            v.rotate(component.transform.angle.toDouble())
+            v.translate(componentDefinition.localTransform.position.copy())
+            v.rotate(componentDefinition.localTransform.rotation.toRadians())
             val f = BodyFixture(v)
-            f.setFilter (CategoryFilter(category.bits, mask))
+            f.setFilter (CategoryFilter(componentDefinition.category, componentDefinition.mask))
             this.addFixture(f)
         }
     }
 
     //Need to update the 'center'
-    fun updateComponents(){
-        for (component in components) {
-            component.transform.position.subtract(this.getMass().center)
+    fun recalculateComponents(){
+        for (renderable in renderables) {
+            renderable.transform.position.subtract(this.getMass().center)
         }
     }
 
@@ -158,17 +151,18 @@ abstract class PhysicsEntity protected constructor(componentsAndCategories: List
 
     abstract fun update();
 
-    fun getComponents(): List<Component> {
-        val result: MutableList<Component> = ArrayList()
+    fun getComponents(): List<RenderableComponent> {
+        val result: MutableList<RenderableComponent> = ArrayList()
 
         val entityAngle = getTransform().rotationAngle.toFloat()
         val entityPos = this.worldCenter
 
-        for (component in components) {
+        for (component in renderables) {
             val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-            val newAngle = entityAngle + component.transform.angle
+            val newAngle = Rotation(component.transform.rotation.toRadians() + this.transform.rotationAngle)
+            val scale = component.transform.scale
 
-            result.add(Component(component.model,Transform(newPos, newAngle, component.transform.scale, component.transform.red, component.transform.green, component.transform.blue, component.transform.alpha)))
+            result.add(RenderableComponent(component.model, Transformation(newPos, scale, newAngle), component.graphicalData));
         }
 
         return result
@@ -177,8 +171,12 @@ abstract class PhysicsEntity protected constructor(componentsAndCategories: List
 
 
 open class DumbEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE, Transform(Vector2(0.0, 0.0), 0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f))
-), PhysicsLayer.CollisionCategory.CATEGORY_SHIP, PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits) {
+    ComponentDefinition(
+        Model.TRIANGLE,
+        Transformation(Vector2(0.0, 0.0), 1.0, 0.0),
+        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f),
+    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
+    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) ) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
     override fun isMarkedForRemoval() : Boolean = false
@@ -190,10 +188,12 @@ open class DumbEntity() : PhysicsEntity(listOf(
 //  Maybe could collect these explosions and pass them to shader to do cool stuff...
 // TODO Does this need a controller attached to it, if it is homing it _definitely_ should
 class ProjectileEntity() : PhysicsEntity(listOf(
-    Component(Model.TRIANGLE,
-        Transform(Vector2(0.0, 0.0), 0f, 0.3f, 0.0f, 1.0f, 0.0f, 1.0f))),
-     PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE,
-     PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits) {
+    ComponentDefinition(
+        Model.TRIANGLE,
+        Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
+        GraphicalData(1.0f, 0.0f, 0.0f, 0.0f),
+        PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits,
+        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) ) {
      var hasCollided = false
 
     init {

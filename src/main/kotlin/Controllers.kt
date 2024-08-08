@@ -192,7 +192,7 @@ class ControllerLayer : Layer{
         entityRequestBuffer.add(entity)
     }
 
-    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.Transform>>) {
+    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         //Add renderables for player perspective?? Interesting idea
     }
 }

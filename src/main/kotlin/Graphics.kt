@@ -1,12 +1,9 @@
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
-import lombok.Getter
-import lombok.Setter
 import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import java.util.function.ToIntFunction
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
@@ -29,12 +26,12 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private inner class ModelData {
         var verticeIndex: Int = 0
         var instanceIndex: Int = 0
-        var instanceData: List<Transform> = ArrayList()
+        var instanceData: List<Pair<Transformation, GraphicalData>> = ArrayList()
         val instanceCount: Int
             get() = instanceData.size
     }
 
-    fun updateDrawables(data: Map<Model, List<Transform>>, cameraTarget: Vector2) {
+    fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraTarget: Vector2) {
         synchronized(modelData) {
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
@@ -43,17 +40,18 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         }
     }
 
-    class Transform(
-        pos: Vector2,
-        val angle: Float,
-        val scale: Float,
-        val red: Float,
-        val green: Float,
-        val blue: Float,
-        val alpha: Float
-    ) {
-        val position: Vector2 = pos.copy()
-    }
+
+//    class Transform(
+//        pos: Vector2,
+//        val angle: Float,
+//        val scale: Float,
+//        val red: Float,
+//        val green: Float,
+//        val blue: Float,
+//        val alpha: Float
+//    ) {
+//        val position: Vector2 = pos.copy()
+//    }
 
     class Model internal constructor(val vertexData: FloatArray, dMode: Int) {
         val points: Int = vertexData.size / 3 //Change if vertex data size changes!
@@ -200,10 +198,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
             gl.glVertexAttribPointer(
                 INSTANCE_COLOR_ATTRIB_INDICE,
-                4,
+                3,
                 GL.GL_FLOAT,
                 false,
-                4 * java.lang.Float.BYTES,
+                3 * java.lang.Float.BYTES,
                 0
             )
 
@@ -229,25 +227,23 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var indexCounter = 0
         var instancePositionDataIndex = 0
         var instanceColorDataIndex = 0
-        val instanceColorData = FloatArray(modelCount * 4)
+        val instanceColorData = FloatArray(modelCount * 3)
         val instancePositionData = FloatArray(modelCount * 4)
         for (data in modelData.values) {
-            for (transform in data.instanceData) {
+            for ((transform, graphicalData) in data.instanceData) {
                 val x = transform.position.x
                 val y = transform.position.y
-                val angle = transform.angle.toDouble()
-                val r = transform.red.toDouble()
-                val g = transform.green.toDouble()
-                val b = transform.blue.toDouble()
-                val a = transform.alpha.toDouble()
+                val angle = transform.rotation.toRadians()
+                val r = graphicalData.red.toDouble()
+                val g = graphicalData.green.toDouble()
+                val b = graphicalData.blue.toDouble()
                 instancePositionData[instancePositionDataIndex++] = x.toFloat()
                 instancePositionData[instancePositionDataIndex++] = y.toFloat()
                 instancePositionData[instancePositionDataIndex++] = angle.toFloat()
-                instancePositionData[instancePositionDataIndex++] = transform.scale
+                instancePositionData[instancePositionDataIndex++] = transform.scale.toFloat()
                 instanceColorData[instanceColorDataIndex++] = r.toFloat()
                 instanceColorData[instanceColorDataIndex++] = g.toFloat()
                 instanceColorData[instanceColorDataIndex++] = b.toFloat()
-                instanceColorData[instanceColorDataIndex++] = a.toFloat()
             }
             data.instanceIndex = indexCounter
             indexCounter += data.instanceCount
