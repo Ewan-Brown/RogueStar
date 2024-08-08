@@ -1,19 +1,18 @@
 import Graphics.Model
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
-import lombok.Getter
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.world.WorldCollisionData
 import java.util.*
 
-class Transformation(public val position: Vector2, val scale : Double, val rotation: Rotation){
+class Transformation(public val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
 open class TransformedComponent(val model : Model, val transform: Transformation)
 class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float)
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
-class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData, val category: Long, val mask: Long)
+
+class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData, val category: Long, val mask: Long)
 
 
 val physicsLayer = PhysicsLayer()
@@ -22,7 +21,7 @@ val controllerLayer = ControllerLayer()
 
 fun main() {
 
-    val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.SQUARE2, Model.BACKPLATE)
+    val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.BACKPLATE)
 
     val gui = Graphics(models)
 
