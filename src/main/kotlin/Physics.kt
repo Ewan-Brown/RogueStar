@@ -62,8 +62,8 @@ class PhysicsLayer : Layer{
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
-        entity.linearDamping = 0.1
-        entity.angularDamping = 0.1
+//        entity.linearDamping = 0.1
+//        entity.angularDamping = 0.1
         entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity
@@ -71,8 +71,8 @@ class PhysicsLayer : Layer{
 
     fun <E : PhysicsEntity> addEntity(entity: E) : E{
         entity.setMass(MassType.NORMAL)
-        entity.linearDamping = 0.1
-        entity.angularDamping = 0.1
+//        entity.linearDamping = 0.1
+//        entity.angularDamping = 0.1
         entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity

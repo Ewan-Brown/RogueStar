@@ -5,18 +5,17 @@ class EffectsUtils{
     companion object {
         fun emitThrustParticles(entity: PhysicsEntity, thrust: Vector2) {
             if (thrust.magnitude > 0) {
-                val adjustedThrust = thrust.product(-0.002).rotate((Math.random() - 0.5) / 3)
+                val adjustedThrust = thrust.product(-0.01).rotate((Math.random() - 0.5) / 3)
                 effectsLayer.addEntity(
-                    TangibleEffectsEntity(
+                    ParticleEntity(
+                        Model.SQUARE1,
                         entity.worldCenter.x,
                         entity.worldCenter.y,
                         Math.random(),
-                        listOf(
-                            RenderableComponent(Model.SQUARE1, Transformation(), GraphicalData(1.0f, 0.0f, 0.0f, +10.0f))
-                        ),
-                        dx = entity.linearVelocity.x// / 10.0 + adjustedThrust.x,
-                            ,dy = entity.linearVelocity.y// / 10.0 + adjustedThrust.y,
-                        ,//drotation = (Math.random() - 0.5) * 10
+                        graphicsDataProvider = {it -> GraphicalData(it.getLife(),0.0f,0.0f,-10.0f)},
+                                dx = entity.changeInPosition.x + adjustedThrust.x
+                        ,dy = entity.changeInPosition.y + adjustedThrust.y,
+                        //drotation = (Math.random() - 0.5) * 10
                     )
                 )
             }
@@ -53,49 +52,40 @@ abstract class EffectsEntity{
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-class TangibleEffectsEntity(var x : Double, var y : Double, var rotation : Double,
-                            val baseComponents: List<RenderableComponent>, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
+class ParticleEntity(val model: Model, var x : Double, var y : Double, var rotation : Double,
+                     val graphicsDataProvider: (ParticleEntity) -> GraphicalData, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
 
-    var lifetime: Int = 0
+    private val MAX_LIFE: Int = 1000
+    var lifetime: Int = MAX_LIFE
     var isDead = false;
+
+    fun getLife() : Float{
+        return (lifetime.toFloat()/MAX_LIFE.toFloat())
+    }
 
     override fun getComponents(): List<RenderableComponent>{
         val components = mutableListOf<RenderableComponent>()
 
-        val entityAngle = rotation;
         val entityPos = Vector2(x, y)
-        val variableScale = Math.min(1.0, Vector2(dx, dy).magnitude*10) * scale;
+        val variableScale = Math.min(scale, Vector2(dx, dy).magnitude*10);
         if(variableScale < 0.01){
             isDead = true
         }
-
-        for (baseComponent in baseComponents) {
-            val m = baseComponent.model
-            val t = baseComponent.transform
-            val g = baseComponent.graphicalData
-
-            val newPos = t.position.copy().multiply(scale).rotate(entityAngle).add(entityPos)
-            val newAngle = entityAngle + t.rotation.toRadians()
-            components.add(RenderableComponent(baseComponent.model,
-                Transformation(newPos, t.scale*variableScale, newAngle),
-                    GraphicalData(g.red, g.green, g.blue, g.z))
-            )
-
-        }
+        return listOf(RenderableComponent(
+            model,
+            Transformation(entityPos, variableScale, rotation),
+            graphicsDataProvider(this)
+        ))
 
         return components
     }
     override fun update() {
-        lifetime++
-        x += dx
-        y += dy
-        rotation += drotation
-
-        dx -= dx/10.0
-        dy -= dy/10.0
-        drotation -= drotation/100.0
+        lifetime--
+        x += dx// * (lifetime/MAX_LIFE)
+        y += dy// * (lifetime/MAX_LIFE)
+        rotation += drotation//  * (lifetime/MAX_LIFE)
     }
     override fun isMarkedForRemoval(): Boolean{
-        return lifetime > 1000 || isDead
+        return lifetime < 0 || isDead
     }
 }
