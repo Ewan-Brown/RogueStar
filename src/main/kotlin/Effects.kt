@@ -12,7 +12,7 @@ class EffectsUtils{
                         entity.worldCenter.x,
                         entity.worldCenter.y,
                         Math.random(),
-                        graphicsDataProvider = {it -> GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife())},
+                        graphicsDataProvider = { GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife())},
                                 dx = entity.changeInPosition.x + adjustedThrust.x
                         ,dy = entity.changeInPosition.y + adjustedThrust.y,
                         drotation = (Math.random() - 0.5)
@@ -56,15 +56,14 @@ class ParticleEntity(val model: Model, var x : Double, var y : Double, var rotat
                      val graphicsDataProvider: (ParticleEntity) -> GraphicalData, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
-    var lifetime: Int = MAX_LIFE
-    var isDead = false;
+    private var lifetime: Int = MAX_LIFE
+    private var isDead = false;
 
     fun getLife() : Float{
         return (lifetime.toFloat()/MAX_LIFE.toFloat())
     }
 
     override fun getComponents(): List<RenderableComponent>{
-        val components = mutableListOf<RenderableComponent>()
 
         val entityPos = Vector2(x, y)
         val variableScale = getLife().toDouble();
@@ -77,7 +76,6 @@ class ParticleEntity(val model: Model, var x : Double, var y : Double, var rotat
             graphicsDataProvider(this)
         ))
 
-        return components
     }
     override fun update() {
         lifetime--
