@@ -22,7 +22,7 @@ class ControllerLayer : Layer{
         private var angleMap: MutableMap<Int, Double>? = null
 
         override fun update(entities: List<E>) {
-            val target = physicsLayer.getEntities().firstOrNull { it.first == 0 }
+            val target = physicsLayer.getBodyData().firstOrNull { it.first == 0 }
             if(target != null) {
                 val angleSeparation = Math.PI * 2 / entities.size;
 
@@ -41,7 +41,7 @@ class ControllerLayer : Layer{
                 } else {
                     for(e in entities){
                         val angle = angleMap!![e.uuid] ?: throw NullPointerException("angle")
-                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
+                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(20.0))
                         val vecToTarget: Vector2 = e.worldCenter.to(targetPos)
                         val vecToTargetHost: Vector2 = e.worldCenter.to(target.second.position)
 
@@ -92,7 +92,7 @@ class ControllerLayer : Layer{
     class ChaseMultiController<in E : PhysicsEntity>() : MultiController<E>(){
 
         override fun update(entities: List<E>) {
-            val result = physicsLayer.getEntities().firstOrNull { it.first == 0 } //Hardcoded to grab player's ship
+            val result = physicsLayer.getBodyData().firstOrNull { it.first == 0 } //Hardcoded to grab player's ship
             if(result != null){
 
                 val uuid = result.first;
@@ -202,7 +202,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
 
         if(input[KeyEvent.VK_X]){
             //TODO Maybe make this a little more abstracted, I don't like having to directly affect kinematics from this layer when we can avoid it...
-            val newEntity = ProjectileEntity();
+            val newEntity = ProjectileEntity(entity.team);
             val addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter.sum(Vector2(entity.transform.rotation.toVector().product(entity.rotationDiscRadius+1))))
             addedEntity.linearVelocity = entity.linearVelocity.copy()
         }
@@ -229,7 +229,7 @@ class ChaseController : ControllerLayer.Controller<ShipEntity>(){
     override fun update(entity: ShipEntity) {
         val currentTarget: Int;
         if(lastTarget == null){
-            val potentialTarget = physicsLayer.getEntities().filter { it.first != entity.uuid}.firstOrNull()
+            val potentialTarget = physicsLayer.getBodyData().filter { it.first != entity.uuid}.firstOrNull()
             if(potentialTarget != null){
                 currentTarget = potentialTarget.first
             }else{
