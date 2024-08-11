@@ -8,12 +8,11 @@ import java.util.*
 class Transformation(public val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
+
 open class TransformedComponent(val model : Model, val transform: Transformation)
 class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float)
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
-
 class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData, val category: Long, val mask: Long)
-
 
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
@@ -42,14 +41,14 @@ fun main() {
         }
     }
 
-    val shipEntity = physicsLayer.addEntity(DumbEntity(), 0.0, Vector2())
-    controllerLayer.addControlledEntity(shipEntity, PlayerController(bitSet))
+    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0), 0.0, Vector2())
+    controllerLayer.addControlledEntity(playerEntity, PlayerController(bitSet))
 
     val entities = mutableListOf<PhysicsEntity>()
-//    for(i in 1..10){
-//        entities.add(physicsLayer.addEntity(DumbEntity(), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-//    }
-    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.EncircleMultiController())
+    for(i in 1..10){
+        entities.add(physicsLayer.addEntity(ShipEntity(1.0), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+    }
+    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.ChaseMultiController())
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -71,7 +70,7 @@ fun main() {
         //Graphical entities created by physics logic, like from collisions or destructions
 
 //        cameraTargetPos = shipEntity.worldCenter
-        gui.updateDrawables(modelDataMap, shipEntity.worldCenter.copy())
+        gui.updateDrawables(modelDataMap, playerEntity.worldCenter.copy())
     }
 
 

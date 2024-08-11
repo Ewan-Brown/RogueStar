@@ -152,34 +152,44 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
     abstract fun update();
 
     fun getComponents(): List<RenderableComponent> {
-        val result: MutableList<RenderableComponent> = ArrayList()
+        if(!isEnabled){
+            return listOf()
+        }else {
+            val result: MutableList<RenderableComponent> = ArrayList()
 
-        val entityAngle = getTransform().rotationAngle.toFloat()
-        val entityPos = this.worldCenter
+            val entityAngle = getTransform().rotationAngle.toFloat()
+            val entityPos = this.worldCenter
 
-        for (component in renderables) {
-            val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-            val newAngle = Rotation(component.transform.rotation.toRadians() + this.transform.rotationAngle)
-            val scale = component.transform.scale
+            for (component in renderables) {
+                val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                val newAngle = Rotation(component.transform.rotation.toRadians() + this.transform.rotationAngle)
+                val scale = component.transform.scale
 
-            result.add(RenderableComponent(component.model, Transformation(newPos, scale, newAngle), component.graphicalData));
+                result.add(
+                    RenderableComponent(
+                        component.model,
+                        Transformation(newPos, scale, newAngle),
+                        component.graphicalData
+                    )
+                );
+            }
+
+            return result
         }
-
-        return result
     }
 }
 
 
-open class DumbEntity() : PhysicsEntity(listOf(
+open class ShipEntity(scale : Double) : PhysicsEntity(listOf(
     PhysicalComponentDefinition(
         Model.TRIANGLE,
-        Transformation(Vector2(0.0, 0.0), 1.0, 0.0),
+        Transformation(Vector2(0.0, 0.0), 1.0*scale, 0.0),
         GraphicalData(0.0f, 0.5f, 0.5f, 0.0f),
     PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
     PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits),
     PhysicalComponentDefinition(
         Model.SQUARE1,
-        Transformation(Vector2(-1.0, 0.0), 1.0, 0.0),
+        Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
         GraphicalData(1.0f, 1.0f, 1.0f, 0.0f),
         PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
         PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) ) {
@@ -210,6 +220,7 @@ class ProjectileEntity() : PhysicsEntity(listOf(
         data.body2.applyImpulse(Vector2(this.transform.rotationAngle).product(2.0))
         data.body2.applyTorque((Math.random()-0.5) * 1000)
         hasCollided = true
+        isEnabled = false
     }
 
     override fun isMarkedForRemoval() : Boolean = hasCollided
