@@ -91,49 +91,21 @@ class ControllerLayer : Layer{
 
     class ChaseMultiController<in E : PhysicsEntity>() : MultiController<E>(){
 
-        val MIN_DIST = 7.0
-        val MAX_DIST = 8.0
-
         override fun update(entities: List<E>) {
-            val result = physicsLayer.getEntities().firstOrNull { it.first == 0 }
+            val result = physicsLayer.getEntities().firstOrNull { it.first == 0 } //Hardcoded to grab player's ship
             if(result != null){
 
                 val uuid = result.first;
                 val data = result.second;
 
-                //Attempt to surround the target
                 val targetLoc = data.position
                 for (entity in entities) {
-                    val vecToTarget = entity.worldCenter.to(targetLoc)
-                    val currentDirection = entity.transform.rotation.toVector()
 
-                    val angleDiff = vecToTarget.getAngleBetween(currentDirection)
-                    val angularVelocity = entity.angularVelocity
-                    val desiredVelocity = -angleDiff
-                    val angularVelocityDiff = desiredVelocity - angularVelocity;
-                    entity.applyTorque(-angleDiff*20 + angularVelocityDiff*10)
-                    if(angleDiff < 0.01){
-                        val dist = vecToTarget.normalize()
-                        if(dist < MIN_DIST){
-                            val thrust = vecToTarget.multiply(-20.0)
-                            emitThrustParticles(entity, thrust)
-                            entity.applyForce(thrust)
-                        }else if (dist > MAX_DIST){
-                            val thrust = vecToTarget.multiply(10.0)
-                            emitThrustParticles(entity, thrust)
-                            entity.applyForce(thrust)
-                        }else{
+                    //IN variables
+                    val position = entity.worldCenter.to(targetLoc)
+                    val velocity = entity.changeInPosition
+                    val orientation = entity.transform.rotation.toVector()
 
-//                            entity.applyForce(entity.linearVelocity.multiply(-0.3))
-                            val orientationVector = entity.transform.rotation.toVector()
-                            val velocity = entity.linearVelocity
-                            val dotProduct = velocity.dot(orientationVector)
-
-                            val sideslip = velocity.difference(orientationVector.product(dotProduct))
-                            sideslip.normalize()
-//                            entity.applyForce(sideslip)
-                        }
-                    }
                 }
             }
         }
@@ -188,17 +160,13 @@ class ControllerLayer : Layer{
         return entityRequestBuffer
     }
 
-    internal fun addEntityRequest(entity : PhysicsEntity){
-        entityRequestBuffer.add(entity)
-    }
-
     fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         //Add renderables for player perspective?? Interesting idea
     }
 }
 
-class PlayerController(val input: BitSet) : ControllerLayer.Controller<DumbEntity>(){
-    override fun update(entity: DumbEntity) {
+class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntity>(){
+    override fun update(entity: ShipEntity) {
         var x = 0.0;
         var y = 0.0;
         var r = 0.0;
@@ -254,11 +222,11 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<DumbEntit
     }
 }
 
-class ChaseController : ControllerLayer.Controller<DumbEntity>(){
+class ChaseController : ControllerLayer.Controller<ShipEntity>(){
 
     private var lastTarget: Int? = null
 
-    override fun update(entity: DumbEntity) {
+    override fun update(entity: ShipEntity) {
         val currentTarget: Int;
         if(lastTarget == null){
             val potentialTarget = physicsLayer.getEntities().filter { it.first != entity.uuid}.firstOrNull()
