@@ -1,18 +1,17 @@
+import Graphics.Model
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
+import org.dyn4j.collision.Filter
 import org.dyn4j.dynamics.AbstractPhysicsBody
 import org.dyn4j.dynamics.BodyFixture
+import org.dyn4j.dynamics.PhysicsBody
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
+import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
-import Graphics.Model
-import org.dyn4j.collision.CategoryFilter
-import org.dyn4j.dynamics.PhysicsBody
-import org.dyn4j.geometry.Rotation
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
+import java.util.function.Predicate
 
 class PhysicsLayer : Layer{
     enum class CollisionCategory(val bits: Long){
@@ -26,8 +25,10 @@ class PhysicsLayer : Layer{
         physicsWorld.setGravity(0.0,0.0)
     }
 
-    fun getEntities() : List<Pair<Int, PhysicsBodyData>>{
-        return physicsWorld.bodies.map { it -> it.uuid to PhysicsBodyData(it) }
+    fun getBodyData() : List<Pair<Int, PhysicsBodyData>>{
+        return physicsWorld.bodies.map {
+            it.uuid to PhysicsBodyData(it)
+        }
     }
 
     //TODO benchmark and see if a cachemap ;) is necessary
@@ -84,8 +85,9 @@ class PhysicsLayer : Layer{
 
 }
 
-data class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val angle: Double, val traceRadius: Double){
-    constructor(body: PhysicsBody) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius);
+//physics DTOs
+open class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val angle: Double, val traceRadius: Double, val team: Team){
+    constructor(body: PhysicsEntity) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius, body.team);
 }
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
@@ -113,7 +115,25 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
     }
 }
 
-abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>) : AbstractPhysicsBody() {
+
+class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<Team> = Predicate { true }, val category : Long, val mask : Long) : Filter{
+    override fun isAllowed(filter: Filter?): Boolean {
+        filter ?: throw NullPointerException("filter can never be null...")
+
+        return if(filter is TeamFilter){
+
+            //Check that the category/mask matches both directions
+            //AND if team logic matches
+            (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(team)
+
+        }else{
+            true;
+        }
+    }
+}
+
+abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>, teamFilter: TeamFilter) : AbstractPhysicsBody() {
+    val team = teamFilter.team
     private companion object {
         private var UUID_COUNTER = 0;
     }
@@ -133,7 +153,8 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
             v.translate(componentDefinition.localTransform.position.copy())
             v.rotate(componentDefinition.localTransform.rotation.toRadians())
             val f = BodyFixture(v)
-            f.setFilter (CategoryFilter(componentDefinition.category, componentDefinition.mask))
+            f.filter = teamFilter
+//            f.setFilter (CategoryFilter(componentDefinition.category, componentDefinition.mask))
             this.addFixture(f)
         }
     }
@@ -180,19 +201,16 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
 }
 
 
-open class ShipEntity(scale : Double) : PhysicsEntity(listOf(
+open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, team : Team) : PhysicsEntity(listOf(
     PhysicalComponentDefinition(
         Model.TRIANGLE,
         Transformation(Vector2(0.0, 0.0), 1.0*scale, 0.0),
-        GraphicalData(0.0f, 0.5f, 0.5f, 0.0f),
-    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
-    PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits),
+        GraphicalData(red, green, blue, 0.0f)),
     PhysicalComponentDefinition(
         Model.SQUARE1,
         Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
-        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f),
-        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
-        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) ) {
+        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
+    mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
     override fun isMarkedForRemoval() : Boolean = false
@@ -202,15 +220,13 @@ open class ShipEntity(scale : Double) : PhysicsEntity(listOf(
 
 //TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
 //  Maybe could collect these explosions and pass them to shader to do cool stuff...
-// TODO Does this need a controller attached to it, if it is homing it _definitely_ should
-class ProjectileEntity() : PhysicsEntity(listOf(
+class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
     PhysicalComponentDefinition(
         Model.TRIANGLE,
         Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
-        GraphicalData(1.0f, 0.0f, 0.0f, 0.0f),
-        PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits,
-        PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) ) {
-     var hasCollided = false
+        GraphicalData(1.0f, 0.0f, 0.0f, 0.0f))),
+    teamFilter = TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits, mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) {
+    var hasCollided = false
 
     init {
         this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))

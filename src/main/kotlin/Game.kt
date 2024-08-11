@@ -12,7 +12,15 @@ class Transformation(public val position: Vector2 = Vector2(), val scale : Doubl
 open class TransformedComponent(val model : Model, val transform: Transformation)
 class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float)
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
-class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData, val category: Long, val mask: Long)
+class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
+
+class Team(val name : String){
+    companion object{
+        private var UUID_COUNTER : Long = 0
+        val TEAMLESS = Team("Teamless")
+    }
+    val UUID = UUID_COUNTER++
+}
 
 val physicsLayer = PhysicsLayer()
 val effectsLayer = EffectsLayer()
@@ -41,14 +49,23 @@ fun main() {
         }
     }
 
-    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0), 0.0, Vector2())
+    val greenTeam = Team("Green")
+    val blueTeam = Team("Blue")
+
+    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 1.0f, 0.0f, 0.0f, Team("Player")), 0.0, Vector2())
     controllerLayer.addControlledEntity(playerEntity, PlayerController(bitSet))
 
-    val entities = mutableListOf<PhysicsEntity>()
+    val greenEntities = mutableListOf<PhysicsEntity>()
+    val blueEntities = mutableListOf<PhysicsEntity>()
     for(i in 1..10){
-        entities.add(physicsLayer.addEntity(ShipEntity(1.0), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+        greenEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+        blueEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, blueTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+
     }
-    controllerLayer.addMultiControlledEntities(entities, ControllerLayer.ChaseMultiController())
+
+    controllerLayer.addMultiControlledEntities(greenEntities, ControllerLayer.EncircleMultiController())
+    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.EncircleMultiController())
+
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
