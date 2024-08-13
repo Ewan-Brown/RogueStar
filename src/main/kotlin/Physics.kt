@@ -233,8 +233,12 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
     }
 
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-        data.body2.applyImpulse(Vector2(this.transform.rotationAngle).product(2.0))
+        //We can't be sure which entity is which, so we just apply forces to both - projectile will be instantly discarded anyways
+        data.body2.applyImpulse(this.linearVelocity.product(0.1))
+        data.body1.applyImpulse(this.linearVelocity.product(0.1))
         data.body2.applyTorque((Math.random()-0.5) * 1000)
+        data.body1.applyTorque((Math.random()-0.5) * 1000)
+
         hasCollided = true
         isEnabled = false
     }
