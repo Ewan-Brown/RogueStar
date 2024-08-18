@@ -93,12 +93,12 @@ open class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val a
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
 
     override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
-        super.processCollisions(iterator)
-        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
-        contactCollisions.forEach {
-            it.pair.first.body.onCollide(it)
-            it.pair.second.body.onCollide(it)
-        }
+//        super.processCollisions(iterator)
+//        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
+//        contactCollisions.forEach {
+//            it.pair.first.body.onCollide(it)
+//            it.pair.second.body.onCollide(it)
+//        }
 
     }
 

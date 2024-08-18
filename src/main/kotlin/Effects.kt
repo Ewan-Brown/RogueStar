@@ -5,7 +5,7 @@ class EffectsUtils{
     companion object {
         fun emitThrustParticles(entity: PhysicsEntity, thrust: Vector2) {
             if (thrust.magnitude > 0) {
-                val adjustedThrust = thrust.product(-0.002).rotate((Math.random() - 0.5) / 3)
+                val adjustedThrust = thrust.product(-0.0002).rotate((Math.random() - 0.5) / 3)
                 effectsLayer.addEntity(
                     ParticleEntity(
                         Model.SQUARE1,
