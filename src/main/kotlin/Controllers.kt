@@ -19,11 +19,11 @@ class ControllerLayer : Layer{
 
     }
 
+    //TODO This should really take into account the target velocity, and needs to be a bit snappier at short distance
     class EncircleMultiController<in E : PhysicsEntity>() : MultiController<E>(){
 
         //TODO This should be immutable
         private var angleMap: MutableMap<Int, Double>? = null
-        val MAX_THRUST = 5.0
         override fun update(entities: List<E>) {
             val target = physicsLayer.getBodyData().firstOrNull { it.first == 0 }
             if(target != null) {
@@ -47,11 +47,8 @@ class ControllerLayer : Layer{
                         val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
                         val vecToTarget: Vector2 = entity.worldCenter.to(targetPos)
                         val vecToTargetHost: Vector2 = entity.worldCenter.to(target.second.position)
-                        val targetVelocity = target.second.velocity!!
-                        val maxAcceleration = MAX_THRUST/entity.mass.mass
 
                         val velocityVector = entity.linearVelocity;
-                        val angleVector = Vector2(entity.transform.rotationAngle)
 
                         val calcTorqueToTurnTo : (Vector2) -> Double = fun(desiredAngleVec) : Double{
                             val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
@@ -65,8 +62,6 @@ class ControllerLayer : Layer{
 
                         var thrust : Vector2 = calcThrustToGetTo(targetPos)
                         var torque : Double = calcTorqueToTurnTo(vecToTarget)
-
-                        val desiredVelocity = vecToTarget.normalized.multiply(1.0)
 
                         if(vecToTarget.magnitude < 0.2 && velocityVector.magnitude < 0.2){
                             thrust = velocityVector.product(-0.8)
