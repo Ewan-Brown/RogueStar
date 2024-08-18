@@ -305,7 +305,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         EntityProgram = Program(gl, javaClass, "", "Game_Entity", "Game_Entity", true)
         checkError(gl, "initProgram : Entity")
 
-        BackgroundProgram = Program(gl, javaClass, "", "Game_Background", "Game_Background_Perlin_Clouds", false)
+        BackgroundProgram = Program(gl, javaClass, "", "Game_Background", "Game_Background_Custom_Stars", false)
         checkError(gl, "initProgram : Background")
     }
 
