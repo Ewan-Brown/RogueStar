@@ -4,6 +4,8 @@ import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.sqrt
 
 //TODO Generalized PID utilities
 class ControllerLayer : Layer{
@@ -21,7 +23,7 @@ class ControllerLayer : Layer{
 
         //TODO This should be immutable
         private var angleMap: MutableMap<Int, Double>? = null
-
+        val MAX_THRUST = 5.0
         override fun update(entities: List<E>) {
             val target = physicsLayer.getBodyData().firstOrNull { it.first == 0 }
             if(target != null) {
@@ -40,48 +42,40 @@ class ControllerLayer : Layer{
                         angle += angleSeparation
                     }
                 } else {
-                    for(e in entities){
-                        val angle = angleMap!![e.uuid] ?: throw NullPointerException("angle")
-                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(20.0))
-                        val vecToTarget: Vector2 = e.worldCenter.to(targetPos)
-                        val vecToTargetHost: Vector2 = e.worldCenter.to(target.second.position)
+                    for(entity in entities){
+                        val angle = angleMap!![entity.uuid] ?: throw NullPointerException("angle")
+                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
+                        val vecToTarget: Vector2 = entity.worldCenter.to(targetPos)
+                        val vecToTargetHost: Vector2 = entity.worldCenter.to(target.second.position)
+                        val targetVelocity = target.second.velocity!!
+                        val maxAcceleration = MAX_THRUST/entity.mass.mass
 
-                        val velocityVector = e.linearVelocity;
-                        val angleVector = Vector2(e.transform.rotationAngle)
-
-                        val FORWARD_ANGLE_THRESHOLD = Math.PI/8;
-
-
-                        val orientationToTargetDiff = angleVector.getAngleBetween(vecToTarget)
-
+                        val velocityVector = entity.linearVelocity;
+                        val angleVector = Vector2(entity.transform.rotationAngle)
 
                         val calcTorqueToTurnTo : (Vector2) -> Double = fun(desiredAngleVec) : Double{
-                            val angularVelocity = e.angularVelocity
-                            val angleDiff = desiredAngleVec.getAngleBetween(e.transform.rotationAngle)
-                            val desiredVelocity = -angleDiff
-                            val velocityOffset = desiredVelocity - angularVelocity;
-                            return -angleDiff + velocityOffset * 2
+                            val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
+                            return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass;
                         }
 
-                        val thrust : Vector2
-                        var torque : Double
-                        if(vecToTarget.magnitude < 1){
-                            thrust = e.linearVelocity.product(-5.0)
-                            torque = calcTorqueToTurnTo(vecToTargetHost)*2
-                        }else {
-
-                            if (abs(orientationToTargetDiff) > FORWARD_ANGLE_THRESHOLD) {
-                                torque = calcTorqueToTurnTo(vecToTarget)*2
-                                thrust = vecToTarget.normalized.product(2.5)
-
-                            } else {
-                                torque = calcTorqueToTurnTo(vecToTarget)
-                                thrust = vecToTarget.normalized.product(5.0)
-                            }
+                        val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
+                            val posDiff = desiredPosition.difference(entity.worldCenter)
+                            return Vector2(posDiff.multiply(2.0)).add(velocityVector.product(-4.0));
                         }
-                        e.applyTorque(torque)
-                        e.applyForce(thrust)
-                        emitThrustParticles(e, thrust)
+
+                        var thrust : Vector2 = calcThrustToGetTo(targetPos)
+                        var torque : Double = calcTorqueToTurnTo(vecToTarget)
+
+                        val desiredVelocity = vecToTarget.normalized.multiply(1.0)
+
+                        if(vecToTarget.magnitude < 0.2 && velocityVector.magnitude < 0.2){
+                            thrust = velocityVector.product(-0.8)
+                            torque = calcTorqueToTurnTo(vecToTargetHost)
+                        }
+
+                        entity.applyTorque(torque)
+                        entity.applyForce(thrust)
+                        emitThrustParticles(entity, thrust)
 
                     }
                 }
@@ -90,13 +84,43 @@ class ControllerLayer : Layer{
         }
     }
 
-    class SquadronController<in E : PhysicsEntity>(var groupOrientation: Rotation = Rotation(), var groupCenter: Vector2 = Vector2()) : MultiController<E>(){
+    class GridController<in E : PhysicsEntity>(var groupOrientation: Rotation = Rotation(), var groupCenter: Vector2 = Vector2()) : MultiController<E>() {
         override fun update(entities: List<E>) {
-
-            val calculatePos : (Int) -> (Vector2) = {
+            val spacing = entities.stream().mapToDouble { it.rotationDiscRadius}.max().asDouble * 3
+            val calculatePos: (Int) -> (Vector2) = {
+                val index = it
                 val count = entities.size
-                
-                Vector2()
+                val countSqrt = floor(sqrt(count.toDouble()))
+                val targetPos = Vector2(index % countSqrt, floor(index / countSqrt)).multiply(spacing)
+                targetPos.rotate(groupOrientation).add(groupCenter)
+                targetPos
+            }
+            for ((index, entity) in entities.withIndex()) {
+                val pos = calculatePos(index)
+                val posDiff = pos.difference(entity.worldCenter)
+                entity.applyForce(posDiff.multiply(0.3))
+                if(posDiff.magnitude < 0.1){
+                    entity.applyForce(entity.linearVelocity.multiply(-0.3))
+                }
+            }
+        }
+    }
+
+    class LineController<in E : PhysicsEntity>(var p0: Vector2, var p1: Vector2) : MultiController<E>() {
+        override fun update(entities: List<E>) {
+            val spacing = p0.to(p1).divide(entities.size.toDouble())
+            val calculatePos: (Int) -> (Vector2) = {
+                val index = it
+                val targetPos = p0.sum(spacing.product(index.toDouble()))
+                targetPos
+            }
+            for ((index, entity) in entities.withIndex()) {
+                val pos = calculatePos(index)
+                val posDiff = pos.difference(entity.worldCenter)
+                entity.applyForce(posDiff.multiply(0.3))
+                if(posDiff.magnitude < 0.03){
+                    entity.applyForce(entity.linearVelocity.multiply(-0.1))
+                }
             }
         }
     }
