@@ -59,12 +59,12 @@ fun main() {
     val blueEntities = mutableListOf<PhysicsEntity>()
     for(i in 1..10){
         greenEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-        blueEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, blueTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+//        blueEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, blueTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
 
     }
 
     controllerLayer.addMultiControlledEntities(greenEntities, ControllerLayer.EncircleMultiController())
-    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.EncircleMultiController())
+//    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.SquadronController())
 
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
