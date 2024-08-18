@@ -1,4 +1,5 @@
 import EffectsUtils.Companion.emitThrustParticles
+import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
@@ -89,24 +90,13 @@ class ControllerLayer : Layer{
         }
     }
 
-    class ChaseMultiController<in E : PhysicsEntity>() : MultiController<E>(){
-
+    class SquadronController<in E : PhysicsEntity>(var groupOrientation: Rotation = Rotation(), var groupCenter: Vector2 = Vector2()) : MultiController<E>(){
         override fun update(entities: List<E>) {
-            val result = physicsLayer.getBodyData().firstOrNull { it.first == 0 } //Hardcoded to grab player's ship
-            if(result != null){
 
-                val uuid = result.first;
-                val data = result.second;
-
-                val targetLoc = data.position
-                for (entity in entities) {
-
-                    //IN variables
-                    val position = entity.worldCenter.to(targetLoc)
-                    val velocity = entity.changeInPosition
-                    val orientation = entity.transform.rotation.toVector()
-
-                }
+            val calculatePos : (Int) -> (Vector2) = {
+                val count = entities.size
+                
+                Vector2()
             }
         }
     }
