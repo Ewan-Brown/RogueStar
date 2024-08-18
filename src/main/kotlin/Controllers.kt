@@ -15,13 +15,14 @@ class ControllerLayer : Layer{
         return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass;
     }
 
-    fun doPositionalControl(entity: PhysicsEntity, targetPos: Vector2, targetOrientation: Vector2){
+    fun doPositionalControl(entity: PhysicsEntity, targetPos: Vector2, targetOrientation: Vector2 = entity.worldCenter.to(targetPos), targetVelocity: Vector2 = Vector2()){
         val velocityVector = entity.linearVelocity
+        val velocityDiff = velocityVector.to(targetVelocity)
         val vecToTarget = entity.worldCenter.to(targetPos)
 
         val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
             val posDiff = desiredPosition.difference(entity.worldCenter)
-            return Vector2(posDiff.multiply(2.0)).add(velocityVector.product(-4.0));
+            return Vector2(posDiff.multiply(2.0)).add(velocityDiff.product(4.0));
         }
 
         val thrust : Vector2 = calcThrustToGetTo(targetPos)
@@ -39,6 +40,21 @@ class ControllerLayer : Layer{
 
     abstract class MultiController<in E : PhysicsEntity> {
         abstract fun update(entities : List<E>)
+
+    }
+
+    inner class BubbleMultiController<in E : PhysicsEntity>(val bubbleCenter: Vector2, val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+
+        override fun update(entities: List<E>) {
+            for (entity in entities) {
+                val vecToBubbleCenter = entity.worldCenter.to(bubbleCenter)
+                if(abs(vecToBubbleCenter.magnitude) < radius){
+                    doPositionalControl(entity, entity.worldCenter, Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                }else{
+                    doPositionalControl(entity, bubbleCenter, Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                }
+            }
+        }
 
     }
 
@@ -75,7 +91,7 @@ class ControllerLayer : Layer{
                         if(vecToTarget.magnitude < 0.2 && velocityVector.magnitude < 0.2){
                             doPositionalControl(entity, targetPos, vecToTargetHost)
                         } else{
-                            doPositionalControl(entity, targetPos, vecToTarget)
+                            doPositionalControl(entity, targetPos)
                         }
 
                     }

@@ -63,7 +63,7 @@ fun main() {
 
     }
 
-    controllerLayer.addMultiControlledEntities(greenEntities, controllerLayer.EncircleMultiController())
+    controllerLayer.addMultiControlledEntities(greenEntities, controllerLayer.BubbleMultiController(Vector2(), 10.0, Vector2(1.0,0.0)))
 //    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.SquadronController())
 
 
