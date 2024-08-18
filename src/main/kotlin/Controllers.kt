@@ -10,6 +10,29 @@ import kotlin.math.sqrt
 //TODO Generalized PID utilities
 class ControllerLayer : Layer{
 
+    fun calcTorqueToTurnTo(desiredAngleVec: Vector2, entity: PhysicsEntity) : Double{
+        val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
+        return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass;
+    }
+
+    fun doPositionalControl(entity: PhysicsEntity, targetPos: Vector2, targetOrientation: Vector2){
+        val velocityVector = entity.linearVelocity
+        val vecToTarget = entity.worldCenter.to(targetPos)
+
+        val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
+            val posDiff = desiredPosition.difference(entity.worldCenter)
+            return Vector2(posDiff.multiply(2.0)).add(velocityVector.product(-4.0));
+        }
+
+        val thrust : Vector2 = calcThrustToGetTo(targetPos)
+        val torque : Double = calcTorqueToTurnTo(targetOrientation, entity)
+
+
+        entity.applyTorque(torque)
+        entity.applyForce(thrust)
+        emitThrustParticles(entity, thrust)
+    }
+
     abstract class Controller<in E : PhysicsEntity> {
         abstract fun update(entity : E)
     }
@@ -20,7 +43,7 @@ class ControllerLayer : Layer{
     }
 
     //TODO This should really take into account the target velocity, and needs to be a bit snappier at short distance
-    class EncircleMultiController<in E : PhysicsEntity>() : MultiController<E>(){
+    inner class EncircleMultiController<in E : PhysicsEntity>() : MultiController<E>(){
 
         //TODO This should be immutable
         private var angleMap: MutableMap<Int, Double>? = null
@@ -45,32 +68,15 @@ class ControllerLayer : Layer{
                     for(entity in entities){
                         val angle = angleMap!![entity.uuid] ?: throw NullPointerException("angle")
                         val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
-                        val vecToTarget: Vector2 = entity.worldCenter.to(targetPos)
-                        val vecToTargetHost: Vector2 = entity.worldCenter.to(target.second.position)
-
-                        val velocityVector = entity.linearVelocity;
-
-                        val calcTorqueToTurnTo : (Vector2) -> Double = fun(desiredAngleVec) : Double{
-                            val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
-                            return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass;
-                        }
-
-                        val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
-                            val posDiff = desiredPosition.difference(entity.worldCenter)
-                            return Vector2(posDiff.multiply(2.0)).add(velocityVector.product(-4.0));
-                        }
-
-                        var thrust : Vector2 = calcThrustToGetTo(targetPos)
-                        var torque : Double = calcTorqueToTurnTo(vecToTarget)
+                        val vecToTarget = entity.worldCenter.to(targetPos)
+                        val vecToTargetHost = entity.worldCenter.to(target.second.position!!)
+                        val velocityVector = entity.linearVelocity.to(target.second.velocity!!)
 
                         if(vecToTarget.magnitude < 0.2 && velocityVector.magnitude < 0.2){
-                            thrust = velocityVector.product(-0.8)
-                            torque = calcTorqueToTurnTo(vecToTargetHost)
+                            doPositionalControl(entity, targetPos, vecToTargetHost)
+                        } else{
+                            doPositionalControl(entity, targetPos, vecToTarget)
                         }
-
-                        entity.applyTorque(torque)
-                        entity.applyForce(thrust)
-                        emitThrustParticles(entity, thrust)
 
                     }
                 }
