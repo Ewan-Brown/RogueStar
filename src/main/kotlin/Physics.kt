@@ -93,12 +93,12 @@ open class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val a
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
 
     override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
-//        super.processCollisions(iterator)
-//        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
-//        contactCollisions.forEach {
-//            it.pair.first.body.onCollide(it)
-//            it.pair.second.body.onCollide(it)
-//        }
+        super.processCollisions(iterator)
+        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
+        contactCollisions.forEach {
+            it.pair.first.body.onCollide(it)
+            it.pair.second.body.onCollide(it)
+        }
 
     }
 
@@ -209,7 +209,7 @@ open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, 
     PhysicalComponentDefinition(
         Model.SQUARE1,
         Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
-        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
+        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
     mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
 
@@ -225,7 +225,7 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
         Model.TRIANGLE,
         Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
         GraphicalData(1.0f, 0.0f, 0.0f, 0.0f))),
-    teamFilter = TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits, mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) {
+    TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits, mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) {
     var hasCollided = false
 
     init {
