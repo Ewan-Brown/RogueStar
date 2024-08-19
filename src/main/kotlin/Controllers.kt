@@ -22,7 +22,7 @@ class ControllerLayer : Layer{
 
         val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
             val posDiff = desiredPosition.difference(entity.worldCenter)
-            return Vector2(posDiff.multiply(2.0)).add(velocityDiff.product(4.0));
+            return Vector2(posDiff.multiply(8.0)).add(velocityDiff.product(4.0));
         }
 
         val thrust : Vector2 = calcThrustToGetTo(targetPos)
@@ -43,15 +43,35 @@ class ControllerLayer : Layer{
 
     }
 
-    inner class BubbleMultiController<in E : PhysicsEntity>(val bubbleCenter: Vector2, val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+    inner class BubbleMultiController<in E : PhysicsEntity>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+
+        val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
+        val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
+
+        private fun randomizeAnchor(index: Int){
+            bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(Math.random()*2*Math.PI)
+        }
 
         override fun update(entities: List<E>) {
+            if(bubbleAnchorMap.isEmpty()){
+                for(entity in entities){
+                    val index = entity.uuid
+                    inBubbleTrackerMap[index] = false
+                    randomizeAnchor(index)
+                }
+            }
             for (entity in entities) {
-                val vecToBubbleCenter = entity.worldCenter.to(bubbleCenter)
+                val index = entity.uuid
+                val vecToBubbleCenter = entity.worldCenter.to(centerGenerator())
                 if(abs(vecToBubbleCenter.magnitude) < radius){
-                    doPositionalControl(entity, entity.worldCenter, Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                    inBubbleTrackerMap[index] = true
+                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
                 }else{
-                    doPositionalControl(entity, bubbleCenter, Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                    if(inBubbleTrackerMap[index]!!){
+                        inBubbleTrackerMap[index] = false
+                        randomizeAnchor(index)
+                    }
+                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
                 }
             }
         }

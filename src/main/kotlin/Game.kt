@@ -63,7 +63,9 @@ fun main() {
 
     }
 
-    controllerLayer.addMultiControlledEntities(greenEntities, controllerLayer.BubbleMultiController(Vector2(), 10.0, Vector2(1.0,0.0)))
+    controllerLayer.addMultiControlledEntities(greenEntities, controllerLayer.BubbleMultiController(
+        { -> playerEntity.worldCenter},
+        20.0, Vector2(1.0,0.0)))
 //    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.SquadronController())
 
 
