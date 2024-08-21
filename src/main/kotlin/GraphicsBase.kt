@@ -1,135 +1,126 @@
-import com.jogamp.newt.event.KeyListener;
-import com.jogamp.newt.event.MouseListener;
-import com.jogamp.newt.event.WindowAdapter;
-import com.jogamp.newt.event.WindowEvent;
-import com.jogamp.newt.opengl.GLWindow;
-import com.jogamp.opengl.*;
-import com.jogamp.opengl.util.Animator;
-import com.jogamp.opengl.util.glsl.ShaderCode;
-import com.jogamp.opengl.util.glsl.ShaderProgram;
+import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.WindowAdapter
+import com.jogamp.newt.event.WindowEvent
+import com.jogamp.newt.opengl.GLWindow
+import com.jogamp.opengl.*
+import com.jogamp.opengl.util.Animator
+import com.jogamp.opengl.util.glsl.ShaderCode
+import com.jogamp.opengl.util.glsl.ShaderProgram
+import kotlin.system.exitProcess
 
-import static com.jogamp.opengl.GL.*;
-import static com.jogamp.opengl.GL2ES2.GL_FRAGMENT_SHADER;
-import static com.jogamp.opengl.GL2ES2.GL_VERTEX_SHADER;
+abstract class GraphicsBase : GLEventListener {
+    protected fun setup(keyListener: KeyListener?) {
+        val glProfile = GLProfile.get(GLProfile.GL3)
+        val glCapabilities = GLCapabilities(glProfile)
 
-public abstract class GraphicsBase implements GLEventListener {
-    private static GLWindow window;
-    private static Animator animator;
+        window = GLWindow.create(glCapabilities)
 
-    protected void setup(KeyListener keyListener) {
-
-        GLProfile glProfile = GLProfile.get(GLProfile.GL3);
-        GLCapabilities glCapabilities = new GLCapabilities(glProfile);
-
-        window = GLWindow.create(glCapabilities);
-
-        window.setTitle("Rogue Star");
-        window.setSize(1024, 768);
+        window!!.title = "Rogue Star"
+        window!!.setSize(1024, 768)
 
 
-        window.setVisible(true);
+        window!!.isVisible = true
 
-        window.addGLEventListener(this);
-        window.addKeyListener(keyListener);
-//        window.setAut
+        window!!.addGLEventListener(this)
+        window!!.addKeyListener(keyListener)
 
-        animator = new Animator(window);
-        animator.start();
+        //        window.setAut
+        animator = Animator(window)
+        animator!!.start()
 
-        window.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowDestroyed(WindowEvent e) {
-                animator.stop();
-                System.exit(1);
+        window!!.addWindowListener(object : WindowAdapter() {
+            override fun windowDestroyed(e: WindowEvent) {
+                animator!!.stop()
+                exitProcess(1)
             }
-        });
-
+        })
     }
 
-    protected Program EntityProgram;
-    protected Program BackgroundProgram;
+    protected var EntityProgram: Program? = null
+    protected var BackgroundProgram: Program? = null
 
-    public class Program {
-
+    inner class Program(
+        gl: GL3,
+        context: Class<*>?,
+        root: String?,
+        vertex: String?,
+        fragment: String?,
+        linkUniforms: Boolean
+    ) {
         //TODO Make the 'program' class extendable it's being overused and overburdened!
-        public int name, modelToWorldMatUL, positionInSpace, time;
+        var name: Int
+        var modelToWorldMatUL: Int = 0
+        var positionInSpace: Int = 0
+        var time: Int = 0
 
-        public Program(GL3 gl, Class context, String root, String vertex, String fragment, boolean linkUniforms) {
+        init {
+            val vertShader = ShaderCode.create(
+                gl, GL2ES2.GL_VERTEX_SHADER, this.javaClass, root, null, vertex,
+                "vert", null, true
+            )
+            val fragShader = ShaderCode.create(
+                gl, GL2ES2.GL_FRAGMENT_SHADER, this.javaClass, root, null, fragment,
+                "frag", null, true
+            )
 
-            ShaderCode vertShader = ShaderCode.create(gl, GL_VERTEX_SHADER, this.getClass(), root, null, vertex,
-                    "vert", null, true);
-            ShaderCode fragShader = ShaderCode.create(gl, GL_FRAGMENT_SHADER, this.getClass(), root, null, fragment,
-                    "frag", null, true);
+            val shaderProgram = ShaderProgram()
 
-            ShaderProgram shaderProgram = new ShaderProgram();
+            shaderProgram.add(vertShader)
+            shaderProgram.add(fragShader)
 
-            shaderProgram.add(vertShader);
-            shaderProgram.add(fragShader);
+            shaderProgram.init(gl)
 
-            shaderProgram.init(gl);
+            name = shaderProgram.program()
 
-            name = shaderProgram.program();
-
-            shaderProgram.link(gl, System.err);
+            shaderProgram.link(gl, System.err)
 
             //TODO This is overburdened
-            if(linkUniforms) {
-                modelToWorldMatUL = gl.glGetUniformLocation(name, "model");
+            if (linkUniforms) {
+                modelToWorldMatUL = gl.glGetUniformLocation(name, "model")
 
                 if (modelToWorldMatUL == -1) {
-                    System.err.println("uniform 'model' not found!");
+                    System.err.println("uniform 'model' not found!")
                 }
 
 
-                int globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices");
+                val globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices")
 
                 if (globalMatricesBI == -1) {
-                    System.err.println("block index 'GlobalMatrices' not found!");
+                    System.err.println("block index 'GlobalMatrices' not found!")
                 }
 
-                gl.glUniformBlockBinding(name, globalMatricesBI, 4);
-            }else{
-                positionInSpace = gl.glGetUniformLocation(name, "position");
-                if(positionInSpace == -1){
-                    System.err.println("uniform 'position' not found!");
+                gl.glUniformBlockBinding(name, globalMatricesBI, 4)
+            } else {
+                positionInSpace = gl.glGetUniformLocation(name, "position")
+                if (positionInSpace == -1) {
+                    System.err.println("uniform 'position' not found!")
                 }
-                time = gl.glGetUniformLocation(name, "time");
-                if(time == -1){
-                    System.err.println("uniform 'time' not found!");
+                time = gl.glGetUniformLocation(name, "time")
+                if (time == -1) {
+                    System.err.println("uniform 'time' not found!")
                 }
-
             }
         }
     }
 
 
-
-    public void checkError(GL gl, String location) {
-
-        int error = gl.glGetError();
-        if (error != GL_NO_ERROR) {
-            String errorString;
-            switch (error) {
-                case GL_INVALID_ENUM:
-                    errorString = "GL_INVALID_ENUM";
-                    break;
-                case GL_INVALID_VALUE:
-                    errorString = "GL_INVALID_VALUE";
-                    break;
-                case GL_INVALID_OPERATION:
-                    errorString = "GL_INVALID_OPERATION";
-                    break;
-                case GL_INVALID_FRAMEBUFFER_OPERATION:
-                    errorString = "GL_INVALID_FRAMEBUFFER_OPERATION";
-                    break;
-                case GL_OUT_OF_MEMORY:
-                    errorString = "GL_OUT_OF_MEMORY";
-                    break;
-                default:
-                    errorString = "UNKNOWN";
-                    break;
+    fun checkError(gl: GL, location: String) {
+        val error = gl.glGetError()
+        if (error != GL.GL_NO_ERROR) {
+            val errorString = when (error) {
+                GL.GL_INVALID_ENUM -> "GL_INVALID_ENUM"
+                GL.GL_INVALID_VALUE -> "GL_INVALID_VALUE"
+                GL.GL_INVALID_OPERATION -> "GL_INVALID_OPERATION"
+                GL.GL_INVALID_FRAMEBUFFER_OPERATION -> "GL_INVALID_FRAMEBUFFER_OPERATION"
+                GL.GL_OUT_OF_MEMORY -> "GL_OUT_OF_MEMORY"
+                else -> "UNKNOWN"
             }
-            throw new Error("OpenGL Error(" + errorString + "): " + location);
+            throw Error("OpenGL Error($errorString): $location")
         }
+    }
+
+    companion object {
+        private var window: GLWindow? = null
+        private var animator: Animator? = null
     }
 }
