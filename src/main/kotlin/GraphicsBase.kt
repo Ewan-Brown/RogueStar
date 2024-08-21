@@ -13,24 +13,24 @@ abstract class GraphicsBase : GLEventListener {
         val glProfile = GLProfile.get(GLProfile.GL3)
         val glCapabilities = GLCapabilities(glProfile)
 
-        window = GLWindow.create(glCapabilities)
+        val window = GLWindow.create(glCapabilities)
 
-        window!!.title = "Rogue Star"
-        window!!.setSize(1024, 768)
+        window.title = "Rogue Star"
+        window.setSize(1024, 768)
 
 
-        window!!.isVisible = true
+        window.isVisible = true
 
-        window!!.addGLEventListener(this)
-        window!!.addKeyListener(keyListener)
+        window.addGLEventListener(this)
+        window.addKeyListener(keyListener)
 
         //        window.setAut
-        animator = Animator(window)
-        animator!!.start()
+        val animator = Animator(window)
+        animator.start()
 
-        window!!.addWindowListener(object : WindowAdapter() {
+        window.addWindowListener(object : WindowAdapter() {
             override fun windowDestroyed(e: WindowEvent) {
-                animator!!.stop()
+                animator.stop()
                 exitProcess(1)
             }
         })
@@ -41,9 +41,9 @@ abstract class GraphicsBase : GLEventListener {
 
     inner class Program(
         gl: GL3,
-        root: String?,
-        vertex: String?,
-        fragment: String?,
+        root: String,
+        vertex: String,
+        fragment: String,
         linkUniforms: Boolean
     ) {
         //TODO Make the 'program' class extendable it's being overused and overburdened!
