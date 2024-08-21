@@ -9,7 +9,7 @@ import com.jogamp.opengl.util.glsl.ShaderProgram
 import kotlin.system.exitProcess
 
 abstract class GraphicsBase : GLEventListener {
-    protected fun setup(keyListener: KeyListener?) {
+    fun setup(keyListener: KeyListener?) {
         val glProfile = GLProfile.get(GLProfile.GL3)
         val glCapabilities = GLCapabilities(glProfile)
 
@@ -41,7 +41,6 @@ abstract class GraphicsBase : GLEventListener {
 
     inner class Program(
         gl: GL3,
-        context: Class<*>?,
         root: String?,
         vertex: String?,
         fragment: String?,

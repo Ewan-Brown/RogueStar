@@ -302,10 +302,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun initProgram(gl: GL3) {
-        EntityProgram = Program(gl, javaClass, "", "Game_Entity", "Game_Entity", true)
+        EntityProgram = Program(gl, "", "Game_Entity", "Game_Entity", true)
         checkError(gl, "initProgram : Entity")
 
-        BackgroundProgram = Program(gl, javaClass, "", "Game_Background", "Game_Background_Perlin_Clouds", false)
+        BackgroundProgram = Program(gl, "", "Game_Background", "Game_Background_Perlin_Clouds", false)
         checkError(gl, "initProgram : Background")
     }
 
@@ -336,10 +336,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             gl.glBindVertexArray(VAOs[0])
 
-            gl.glUseProgram(BackgroundProgram.name)
+            gl.glUseProgram(BackgroundProgram!!.name)
 
-            gl.glUniform2f(BackgroundProgram.positionInSpace, cameraPos.x.toFloat(), cameraPos.y.toFloat())
-            gl.glUniform1f(BackgroundProgram.time, time)
+            gl.glUniform2f(BackgroundProgram!!.positionInSpace, cameraPos.x.toFloat(), cameraPos.y.toFloat())
+            gl.glUniform1f(BackgroundProgram!!.time, time)
 
             gl.glDrawArrays(
                 Model.BACKPLATE.drawMode,
@@ -349,7 +349,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             gl.glUseProgram(0)
 
-            gl.glUseProgram(EntityProgram.name)
+            gl.glUseProgram(EntityProgram!!.name)
 
             // model matrix
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
@@ -361,7 +361,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             for (i in 0..15) {
                 matBuffer.put(i, modelToWorldMat[i])
             }
-            gl.glUniformMatrix4fv(EntityProgram.modelToWorldMatUL, 1, false, matBuffer)
+            gl.glUniformMatrix4fv(EntityProgram!!.modelToWorldMatUL, 1, false, matBuffer)
             for ((model, data) in modelData) {
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
@@ -401,7 +401,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     override fun dispose(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
-        gl.glDeleteProgram(EntityProgram.name)
+        gl.glDeleteProgram(EntityProgram!!.name)
         gl.glDeleteVertexArrays(1, VAOs)
         gl.glDeleteBuffers(Buffer.MAX, VBOs)
     }
