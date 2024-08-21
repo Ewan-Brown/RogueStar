@@ -109,7 +109,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
     fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         for (body in this.bodies) {
             for (component in body.getComponents()) {
-                map[component.model]!!.add(Pair<Transformation, GraphicalData>(component.transform, component.graphicalData))
+                map[component.model]!!.add(Pair(component.transform, component.graphicalData))
             }
         }
     }

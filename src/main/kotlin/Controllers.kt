@@ -34,12 +34,16 @@ class ControllerLayer : Layer{
         emitThrustParticles(entity, thrust)
     }
 
-    abstract class Controller<in E : PhysicsEntity> {
-        abstract fun update(entity : E)
+    abstract class BaseController<in E : PhysicsEntity, in T>{
+        abstract fun update(input: T)
     }
 
-    abstract class MultiController<in E : PhysicsEntity> {
-        abstract fun update(entities : List<E>)
+    abstract class SingleController<in E : PhysicsEntity> : BaseController<E, E>() {
+        abstract override fun update(input : E)
+    }
+
+    abstract class MultiController<in E : PhysicsEntity> : BaseController<E, List<E>>(){
+        abstract override fun update(input : List<E>)
 
     }
 
@@ -162,44 +166,26 @@ class ControllerLayer : Layer{
         }
     }
 
-    fun <E : PhysicsEntity> addControlledEntity(entity: E, controller: Controller<E>){
-        val entry = ControllerEntityEntry(controller, entity)
-        controllerList.add(entry)
+    fun <E : PhysicsEntity> addControlledEntity(entity: E, controller: SingleController<E>){
+        controllerList.add(ControllerInputEntry(controller, entity))
     }
 
-    fun <E : PhysicsEntity> addMultiControlledEntities(entities: List<E>, controller: MultiController<E>){
-        val entry = MultiControllerEntityEntry(controller, entities)
-        multiControllerList.add(entry)
+    fun <E : PhysicsEntity> addControlledEntityGroup(group: List<E>, controller: MultiController<E>){
+        controllerList.add(ControllerInputEntry(controller, group))
     }
 
-    private data class ControllerEntityEntry<E : PhysicsEntity>(val controller: Controller<E>,  var entity: E){
-        fun update() {
-            controller.update(entity)
+    private data class ControllerInputEntry<in E : PhysicsEntity, T>(val controller: BaseController<E, T>, var input: T){
+        fun update(){
+            controller.update(input)
         }
     }
 
-    //TODO This 'entry' thing is fine but why do we need two types for single vs multi?
-    private data class MultiControllerEntityEntry<E : PhysicsEntity>(val controller: MultiController<E>,  var entities: List<E>){
-        //TODO Add a clean exit/recovery case for when one or more entities inevitably die off
-        fun update() {
-            controller.update(entities)
-        }
-    }
-
-    private val controllerList = mutableListOf<ControllerEntityEntry<*>>()
-    private val multiControllerList = mutableListOf<MultiControllerEntityEntry<*>>()
+    private val controllerList = mutableListOf<ControllerInputEntry<*, *>>()
     private val entityRequestBuffer = mutableListOf<PhysicsEntity>()
 
     override fun update() {
         entityRequestBuffer.clear()
-        controllerList.removeIf { t -> t.entity.isMarkedForRemoval() }
         for (controllerEntityEntry in controllerList) {
-            controllerEntityEntry.update()
-        }
-        for (controllerEntityEntry in multiControllerList) {
-            if(controllerEntityEntry.entities.stream().anyMatch(PhysicsEntity::isMarkedForRemoval)){
-                error("Entity under a multi controller is marked for removal... Controller should deal with this?")
-            }
             controllerEntityEntry.update()
         }
         for (physicsEntity in entityRequestBuffer) {
@@ -216,7 +202,7 @@ class ControllerLayer : Layer{
     }
 }
 
-class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntity>(){
+class PlayerController(val input: BitSet) : ControllerLayer.SingleController<ShipEntity>(){
     override fun update(entity: ShipEntity) {
         var x = 0.0;
         var y = 0.0;
@@ -273,7 +259,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.Controller<ShipEntit
     }
 }
 
-class ChaseController : ControllerLayer.Controller<ShipEntity>(){
+class ChaseController : ControllerLayer.SingleController<ShipEntity>(){
 
     private var lastTarget: Int? = null
 

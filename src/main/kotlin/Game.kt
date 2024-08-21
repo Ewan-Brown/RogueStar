@@ -5,7 +5,7 @@ import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.util.*
 
-class Transformation(public val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
+class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
 
@@ -29,9 +29,7 @@ val controllerLayer = ControllerLayer()
 fun main() {
 
     val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.BACKPLATE)
-
     val gui = Graphics(models)
-
     val bitSet = BitSet(256);
 
     val keyListener : KeyListener = object : KeyListener {
@@ -63,11 +61,10 @@ fun main() {
 
     }
 
-    controllerLayer.addMultiControlledEntities(greenEntities, controllerLayer.BubbleMultiController(
+    controllerLayer.addControlledEntityGroup(greenEntities, controllerLayer.BubbleMultiController(
         { -> playerEntity.worldCenter},
         20.0, Vector2(1.0,0.0)))
 //    controllerLayer.addMultiControlledEntities(blueEntities, ControllerLayer.SquadronController())
-
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -76,7 +73,6 @@ fun main() {
         for (model in models) {
             modelDataMap[model] = mutableListOf()
         }
-
 
         //Let each world append data to the model data map
         physicsLayer.populateModelMap(modelDataMap)
@@ -91,7 +87,6 @@ fun main() {
 //        cameraTargetPos = shipEntity.worldCenter
         gui.updateDrawables(modelDataMap, playerEntity.worldCenter.copy())
     }
-
 
     populateData()
     gui.setup(keyListener)
@@ -111,6 +106,5 @@ interface Layer{
     fun update()
 }
 
-//data class Component(val model: Model, val transform: Transform)
 
 
