@@ -19,8 +19,8 @@ class PhysicsLayer : Layer{
         CATEGORY_PROJECTILE(0b0010),
         CATEGORY_SHIELD(    0b0100)
     }
-    private val physicsWorld = PhysicsWorld();
-    private var time = 0.0;
+    private val physicsWorld = PhysicsWorld()
+    private var time = 0.0
     init {
         physicsWorld.setGravity(0.0,0.0)
     }
@@ -31,7 +31,7 @@ class PhysicsLayer : Layer{
         }
     }
 
-    //TODO benchmark and see if a cachemap ;) is necessary
+    //TODO benchmark and see if a cachemap ) is necessary
     fun getEntity(uuid : Int) : PhysicsBodyData? {
         val body = physicsWorld.bodies.firstOrNull { it.uuid == uuid }
         return body?.let { PhysicsBodyData(it) }
@@ -40,23 +40,23 @@ class PhysicsLayer : Layer{
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
     //therefore onCollide should simply flag things and store data, allowing .update() to clean up.
     override fun update() {
-        time++;
+        time++
         physicsWorld.update(1.0)
-        var i = physicsWorld.bodies.size;
+        var i = physicsWorld.bodies.size
         while(i > 0){
-            i--;
+            i--
             val body = physicsWorld.bodies[i]
             body.update()
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
-                i--;
+                i--
             }
         }
     }
 
     //TODO Can we delegate this or something
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
-        physicsWorld.populateModelMap(modelDataMap);
+        physicsWorld.populateModelMap(modelDataMap)
     }
 
     fun <E : PhysicsEntity> addEntity(entity: E, angle : Double, pos : Vector2) : E{
@@ -87,7 +87,7 @@ class PhysicsLayer : Layer{
 
 //physics DTOs
 open class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val angle: Double, val traceRadius: Double, val team: Team){
-    constructor(body: PhysicsEntity) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius, body.team);
+    constructor(body: PhysicsEntity) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius, body.team)
 }
 
 private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
@@ -103,7 +103,7 @@ private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionD
     }
 
     override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
-        return WorldCollisionData(pair);
+        return WorldCollisionData(pair)
     }
 
     fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
@@ -127,7 +127,7 @@ class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<
             (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(team)
 
         }else{
-            true;
+            true
         }
     }
 }
@@ -135,10 +135,10 @@ class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<
 abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>, teamFilter: TeamFilter) : AbstractPhysicsBody() {
     val team = teamFilter.team
     private companion object {
-        private var UUID_COUNTER = 0;
+        private var UUID_COUNTER = 0
     }
 
-    val uuid = UUID_COUNTER++;
+    val uuid = UUID_COUNTER++
     private val renderables: List<RenderableComponent> = compDefinitions.map {
         RenderableComponent(it.model, it.localTransform, it.graphicalData)
     }
@@ -166,11 +166,11 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
         }
     }
 
-    abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>);
+    abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>)
 
-    abstract fun isMarkedForRemoval() : Boolean;
+    abstract fun isMarkedForRemoval() : Boolean
 
-    abstract fun update();
+    abstract fun update()
 
     fun getComponents(): List<RenderableComponent> {
         if(!isEnabled){
@@ -192,7 +192,7 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                         Transformation(newPos, scale, newAngle),
                         component.graphicalData
                     )
-                );
+                )
             }
 
             return result

@@ -255,12 +255,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 instanceColorData[instanceColorDataIndex++] = r
                 instanceColorData[instanceColorDataIndex++] = g
                 instanceColorData[instanceColorDataIndex++] = b
-                instanceRotationData[instanceRotationDataIndex++] = angle;
+                instanceRotationData[instanceRotationDataIndex++] = angle
                 instanceScaleData[instanceScaleDataIndex++] = scale.toFloat()
             }
             data.instanceIndex = indexCounter
             indexCounter += data.instanceCount
         }
+
+        //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
 
         val positionBuffer = GLBuffers.newDirectFloatBuffer(instancePositionData)
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
@@ -353,7 +355,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
             // model matrix
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
-            //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f);
+            //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f)
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
             val modelToWorldMat = FloatUtil.multMatrix(scale, translate)
