@@ -80,15 +80,6 @@ abstract class GraphicsBase : GLEventListener {
                 if (modelToWorldMatUL == -1) {
                     System.err.println("uniform 'model' not found!")
                 }
-
-
-                val globalMatricesBI = gl.glGetUniformBlockIndex(name, "GlobalMatrices")
-
-                if (globalMatricesBI == -1) {
-                    System.err.println("block index 'GlobalMatrices' not found!")
-                }
-
-                gl.glUniformBlockBinding(name, globalMatricesBI, 4)
             } else {
                 positionInSpace = gl.glGetUniformLocation(name, "position")
                 if (positionInSpace == -1) {
