@@ -9,11 +9,6 @@ layout (location = 4) in vec3 instanced_color;
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
 
-uniform GlobalMatrices
-{
-    mat4 view;
-};
-
 uniform mat4 model;
 out vec3 interpolatedColor;
 
@@ -25,7 +20,7 @@ void main() {
     vec3 pos = instanced_pos;
     vec3 scaledPosition = position * instanced_scale;
 
-    gl_Position = (view * (model * vec4(pos + rotate(scaledPosition, instanced_rotation), 1)));
+    gl_Position = model * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
     interpolatedColor = instanced_color;
 }
 

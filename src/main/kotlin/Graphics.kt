@@ -81,8 +81,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             const val INSTANCED_ROTATIONS: Int = 3
             const val INSTANCED_SCALES: Int = 4
             const val INSTANCED_COLORS: Int = 5
-            const val GLOBAL_MATRICES: Int = 6
-            const val MAX: Int = 7
+            const val MAX: Int = 6
         }
     }
 
@@ -134,16 +133,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
-        gl.glBufferData(
-            GL2ES3.GL_UNIFORM_BUFFER,
-            (16 * java.lang.Float.BYTES * 2).toLong(),
-            null,
-            GL2ES2.GL_STREAM_DRAW
-        )
         gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
-
-        gl.glBindBufferBase(GL2ES3.GL_UNIFORM_BUFFER, 4, VBOs[Buffer.GLOBAL_MATRICES])
 
         checkError(gl, "initBuffers")
     }
@@ -324,14 +314,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             for (i in 0..15) {
                 matBuffer.put(i, view[i])
             }
-            gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
-            gl.glBufferSubData(
-                GL2ES3.GL_UNIFORM_BUFFER,
-                (16 * java.lang.Float.BYTES).toLong(),
-                (16 * java.lang.Float.BYTES).toLong(),
-                matBuffer
-            )
-            gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
             gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
             gl.glClearBufferfv(GL2ES3.GL_DEPTH, 0, clearDepth.put(0, 1f))
@@ -350,12 +332,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             )
 
             gl.glUseProgram(0)
-
             gl.glUseProgram(EntityProgram!!.name)
 
-            // model matrix
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
-            //            float[] zRotation = FloatUtil.makeRotationEuler(new float[16], 0, 0, 0, 0.0f)
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
             val modelToWorldMat = FloatUtil.multMatrix(scale, translate)
@@ -387,15 +366,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
         val gl = drawable.gl.gL3
-
-        val ortho = FloatArray(16)
-        FloatUtil.makeOrtho(ortho, 0, false, -1f, 1f, -1f, 1f, 1f, -1f)
-        for (i in 0..15) {
-            matBuffer.put(i, ortho[i])
-        }
-        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, VBOs[Buffer.GLOBAL_MATRICES])
-        gl.glBufferSubData(GL2ES3.GL_UNIFORM_BUFFER, 0, (16 * java.lang.Float.BYTES).toLong(), matBuffer)
-        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
         gl.glViewport(x, y, width, height)
     }
