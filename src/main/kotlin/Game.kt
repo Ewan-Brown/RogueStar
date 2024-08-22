@@ -30,19 +30,19 @@ fun main() {
 
     val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.BACKPLATE)
     val gui = Graphics(models)
-    val bitSet = BitSet(256);
+    val bitSet = BitSet(256)
 
     val keyListener : KeyListener = object : KeyListener {
 
         override fun keyPressed(e: KeyEvent?) {
             if(!e!!.isAutoRepeat){
-                bitSet.set(e.keyCode.toInt(), true);
+                bitSet.set(e.keyCode.toInt(), true)
             }
         }
 
         override fun keyReleased(e: KeyEvent?) {
             if(!e!!.isAutoRepeat){
-                bitSet.set(e.keyCode.toInt(), false);
+                bitSet.set(e.keyCode.toInt(), false)
             }
         }
     }
@@ -80,7 +80,7 @@ fun main() {
         controllerLayer.populateModelMap(modelDataMap)
 
         //New entities created from controllers, like projectiles or summoned ships
-        val controllerEntityRequestList = controllerLayer.getNewEntityRequests();
+        val controllerEntityRequestList = controllerLayer.getNewEntityRequests()
 
         //Graphical entities created by physics logic, like from collisions or destructions
 

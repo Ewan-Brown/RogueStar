@@ -12,7 +12,7 @@ class ControllerLayer : Layer{
 
     fun calcTorqueToTurnTo(desiredAngleVec: Vector2, entity: PhysicsEntity) : Double{
         val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
-        return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass;
+        return (-angleDiff*8 - entity.angularVelocity*4) * entity.mass.mass
     }
 
     fun doPositionalControl(entity: PhysicsEntity, targetPos: Vector2, targetOrientation: Vector2 = entity.worldCenter.to(targetPos), targetVelocity: Vector2 = Vector2()){
@@ -22,7 +22,7 @@ class ControllerLayer : Layer{
 
         val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
             val posDiff = desiredPosition.difference(entity.worldCenter)
-            return Vector2(posDiff.multiply(8.0)).add(velocityDiff.product(4.0));
+            return Vector2(posDiff.multiply(8.0)).add(velocityDiff.product(4.0))
         }
 
         val thrust : Vector2 = calcThrustToGetTo(targetPos)
@@ -90,7 +90,7 @@ class ControllerLayer : Layer{
         override fun update(entities: List<E>) {
             val target = physicsLayer.getBodyData().firstOrNull { it.first == 0 }
             if(target != null) {
-                val angleSeparation = Math.PI * 2 / entities.size;
+                val angleSeparation = Math.PI * 2 / entities.size
 
                 //Check if the angleMap either
                 // is null
@@ -98,10 +98,10 @@ class ControllerLayer : Layer{
                 // does not have matching elements to entities
                 if (angleMap == null || entities.size != angleMap!!.size || !entities.map { it -> it.uuid }
                         .all { angleMap!!.containsKey(it) }) {
-                    angleMap = mutableMapOf();
+                    angleMap = mutableMapOf()
                     var angle = 0.0
                     for (entity in entities.sortedBy { it.uuid }) {
-                        angleMap!![entity.uuid] = angle;
+                        angleMap!![entity.uuid] = angle
                         angle += angleSeparation
                     }
                 } else {
@@ -204,42 +204,42 @@ class ControllerLayer : Layer{
 
 class PlayerController(val input: BitSet) : ControllerLayer.SingleController<ShipEntity>(){
     override fun update(entity: ShipEntity) {
-        var x = 0.0;
-        var y = 0.0;
-        var r = 0.0;
+        var x = 0.0
+        var y = 0.0
+        var r = 0.0
 
         if(input[KeyEvent.VK_W]){
-            x++;
+            x++
         }
         if(input[KeyEvent.VK_S]){
-            x--;
+            x--
         }
         if(input[KeyEvent.VK_D]){
-            y++;
+            y++
         }
         if(input[KeyEvent.VK_A]){
-            y--;
+            y--
         }
 
         if(input[KeyEvent.VK_Q]){
-            r++;
+            r++
         }
 
         if(input[KeyEvent.VK_E]){
-            r--;
+            r--
         }
 
-        var needsRotation = true;
+        var needsRotation = true
 
         if(input[KeyEvent.VK_SPACE]){
             x = -entity.linearVelocity.x/10.0
             y = -entity.linearVelocity.y/10.0
-            needsRotation = false;
+            needsRotation = false
         }
 
         if(input[KeyEvent.VK_X]){
             //TODO Maybe make this a little more abstracted, I don't like having to directly affect kinematics from this layer when we can avoid it...
-            val newEntity = ProjectileEntity(entity.team);
+            val newEntity = ProjectileEntity(entity.team)
             val addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter.sum(Vector2(entity.transform.rotation.toVector().product(entity.rotationDiscRadius+1))))
             addedEntity.linearVelocity = entity.linearVelocity.copy()
         }
@@ -264,7 +264,7 @@ class ChaseController : ControllerLayer.SingleController<ShipEntity>(){
     private var lastTarget: Int? = null
 
     override fun update(entity: ShipEntity) {
-        val currentTarget: Int;
+        val currentTarget: Int
         if(lastTarget == null){
             val potentialTarget = physicsLayer.getBodyData().filter { it.first != entity.uuid}.firstOrNull()
             if(potentialTarget != null){
@@ -277,7 +277,7 @@ class ChaseController : ControllerLayer.SingleController<ShipEntity>(){
         }
 
         if(currentTarget != null) {
-            val bodyData = physicsLayer.getEntity(currentTarget);
+            val bodyData = physicsLayer.getEntity(currentTarget)
             val posDiff = entity.worldCenter.to(bodyData?.position)
             val thrust = posDiff.normalized
             emitThrustParticles(entity, thrust)

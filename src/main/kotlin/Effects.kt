@@ -24,11 +24,11 @@ class EffectsUtils{
 }
 
 class EffectsLayer : Layer{
-    private val entities = mutableListOf<EffectsEntity>();
+    private val entities = mutableListOf<EffectsEntity>()
 
     override fun update() {
         for (entity in entities) {
-            entity.update();
+            entity.update()
         }
     }
 
@@ -42,7 +42,7 @@ class EffectsLayer : Layer{
     }
 
     fun addEntity(entity : EffectsEntity){
-        entities.add(entity);
+        entities.add(entity)
     }
 }
 
@@ -57,7 +57,7 @@ class ParticleEntity(val model: Model, var x : Double, var y : Double, var rotat
 
     private val MAX_LIFE: Int = 100
     private var lifetime: Int = MAX_LIFE
-    private var isDead = false;
+    private var isDead = false
 
     fun getLife() : Float{
         return (lifetime.toFloat()/MAX_LIFE.toFloat())
@@ -66,7 +66,7 @@ class ParticleEntity(val model: Model, var x : Double, var y : Double, var rotat
     override fun getComponents(): List<RenderableComponent>{
 
         val entityPos = Vector2(x, y)
-        val variableScale = getLife().toDouble();
+        val variableScale = getLife().toDouble()
         if(variableScale < 0.01){
             isDead = true
         }
