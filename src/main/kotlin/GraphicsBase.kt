@@ -48,7 +48,7 @@ abstract class GraphicsBase : GLEventListener {
     ) {
         //TODO Make the 'program' class extendable it's being overused and overburdened!
         var name: Int
-        var modelToWorldMatUL: Int = 0
+        var viewMat: Int = 0
         var positionInSpace: Int = 0
         var time: Int = 0
 
@@ -75,9 +75,9 @@ abstract class GraphicsBase : GLEventListener {
 
             //TODO This is overburdened
             if (linkUniforms) {
-                modelToWorldMatUL = gl.glGetUniformLocation(name, "model")
+                viewMat = gl.glGetUniformLocation(name, "view")
 
-                if (modelToWorldMatUL == -1) {
+                if (viewMat == -1) {
                     System.err.println("uniform 'model' not found!")
                 }
             } else {

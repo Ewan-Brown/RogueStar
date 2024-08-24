@@ -342,7 +342,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             for (i in 0..15) {
                 matBuffer.put(i, modelToWorldMat[i])
             }
-            gl.glUniformMatrix4fv(EntityProgram!!.modelToWorldMatUL, 1, false, matBuffer)
+            gl.glUniformMatrix4fv(EntityProgram!!.viewMat, 1, false, matBuffer)
             for ((model, data) in modelData) {
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
