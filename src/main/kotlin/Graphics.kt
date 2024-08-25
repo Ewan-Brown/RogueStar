@@ -320,8 +320,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
-            val viewMat = FloatUtil.multMatrix(scale, translate)
-
+            val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
+            val viewMat = FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
             for (i in 0..15) {
                 matBuffer.put(i, viewMat[i])
             }
