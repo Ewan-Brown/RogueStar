@@ -36,21 +36,18 @@ abstract class GraphicsBase : GLEventListener {
         })
     }
 
-    protected var EntityProgram: Program? = null
-    protected var BackgroundProgram: Program? = null
-
-    inner class Program(
-        gl: GL3,
-        root: String,
-        vertex: String,
-        fragment: String,
-        linkUniforms: Boolean
-    ) {
+    open inner class Program(gl: GL3,root: String,vertex: String,fragment: String) {
+        protected fun registerField(gl: GL3, fieldName: String) : Int {
+            val fieldAddress = gl.glGetUniformLocation(name, fieldName)
+            if (fieldAddress == -1) {
+                System.err.println("uniform '{$fieldName}' not found for program : " + javaClass)
+            }
+            return fieldAddress
+        }
         //TODO Make the 'program' class extendable it's being overused and overburdened!
-        var name: Int
-        var viewMat: Int = 0
-        var positionInSpace: Int = 0
-        var time: Int = 0
+        val name: Int
+        val viewMat: Int
+        val time: Int
 
         init {
             val vertShader = ShaderCode.create(
@@ -70,29 +67,12 @@ abstract class GraphicsBase : GLEventListener {
             shaderProgram.init(gl)
 
             name = shaderProgram.program()
-
             shaderProgram.link(gl, System.err)
+            viewMat = registerField(gl, "view")
+            time = registerField(gl, "time")
 
-            //TODO This is overburdened
-            if (linkUniforms) {
-                viewMat = gl.glGetUniformLocation(name, "view")
-
-                if (viewMat == -1) {
-                    System.err.println("uniform 'model' not found!")
-                }
-            } else {
-                positionInSpace = gl.glGetUniformLocation(name, "position")
-                if (positionInSpace == -1) {
-                    System.err.println("uniform 'position' not found!")
-                }
-                time = gl.glGetUniformLocation(name, "time")
-                if (time == -1) {
-                    System.err.println("uniform 'time' not found!")
-                }
-            }
         }
     }
-
 
     fun checkError(gl: GL, location: String) {
         val error = gl.glGetError()

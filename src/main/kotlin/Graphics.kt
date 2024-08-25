@@ -20,6 +20,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     var cameraPos: Vector2 = Vector2()
     var cameraTargetPos: Vector2 = Vector2()
 
+    var entityProgram: EntityProgram? = null
+    var backgroundProgram: BackgroundProgram? = null
+
     //the time for the background
     var time: Float = 0f
 
@@ -294,11 +297,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun initProgram(gl: GL3) {
-        EntityProgram = Program(gl, "", "Game_Entity", "Game_Entity", true)
-        checkError(gl, "initProgram : Entity")
 
-        BackgroundProgram = Program(gl, "", "Game_Background", "Game_Background_Perlin_Clouds", false)
-        checkError(gl, "initProgram : Background")
+        backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Empty")
+        checkError(gl, "initProgram : backGroundProgram")
+
+        entityProgram = EntityProgram(gl, "", "Game_Entity", "Game_Entity")
+        checkError(gl, "initProgram : entityProgram")
+
+
     }
 
 
@@ -311,29 +317,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
 
-            for (i in 0..15) {
-                matBuffer.put(i, view[i])
-            }
-
-            gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
-            gl.glClearBufferfv(GL2ES3.GL_DEPTH, 0, clearDepth.put(0, 1f))
-
-            gl.glBindVertexArray(VAOs[0])
-
-            gl.glUseProgram(BackgroundProgram!!.name)
-
-            gl.glUniform2f(BackgroundProgram!!.positionInSpace, cameraPos.x.toFloat(), cameraPos.y.toFloat())
-            gl.glUniform1f(BackgroundProgram!!.time, time)
-
-            gl.glDrawArrays(
-                Model.BACKPLATE.drawMode,
-                modelData.getValue(Model.BACKPLATE).verticeIndex,
-                Model.BACKPLATE.points
-            )
-
-            gl.glUseProgram(0)
-            gl.glUseProgram(EntityProgram!!.name)
-
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
@@ -342,7 +325,27 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             for (i in 0..15) {
                 matBuffer.put(i, modelToWorldMat[i])
             }
-            gl.glUniformMatrix4fv(EntityProgram!!.viewMat, 1, false, matBuffer)
+
+            gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
+            gl.glClearBufferfv(GL2ES3.GL_DEPTH, 0, clearDepth.put(0, 1f))
+
+            gl.glBindVertexArray(VAOs[0])
+
+            gl.glUseProgram(backgroundProgram!!.name)
+            gl.glUniform1f(backgroundProgram!!.time, time)
+            gl.glUniformMatrix4fv(backgroundProgram!!.viewMat, 1, false, matBuffer)
+
+            gl.glDrawArrays(
+                Model.BACKPLATE.drawMode,
+                modelData.getValue(Model.BACKPLATE).verticeIndex,
+                Model.BACKPLATE.points
+            )
+
+            gl.glUseProgram(0)
+            gl.glUseProgram(entityProgram!!.name)
+            gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniform1f(entityProgram!!.time, time)
+
             for ((model, data) in modelData) {
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
@@ -373,10 +376,16 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     override fun dispose(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
-        gl.glDeleteProgram(EntityProgram!!.name)
+        gl.glDeleteProgram(entityProgram!!.name)
+        gl.glDeleteProgram(backgroundProgram!!.name)
         gl.glDeleteVertexArrays(1, VAOs)
         gl.glDeleteBuffers(Buffer.MAX, VBOs)
+        checkError(gl, "dispose() : deleting resources")
     }
+
+    inner class BackgroundProgram(gl: GL3,root: String,fragment: String) : Program(gl, root,"Game_Background", fragment){}
+
+    inner class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex, fragment){}
 
     companion object {
         var POSITION_ATTRIB_INDICE: Int = 0
