@@ -298,7 +298,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     private fun initProgram(gl: GL3) {
 
-        backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Empty")
+        backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Simple")
         checkError(gl, "initProgram : backGroundProgram")
 
         entityProgram = EntityProgram(gl, "", "Game_Entity", "Game_Entity")
@@ -320,10 +320,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
-            val modelToWorldMat = FloatUtil.multMatrix(scale, translate)
+            val viewMat = FloatUtil.multMatrix(scale, translate)
 
             for (i in 0..15) {
-                matBuffer.put(i, modelToWorldMat[i])
+                matBuffer.put(i, viewMat[i])
             }
 
             gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
