@@ -2,6 +2,7 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
+import org.dyn4j.world.World
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
@@ -22,6 +23,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
+    var uiProgram: UIProgram? = null
 
     //the time for the background
     var time: Float = 0f
@@ -298,11 +300,15 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     private fun initProgram(gl: GL3) {
 
+        //TODO Figure out if uniforms can be shared across programs??
         backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Simple")
         checkError(gl, "initProgram : backGroundProgram")
 
         entityProgram = EntityProgram(gl, "", "Game_Entity", "Game_Entity")
         checkError(gl, "initProgram : entityProgram")
+
+        uiProgram = UIProgram(gl, "", "Game_UI", "Game_UI")
+        checkError(gl, "initProgram: uiProgram")
 
 
     }
@@ -383,9 +389,15 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         checkError(gl, "dispose() : deleting resources")
     }
 
-    inner class BackgroundProgram(gl: GL3,root: String,fragment: String) : Program(gl, root,"Game_Background", fragment){}
+    inner class BackgroundProgram(gl: GL3,root: String,fragment: String) : WorldProgram(gl, root,"Game_Background", fragment){}
 
-    inner class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex, fragment){}
+    inner class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : WorldProgram(gl,root,vertex, fragment){}
+
+    open inner class WorldProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){
+        val viewMat: Int = registerField(gl, "view")
+    }
+
+    inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
 
     companion object {
         var POSITION_ATTRIB_INDICE: Int = 0

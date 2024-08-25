@@ -46,7 +46,6 @@ abstract class GraphicsBase : GLEventListener {
         }
         //TODO Make the 'program' class extendable it's being overused and overburdened!
         val name: Int
-        val viewMat: Int
         val time: Int
 
         init {
@@ -68,7 +67,6 @@ abstract class GraphicsBase : GLEventListener {
 
             name = shaderProgram.program()
             shaderProgram.link(gl, System.err)
-            viewMat = registerField(gl, "view")
             time = registerField(gl, "time")
 
         }
