@@ -88,9 +88,4 @@ abstract class GraphicsBase : GLEventListener {
             throw Error("OpenGL Error($errorString): $location")
         }
     }
-
-    companion object {
-        private var window: GLWindow? = null
-        private var animator: Animator? = null
-    }
 }
