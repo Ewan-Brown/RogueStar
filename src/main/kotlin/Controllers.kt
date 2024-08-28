@@ -255,7 +255,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Shi
         entity.applyForce(thrust)
 
         val rotate = r*5 - entity.angularVelocity
-        entity.applyTorque(rotate*1.0)
+        entity.applyTorque(rotate*10.0)
     }
 }
 
