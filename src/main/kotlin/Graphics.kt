@@ -301,7 +301,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private fun initProgram(gl: GL3) {
 
         //TODO Figure out if uniforms can be shared across programs??
-        backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Simple")
+        backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Custom_Stars")
         checkError(gl, "initProgram : backGroundProgram")
 
         entityProgram = EntityProgram(gl, "", "Game_Entity", "Game_Entity")
