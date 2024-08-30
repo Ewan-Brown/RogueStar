@@ -59,9 +59,8 @@ fun main() {
 
     }
 
-    controllerLayer.addControlledEntityGroup(greenEntities, controllerLayer.BubbleMultiController(
-        { playerEntity.worldCenter},
-        20.0, Vector2(1.0,0.0)))
+    controllerLayer.addControlledEntityGroup(greenEntities, controllerLayer.BubbleMultiController(20.0,
+        { playerEntity.worldCenter}, {playerEntity.linearVelocity}))
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 

@@ -47,7 +47,7 @@ class ControllerLayer : Layer{
 
     }
 
-    inner class BubbleMultiController<in E : PhysicsEntity>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+    inner class BubbleMultiController<in E : PhysicsEntity>(val radius: Double, inline val centerGenerator: () -> Vector2, inline val velocityGenerator: () -> Vector2) : MultiController<E>(){
 
         val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
@@ -60,23 +60,24 @@ class ControllerLayer : Layer{
             if(bubbleAnchorMap.isEmpty()){
                 for(entity in entities){
                     val index = entity.uuid
-                    inBubbleTrackerMap[index] = false
+//                    inBubbleTrackerMap[index] = false
                     randomizeAnchor(index)
                 }
             }
+            val bubbleCenter = centerGenerator();
+            val bubbleVelocity = velocityGenerator();
             for (entity in entities) {
                 val index = entity.uuid
-                val vecToBubbleCenter = entity.worldCenter.to(centerGenerator())
+                val vecToBubbleCenter = entity.worldCenter.to(bubbleCenter)
                 if(abs(vecToBubbleCenter.magnitude) < radius){
-                    inBubbleTrackerMap[index] = true
-                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
+
+
                 }else{
-                    if(inBubbleTrackerMap[index]!!){
-                        inBubbleTrackerMap[index] = false
-                        randomizeAnchor(index)
-                    }
-                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                    val target = vecToBubbleCenter.normalized.multiply(-10.0)
+                    bubbleAnchorMap[index] = target;
                 }
+                doPositionalControl(entity, bubbleCenter.sum(bubbleAnchorMap[index]), targetOrientation = bubbleCenter, targetVelocity = bubbleVelocity)
+
             }
         }
 
