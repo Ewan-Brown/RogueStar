@@ -3,6 +3,7 @@ import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
+import java.util.Random
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -47,36 +48,46 @@ class ControllerLayer : Layer{
 
     }
 
-    inner class BubbleMultiController<in E : PhysicsEntity>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+    inner class BubbleMultiController<in E : PhysicsEntity>(val radius: Double, inline val centerGenerator: () -> Vector2, inline val velocityGenerator: () -> Vector2) : MultiController<E>(){
 
         val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
+        val rotationMap = mutableMapOf<Int, Float>()
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
 
         private fun randomizeAnchor(index: Int){
             bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(Math.random()*2*Math.PI)
+            rotationMap[index] = (Random().nextFloat() - 0.5f)/10f;
         }
 
         override fun update(entities: List<E>) {
             if(bubbleAnchorMap.isEmpty()){
                 for(entity in entities){
                     val index = entity.uuid
-                    inBubbleTrackerMap[index] = false
                     randomizeAnchor(index)
                 }
             }
+            val bubbleCenter = centerGenerator();
+            val bubbleVelocity = velocityGenerator();
             for (entity in entities) {
                 val index = entity.uuid
-                val vecToBubbleCenter = entity.worldCenter.to(centerGenerator())
-                if(abs(vecToBubbleCenter.magnitude) < radius){
-                    inBubbleTrackerMap[index] = true
-                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                val vecToBubbleCenter = entity.worldCenter.to(bubbleCenter)
+                var targetOrientation = Vector2()
+                if(entity.worldCenter.to(bubbleAnchorMap[index]!!.sum(bubbleCenter)).magnitude < radius){
+                    targetOrientation = entity.worldCenter.to(bubbleCenter)
+//                    if(entity.linearVelocity.difference(bubbleVelocity).magnitude < 1){
+                        val rotation = rotationMap[index]!!
+                        val currentRotation = Vector2().getAngleBetween(bubbleAnchorMap[index]!!)
+                        bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(rotation+currentRotation)
+//                    }
                 }else{
-                    if(inBubbleTrackerMap[index]!!){
-                        inBubbleTrackerMap[index] = false
-                        randomizeAnchor(index)
-                    }
-                    doPositionalControl(entity, centerGenerator().sum(bubbleAnchorMap[index]), Vector2(entity.transform.rotationAngle), bubbleVelocity)
+                    targetOrientation = bubbleCenter.sum(bubbleAnchorMap[index])
+                    val target = vecToBubbleCenter.normalized.multiply(-10.0)
+                    bubbleAnchorMap[index] = target;
                 }
+                doPositionalControl(entity, bubbleCenter.sum(bubbleAnchorMap[index]), targetOrientation = targetOrientation, targetVelocity = bubbleVelocity)
+//                if(Random().nextDouble() < 0.01){
+//                    rotationMap[index] = Random().nextFloat() - 0.5f;
+//                }
             }
         }
 
