@@ -55,8 +55,8 @@ class ControllerLayer : Layer{
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
 
         private fun randomizeAnchor(index: Int){
-            bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(Math.random()*2*Math.PI)
-            rotationMap[index] = (Random().nextFloat() - 0.5f)/10f;
+            bubbleAnchorMap[index] = Vector2(radius*0.7).rotate(Math.random()*2*Math.PI)
+            rotationMap[index] = (Random().nextFloat() - 0.5f)/20f;
         }
 
         override fun update(entities: List<E>) {
@@ -74,10 +74,13 @@ class ControllerLayer : Layer{
                 var targetOrientation = Vector2()
                 if(entity.worldCenter.to(bubbleAnchorMap[index]!!.sum(bubbleCenter)).magnitude < radius){
                     targetOrientation = entity.worldCenter.to(bubbleCenter)
+                    if(Random().nextFloat() < 0.01){
+//                        bubbleAnchorMap[index] = Vector2(radius*0.7).rotate(Math.random()*2*Math.PI)
+                    }
 //                    if(entity.linearVelocity.difference(bubbleVelocity).magnitude < 1){
-                        val rotation = rotationMap[index]!!
-                        val currentRotation = Vector2().getAngleBetween(bubbleAnchorMap[index]!!)
-                        bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(rotation+currentRotation)
+//                        val rotation = rotationMap[index]!!
+//                        val currentRotation = Vector2().getAngleBetween(bubbleAnchorMap[index]!!)
+//                        bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(rotation+currentRotation)
 //                    }
                 }else{
                     targetOrientation = bubbleCenter.sum(bubbleAnchorMap[index])
