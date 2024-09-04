@@ -139,9 +139,6 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
     }
 
     val uuid = UUID_COUNTER++
-    private val renderables: List<RenderableComponent> = compDefinitions.map {
-        RenderableComponent(it.model, it.localTransform, it.graphicalData)
-    }
 
     init {
         for (componentDefinition in compDefinitions) {
@@ -155,14 +152,18 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
             val f = BodyFixture(v)
             f.filter = teamFilter
 //            f.setFilter (CategoryFilter(componentDefinition.category, componentDefinition.mask))
+//           val renderables = compDefinitions.map {
+//                RenderableComponent(it.model, it.localTransform, it.graphicalData)
+//            }
+            f.userData = RenderableComponent(componentDefinition.model, componentDefinition.localTransform, componentDefinition.graphicalData)
             this.addFixture(f)
         }
     }
 
     //Need to update the 'center'
     fun recalculateComponents(){
-        for (renderable in renderables) {
-            renderable.transform.position.subtract(this.getMass().center)
+        for (fixture in getFixtures().map { it.userData as RenderableComponent}) {
+            fixture.transform.position.subtract(this.getMass().center)
         }
     }
 
@@ -181,25 +182,26 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
             val entityAngle = getTransform().rotationAngle.toFloat()
             val entityPos = this.worldCenter
 
-            for (component in renderables) {
-                val newPos = component.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-                val newAngle = Rotation(component.transform.rotation.toRadians() + this.transform.rotationAngle)
-                val scale = component.transform.scale
+            for (renderable in getFixtures().map { it.userData as RenderableComponent}) {
+                val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
+                val scale = renderable.transform.scale
 
+                //TODO We should probably have two different types -
+                //  'renderable data that is static and attached to fixture'
+                //  and 'class that represents ephemeral data describing a fixture's rendering'
                 result.add(
                     RenderableComponent(
-                        component.model,
+                        renderable.model,
                         Transformation(newPos, scale, newAngle),
-                        component.graphicalData
+                        GraphicalData(renderable.graphicalData.red, renderable.graphicalData.green, renderable.graphicalData.blue, renderable.graphicalData.z, 1.0f)
                     )
                 )
             }
-
             return result
         }
     }
 }
-
 
 open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, team : Team) : PhysicsEntity(listOf(
     PhysicalComponentDefinition(
@@ -211,7 +213,11 @@ open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, 
         Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
         GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
     mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {}
+    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+        val isOtherBody = data.body1 == this
+        val collisionItem = if (isOtherBody) data.pair.second else data.pair.first
+//        collisionItem.fixture.
+    }
 
     override fun isMarkedForRemoval() : Boolean = false
 

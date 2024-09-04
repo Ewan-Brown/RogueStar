@@ -10,7 +10,7 @@ class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0
 }
 
 open class TransformedComponent(val model : Model, val transform: Transformation)
-class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float)
+class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val construction: Float = 1.0f) //Construction to represent the % this part is done being built
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
 class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
