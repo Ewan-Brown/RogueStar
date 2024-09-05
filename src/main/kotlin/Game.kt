@@ -10,7 +10,7 @@ class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0
 }
 
 open class TransformedComponent(val model : Model, val transform: Transformation)
-class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val construction: Float = 1.0f) //Construction to represent the % this part is done being built
+class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val health: Float = 1.0f) //Construction to represent the % this part is done being built
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
 class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
@@ -54,7 +54,7 @@ fun main() {
 
     val greenEntities = mutableListOf<PhysicsEntity>()
     val blueEntities = mutableListOf<PhysicsEntity>()
-    for(i in 1..10){
+    for(i in 1..0){
         greenEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
 
     }
