@@ -86,7 +86,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             const val INSTANCED_ROTATIONS: Int = 3
             const val INSTANCED_SCALES: Int = 4
             const val INSTANCED_COLORS: Int = 5
-            const val MAX: Int = 6
+            const val INSTANCED_HEALTHS: Int = 6
+            const val MAX: Int = 7
         }
     }
 
@@ -204,12 +205,24 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 0
             )
 
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
+            gl.glEnableVertexAttribArray(INSTANCE_HEALTH_ATTRIB_INDICE)
+            gl.glVertexAttribPointer(
+                INSTANCE_HEALTH_ATTRIB_INDICE,
+                1,
+                GL.GL_FLOAT,
+                false,
+                1 * java.lang.Float.BYTES,
+                0
+            )
+
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
             gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
             gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
             gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
             gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
+            gl.glVertexAttribDivisor(INSTANCE_HEALTH_ATTRIB_INDICE, 1)
         }
         gl.glBindVertexArray(0)
 
@@ -225,15 +238,18 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 .sum()
 
         //TODO Clean this up.
+        //TODO Maybe see if we can automate the insertion of new fields here this is getting silly
         var indexCounter = 0
         var instancePositionDataIndex = 0
         var instanceColorDataIndex = 0
         var instanceRotationDataIndex = 0
         var instanceScaleDataIndex = 0
+        var instancedHealthDataIndex = 0
         val instancePositionData = FloatArray(modelCount * 4)
         val instanceColorData = FloatArray(modelCount * 3)
         val instanceRotationData = FloatArray(modelCount * 1)
         val instanceScaleData = FloatArray(modelCount * 1)
+        val instanceHealthData = FloatArray(modelCount * 1)
         for (data in modelData.values) {
             for ((transform, graphicalData) in data.instanceData) {
                 val x = transform.position.x
@@ -244,6 +260,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 val g = graphicalData.green
                 val b = graphicalData.blue
                 val scale = transform.scale
+                val health = graphicalData.health
                 instancePositionData[instancePositionDataIndex++] = x.toFloat()
                 instancePositionData[instancePositionDataIndex++] = y.toFloat()
                 instancePositionData[instancePositionDataIndex++] = z
@@ -252,13 +269,13 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 instanceColorData[instanceColorDataIndex++] = b
                 instanceRotationData[instanceRotationDataIndex++] = angle
                 instanceScaleData[instanceScaleDataIndex++] = scale.toFloat()
+                instanceHealthData[instancedHealthDataIndex++] = health
             }
             data.instanceIndex = indexCounter
             indexCounter += data.instanceCount
         }
 
         //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
-
         val positionBuffer = GLBuffers.newDirectFloatBuffer(instancePositionData)
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
         gl.glBufferData(
@@ -292,6 +309,15 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             GL.GL_ARRAY_BUFFER,
             scaleBuffer.capacity().toLong() * java.lang.Float.BYTES,
             scaleBuffer,
+            GL.GL_DYNAMIC_DRAW
+        )
+
+        val healthBuffer = GLBuffers.newDirectFloatBuffer(instanceHealthData)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            healthBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            healthBuffer,
             GL.GL_DYNAMIC_DRAW
         )
 
@@ -405,5 +431,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var INSTANCE_ROTATION_ATTRIB_INDICE: Int = 2
         var INSTANCE_SCALE_ATTRIB_INCIDE: Int = 3
         var INSTANCE_COLOR_ATTRIB_INDICE: Int = 4
+        var INSTANCE_HEALTH_ATTRIB_INDICE: Int = 5;
     }
 }

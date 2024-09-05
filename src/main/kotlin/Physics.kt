@@ -12,6 +12,7 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
+import kotlin.math.cos
 
 class PhysicsLayer : Layer{
     enum class CollisionCategory(val bits: Long){
@@ -194,7 +195,7 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                     RenderableComponent(
                         renderable.model,
                         Transformation(newPos, scale, newAngle),
-                        GraphicalData(renderable.graphicalData.red, renderable.graphicalData.green, renderable.graphicalData.blue, renderable.graphicalData.z, 1.0f)
+                        GraphicalData(renderable.graphicalData.red, renderable.graphicalData.green, renderable.graphicalData.blue, renderable.graphicalData.z, 0.5f+0.5f*cos(System.currentTimeMillis()/1000.0).toFloat())
                     )
                 )
             }
