@@ -349,7 +349,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
 
-            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.03f, 0.03f, 0.03f)
+            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f, 0.06f, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
             val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
