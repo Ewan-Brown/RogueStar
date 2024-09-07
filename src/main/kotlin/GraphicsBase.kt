@@ -16,7 +16,7 @@ abstract class GraphicsBase : GLEventListener {
         val window = GLWindow.create(glCapabilities)
 
         window.title = "Rogue Star"
-        window.setSize(1024, 768)
+        window.setSize(600,600)
 
 
         window.isVisible = true
