@@ -133,38 +133,59 @@ class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<
     }
 }
 
-abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>, teamFilter: TeamFilter) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>, private val teamFilter: TeamFilter) : AbstractPhysicsBody() {
     val team = teamFilter.team
     private companion object {
         private var UUID_COUNTER = 0
     }
 
+    private val missingParts = mutableListOf<PhysicalComponentDefinition>()
+    private class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition){}
+
     val uuid = UUID_COUNTER++
 
     init {
         for (componentDefinition in compDefinitions) {
-            val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
-            for (i in vertices.indices) {
-                vertices[i] = componentDefinition.model.asVectorData[i].copy().multiply(componentDefinition.localTransform.scale.toDouble())
-            }
-            val v = Polygon(*vertices)
-            v.translate(componentDefinition.localTransform.position.copy())
-            v.rotate(componentDefinition.localTransform.rotation.toRadians())
-            val f = BodyFixture(v)
-            f.filter = teamFilter
-//            f.setFilter (CategoryFilter(componentDefinition.category, componentDefinition.mask))
-//           val renderables = compDefinitions.map {
-//                RenderableComponent(it.model, it.localTransform, it.graphicalData)
-//            }
-            f.userData = RenderableComponent(componentDefinition.model, componentDefinition.localTransform, componentDefinition.graphicalData)
-            this.addFixture(f)
+            this.addFixture(createFixture(componentDefinition))
         }
+    }
+
+    override fun removeFixture(fixture: BodyFixture?): Boolean {
+        if(fixture != null){
+            missingParts.add((fixture.userData as PartInfo).componentDefinition)
+        }
+        return super.removeFixture(fixture)
+    }
+
+    fun createFixture(componentDefinition: PhysicalComponentDefinition) : BodyFixture{
+        val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
+        for (i in vertices.indices) {
+            vertices[i] = componentDefinition.model.asVectorData[i].copy().multiply(componentDefinition.localTransform.scale.toDouble())
+        }
+        val v = Polygon(*vertices)
+        v.translate(componentDefinition.localTransform.position.copy())
+        v.rotate(componentDefinition.localTransform.rotation.toRadians())
+        val f = BodyFixture(v)
+        f.createMass()
+        f.filter = teamFilter
+        f.userData = PartInfo ({
+            RenderableComponent(
+                componentDefinition.model,
+                componentDefinition.localTransform,
+                componentDefinition.graphicalData
+            )
+        }, componentDefinition)
+        return f
+    }
+
+    fun getLocalRenderables(): List<RenderableComponent> {
+        return getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }
     }
 
     //Need to update the 'center'
     fun recalculateComponents(){
-        for (fixture in getFixtures().map { it.userData as RenderableComponent}) {
-            fixture.transform.position.subtract(this.getMass().center)
+        for (renderable in getLocalRenderables()) {
+            renderable.transform.position.subtract(this.getMass().center)
         }
     }
 
@@ -183,21 +204,27 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
             val entityAngle = getTransform().rotationAngle.toFloat()
             val entityPos = this.worldCenter
 
-            for (renderable in getFixtures().map { it.userData as RenderableComponent}) {
-                val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-                val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
-                val scale = renderable.transform.scale
+            for (renderable in getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }) {
+                    val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                    val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
+                    val scale = renderable.transform.scale
 
-                //TODO We should probably have two different types -
-                //  'renderable data that is static and attached to fixture'
-                //  and 'class that represents ephemeral data describing a fixture's rendering'
-                result.add(
-                    RenderableComponent(
-                        renderable.model,
-                        Transformation(newPos, scale, newAngle),
-                        GraphicalData(renderable.graphicalData.red, renderable.graphicalData.green, renderable.graphicalData.blue, renderable.graphicalData.z, 0.5f+0.5f*cos(System.currentTimeMillis()/1000.0).toFloat())
+                    //TODO We should probably have two different types -
+                    //  'renderable data that is static and attached to fixture'
+                    //  and 'class that represents ephemeral data describing a fixture's rendering'
+                    result.add(
+                        RenderableComponent(
+                            renderable.model,
+                            Transformation(newPos, scale, newAngle),
+                            GraphicalData(
+                                renderable.graphicalData.red,
+                                renderable.graphicalData.green,
+                                renderable.graphicalData.blue,
+                                renderable.graphicalData.z,
+                                0.5f + 0.5f * cos(System.currentTimeMillis() / 1000.0).toFloat()
+                            )
+                        )
                     )
-                )
             }
             return result
         }
