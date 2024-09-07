@@ -3,15 +3,15 @@ X Get a simple Dyn4J world running
 X Define Ships, Planets, and Debris(Effects)
 X Get a simple control interface up
 X Setup background shader
+X individual entity colors/opacity
+X Simple projectile with collision filtering
+
 
 \ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
-\ Write POC projectile
-  * Got a simple one working but fixing up a system for Collision filtering by Category/Mask.
 
+= Use fixture.setSensor for projectiles and shields!
 = Clean up Components vs Transform vs Category etc etc.
-
 = Add shader code for HUD
-= Add support for individualized model colors/opacity
 = Write a group AI that organizes AIs in a list around the player
   * need to have the controller target not only position but a velocity that matches the target's velocity!!! This will need to be added to body data DTO
 -    Square
