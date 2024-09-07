@@ -19,7 +19,7 @@ void main()
     int x = int(floor(xyVarying.x/0.2));
     int y = int(floor(xyVarying.y/0.2));
     float r = random(vec2(x,y));
-    float s0 = r + health_out*2 - 1;
+    float s0 = r + health_out*5-1;
     float s0_clamped = clamp(s0, 0, 1);
 
     outputColor = vec4(interpolatedColor * s0_clamped, 1) ;
