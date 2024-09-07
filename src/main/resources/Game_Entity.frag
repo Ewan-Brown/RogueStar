@@ -9,11 +9,18 @@ layout (location = 0) out vec4 outputColor;
 in float health_out;
 in vec2 xyVarying;
 
+float random(vec2 st)
+{
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
 void main()
 {
-    float a = cos(xyVarying.x*10.0);
-    float b = 1.0 - a;
-    float d = a + b*health_out;
-    // We simply pad the interpolatedColor to vec4
-    outputColor = vec4(d, 0, 0, 1) ;
+    int x = int(floor(xyVarying.x/0.2));
+    int y = int(floor(xyVarying.y/0.2));
+    float r = random(vec2(x,y));
+    float s0 = r + health_out*2 - 1;
+    float s0_clamped = clamp(s0, 0, 1);
+
+    outputColor = vec4(interpolatedColor * s0_clamped, 1) ;
 }

@@ -28,6 +28,6 @@ void main() {
     gl_Position = view * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
     interpolatedColor = instanced_color;
     health_out = instanced_health;
-    xyVarying = position.xy;
+    xyVarying = scaledPosition.xy;
 }
 
