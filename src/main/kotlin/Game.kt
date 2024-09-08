@@ -50,16 +50,16 @@ fun main() {
     val greenTeam = Team("Green")
 
     val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 1.0f, 0.0f, 0.0f, Team("Player")), 0.0, Vector2())
-    controllerLayer.addControlledEntity(playerEntity, PlayerController(bitSet))
+    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
 
     val greenEntities = mutableListOf<PhysicsEntity>()
     val blueEntities = mutableListOf<PhysicsEntity>()
-    for(i in 1..0){
+    for(i in 1..10){
         greenEntities.add(physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
 
     }
 
-    controllerLayer.addControlledEntityGroup(greenEntities, controllerLayer.BubbleMultiController(
+    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
         { playerEntity.worldCenter},
         20.0, Vector2(1.0,0.0)))
 

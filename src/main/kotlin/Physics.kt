@@ -4,7 +4,6 @@ import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
 import org.dyn4j.dynamics.AbstractPhysicsBody
 import org.dyn4j.dynamics.BodyFixture
-import org.dyn4j.dynamics.PhysicsBody
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Rotation
@@ -15,11 +14,13 @@ import java.util.function.Predicate
 import kotlin.math.cos
 
 class PhysicsLayer : Layer{
+
     enum class CollisionCategory(val bits: Long){
         CATEGORY_SHIP(      0b0001),
         CATEGORY_PROJECTILE(0b0010),
         CATEGORY_SHIELD(    0b0100)
     }
+
     private val physicsWorld = PhysicsWorld()
     private var time = 0.0
     init {
@@ -32,7 +33,7 @@ class PhysicsLayer : Layer{
         }
     }
 
-    //TODO benchmark and see if a cachemap ) is necessary
+    //TODO benchmark and see if a cachemap ;) is necessary
     fun getEntity(uuid : Int) : PhysicsBodyData? {
         val body = physicsWorld.bodies.firstOrNull { it.uuid == uuid }
         return body?.let { PhysicsBodyData(it) }
@@ -64,8 +65,6 @@ class PhysicsLayer : Layer{
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
-//        entity.linearDamping = 0.1
-//        entity.angularDamping = 0.1
         entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity
@@ -73,8 +72,6 @@ class PhysicsLayer : Layer{
 
     fun <E : PhysicsEntity> addEntity(entity: E) : E{
         entity.setMass(MassType.NORMAL)
-//        entity.linearDamping = 0.1
-//        entity.angularDamping = 0.1
         entity.recalculateComponents()
         physicsWorld.addBody(entity)
         return entity
@@ -122,11 +119,9 @@ class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<
         filter ?: throw NullPointerException("filter can never be null...")
 
         return if(filter is TeamFilter){
-
             //Check that the category/mask matches both directions
             //AND if team logic matches
             (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(team)
-
         }else{
             true
         }
@@ -140,7 +135,7 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
     }
 
     private val missingParts = mutableListOf<PhysicalComponentDefinition>()
-    private class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition){}
+    class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition, var health: Int){}
 
     val uuid = UUID_COUNTER++
 
@@ -174,7 +169,7 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                 componentDefinition.localTransform,
                 componentDefinition.graphicalData
             )
-        }, componentDefinition)
+        }, componentDefinition, 100)
         return f
     }
 
@@ -204,7 +199,9 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
             val entityAngle = getTransform().rotationAngle.toFloat()
             val entityPos = this.worldCenter
 
-            for (renderable in getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }) {
+            for (partInfo in getFixtures().map { (it.userData as PartInfo)}) {
+                val renderable = partInfo.renderableProducer()
+                if(renderable != null) {
                     val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
                     val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
                     val scale = renderable.transform.scale
@@ -221,10 +218,11 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                                 renderable.graphicalData.green,
                                 renderable.graphicalData.blue,
                                 renderable.graphicalData.z,
-                                0.5f + 0.5f * cos(System.currentTimeMillis() / 1000.0).toFloat()
-                            )
+                                partInfo.health/100.0f
+                                )
                         )
                     )
+                }
             }
             return result
         }
@@ -241,10 +239,9 @@ open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, 
         Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
         GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
     mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
+
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
         val isOtherBody = data.body1 == this
-        val collisionItem = if (isOtherBody) data.pair.second else data.pair.first
-//        collisionItem.fixture.
     }
 
     override fun isMarkedForRemoval() : Boolean = false
@@ -267,12 +264,21 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
     }
 
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-        //We can't be sure which entity is which, so we just apply forces to both - projectile will be instantly discarded anyways
-        data.body2.applyImpulse(this.linearVelocity.product(0.1))
-        data.body1.applyImpulse(this.linearVelocity.product(0.1))
-        data.body2.applyTorque((Math.random()-0.5) * 1000)
-        data.body1.applyTorque((Math.random()-0.5) * 1000)
+        val otherBody = if(data.body1 == this) data.body2 else data.body1
+        val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
 
+        otherBody.applyImpulse(this.linearVelocity.product(0.1))
+        otherBody.applyTorque((Math.random()-0.5) * 1000)
+
+        (otherFixture.userData as PartInfo).health -= 10
+        if((otherFixture.userData as PartInfo).health <= 0){
+            otherBody.removeFixture(otherFixture)
+            if(otherBody.fixtures.size == 0){
+                physicsLayer.removeEntity(otherBody);
+                controllerLayer.removeController(otherBody);
+            }
+        }
+        otherBody.setMass(MassType.NORMAL)
         hasCollided = true
         isEnabled = false
     }

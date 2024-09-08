@@ -1,14 +1,15 @@
 import EffectsUtils.Companion.emitThrustParticles
-import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
-import kotlin.math.floor
-import kotlin.math.sqrt
 
 //TODO Generalized PID utilities
 class ControllerLayer : Layer{
+
+    fun removeController(entity: PhysicsEntity){
+        controllerList.removeIf{ it -> it.input.any { it == entity}}
+    }
 
     fun calcTorqueToTurnTo(desiredAngleVec: Vector2, entity: PhysicsEntity) : Double{
         val angleDiff = desiredAngleVec.getAngleBetween(entity.transform.rotationAngle)
@@ -34,20 +35,26 @@ class ControllerLayer : Layer{
         emitThrustParticles(entity, thrust)
     }
 
-    abstract class BaseController<in E : PhysicsEntity, in T>{
-        abstract fun update(input: T)
+    abstract class BaseController<E : PhysicsEntity>{
+        abstract fun update(input: List<E>)
     }
 
-    abstract class SingleController<in E : PhysicsEntity> : BaseController<E, E>() {
-        abstract override fun update(input : E)
-    }
-
-    abstract class MultiController<in E : PhysicsEntity> : BaseController<E, List<E>>(){
+    abstract class Controller<E : PhysicsEntity> : BaseController<E>() {
         abstract override fun update(input : List<E>)
-
     }
 
-    inner class BubbleMultiController<in E : PhysicsEntity>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : MultiController<E>(){
+    abstract class SingleController<E : PhysicsEntity> : Controller<E>(){
+        final override fun update(input: List<E>) {
+            if(input.size != 1){
+                throw IllegalArgumentException("A $javaClass should only ever be attached to one entity at a time ")
+            }
+            update(input.first())
+        }
+
+        abstract fun update(input: E);
+    }
+
+    inner class BubbleMultiController<E : PhysicsEntity>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : Controller<E>(){
 
         val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
@@ -82,105 +89,18 @@ class ControllerLayer : Layer{
 
     }
 
-    //TODO This should really take into account the target velocity, and needs to be a bit snappier at short distance
-    inner class EncircleMultiController<in E : PhysicsEntity>() : MultiController<E>(){
-
-        //TODO This should be immutable
-        private var angleMap: MutableMap<Int, Double>? = null
-        override fun update(entities: List<E>) {
-            val target = physicsLayer.getBodyData().firstOrNull { it.first == 0 }
-            if(target != null) {
-                val angleSeparation = Math.PI * 2 / entities.size
-
-                //Check if the angleMap either
-                // is null
-                // is not of same size as passed entities
-                // does not have matching elements to entities
-                if (angleMap == null || entities.size != angleMap!!.size || !entities.map { it -> it.uuid }
-                        .all { angleMap!!.containsKey(it) }) {
-                    angleMap = mutableMapOf()
-                    var angle = 0.0
-                    for (entity in entities.sortedBy { it.uuid }) {
-                        angleMap!![entity.uuid] = angle
-                        angle += angleSeparation
-                    }
-                } else {
-                    for(entity in entities){
-                        val angle = angleMap!![entity.uuid] ?: throw NullPointerException("angle")
-                        val targetPos: Vector2 = Vector2(target.second.position).add(Vector2(angle).product(10.0))
-                        val vecToTarget = entity.worldCenter.to(targetPos)
-                        val vecToTargetHost = entity.worldCenter.to(target.second.position!!)
-                        val velocityVector = entity.linearVelocity.to(target.second.velocity!!)
-
-                        if(vecToTarget.magnitude < 0.2 && velocityVector.magnitude < 0.2){
-                            doPositionalControl(entity, targetPos, vecToTargetHost)
-                        } else{
-                            doPositionalControl(entity, targetPos)
-                        }
-
-                    }
-                }
-            }
-
-        }
-    }
-
-    class GridController<in E : PhysicsEntity>(var groupOrientation: Rotation = Rotation(), var groupCenter: Vector2 = Vector2()) : MultiController<E>() {
-        override fun update(entities: List<E>) {
-            val spacing = entities.stream().mapToDouble { it.rotationDiscRadius}.max().asDouble * 3
-            val calculatePos: (Int) -> (Vector2) = {
-                val index = it
-                val count = entities.size
-                val countSqrt = floor(sqrt(count.toDouble()))
-                val targetPos = Vector2(index % countSqrt, floor(index / countSqrt)).multiply(spacing)
-                targetPos.rotate(groupOrientation).add(groupCenter)
-                targetPos
-            }
-            for ((index, entity) in entities.withIndex()) {
-                val pos = calculatePos(index)
-                val posDiff = pos.difference(entity.worldCenter)
-                entity.applyForce(posDiff.multiply(0.3))
-                if(posDiff.magnitude < 0.1){
-                    entity.applyForce(entity.linearVelocity.multiply(-0.3))
-                }
-            }
-        }
-    }
-
-    class LineController<in E : PhysicsEntity>(var p0: Vector2, var p1: Vector2) : MultiController<E>() {
-        override fun update(entities: List<E>) {
-            val spacing = p0.to(p1).divide(entities.size.toDouble())
-            val calculatePos: (Int) -> (Vector2) = {
-                val index = it
-                val targetPos = p0.sum(spacing.product(index.toDouble()))
-                targetPos
-            }
-            for ((index, entity) in entities.withIndex()) {
-                val pos = calculatePos(index)
-                val posDiff = pos.difference(entity.worldCenter)
-                entity.applyForce(posDiff.multiply(0.3))
-                if(posDiff.magnitude < 0.03){
-                    entity.applyForce(entity.linearVelocity.multiply(-0.1))
-                }
-            }
-        }
-    }
-
-    fun <E : PhysicsEntity> addControlledEntity(entity: E, controller: SingleController<E>){
-        controllerList.add(ControllerInputEntry(controller, entity))
-    }
-
-    fun <E : PhysicsEntity> addControlledEntityGroup(group: List<E>, controller: MultiController<E>){
+    fun <E : PhysicsEntity> addControllerEntry(group: List<E>, controller: Controller<E>){
         controllerList.add(ControllerInputEntry(controller, group))
     }
 
-    private data class ControllerInputEntry<in E : PhysicsEntity, T>(val controller: BaseController<E, T>, var input: T){
+    private data class ControllerInputEntry<E : PhysicsEntity>(val controller: BaseController<E>, var input: List<E>){
         fun update(){
             controller.update(input)
         }
     }
 
-    private val controllerList = mutableListOf<ControllerInputEntry<*, *>>()
+
+    private val controllerList = mutableListOf<ControllerInputEntry<*>>()
     private val entityRequestBuffer = mutableListOf<PhysicsEntity>()
 
     override fun update() {
@@ -256,32 +176,5 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Shi
 
         val rotate = r*5 - entity.angularVelocity
         entity.applyTorque(rotate*10.0)
-    }
-}
-
-class ChaseController : ControllerLayer.SingleController<ShipEntity>(){
-
-    private var lastTarget: Int? = null
-
-    override fun update(entity: ShipEntity) {
-        val currentTarget: Int
-        if(lastTarget == null){
-            val potentialTarget = physicsLayer.getBodyData().filter { it.first != entity.uuid}.firstOrNull()
-            if(potentialTarget != null){
-                currentTarget = potentialTarget.first
-            }else{
-                return
-            }
-        }else{
-            currentTarget = lastTarget!!
-        }
-
-        if(currentTarget != null) {
-            val bodyData = physicsLayer.getEntity(currentTarget)
-            val posDiff = entity.worldCenter.to(bodyData?.position)
-            val thrust = posDiff.normalized
-            emitThrustParticles(entity, thrust)
-            entity.applyForce(thrust)
-        }
     }
 }
