@@ -135,7 +135,7 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
     }
 
     private val missingParts = mutableListOf<PhysicalComponentDefinition>()
-    class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition, var health: Int){}
+    class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition, var health: Int, var removed: Boolean = false){}
 
     val uuid = UUID_COUNTER++
 
@@ -267,18 +267,19 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
         val otherBody = if(data.body1 == this) data.body2 else data.body1
         val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
 
-        otherBody.applyImpulse(this.linearVelocity.product(0.1))
-        otherBody.applyTorque((Math.random()-0.5) * 1000)
-
-        (otherFixture.userData as PartInfo).health -= 10
-        if((otherFixture.userData as PartInfo).health <= 0){
+        (otherFixture.userData as PartInfo).health -= 10000
+        if((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed){
+            (otherFixture.userData as PartInfo).removed = true
             otherBody.removeFixture(otherFixture)
+            EffectsUtils.debris(otherBody, otherFixture)
             if(otherBody.fixtures.size == 0){
                 physicsLayer.removeEntity(otherBody);
                 controllerLayer.removeController(otherBody);
+            }else{
+                otherBody.setMass(MassType.NORMAL)
+                otherBody.recalculateComponents()
             }
         }
-        otherBody.setMass(MassType.NORMAL)
         hasCollided = true
         isEnabled = false
     }

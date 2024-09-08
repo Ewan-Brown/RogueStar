@@ -6,7 +6,7 @@ X Setup background shader
 X individual entity colors/opacity
 X Simple projectile with collision filtering
 
-
+\ Something's wrong with the collisions/physics after fixtures have been removed.
 \ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
 
 = Use fixture.setSensor for projectiles and shields!

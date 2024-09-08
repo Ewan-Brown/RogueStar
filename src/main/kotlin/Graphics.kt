@@ -336,9 +336,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         uiProgram = UIProgram(gl, "", "Game_UI", "Game_UI")
         checkError(gl, "initProgram: uiProgram")
 
-
     }
-
 
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3

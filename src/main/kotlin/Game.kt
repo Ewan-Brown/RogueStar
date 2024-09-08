@@ -9,6 +9,7 @@ class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
 
+//Immutable please
 open class TransformedComponent(val model : Model, val transform: Transformation)
 class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val health: Float = 1.0f) //Construction to represent the % this part is done being built
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
@@ -59,9 +60,9 @@ fun main() {
 
     }
 
-    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
-        { playerEntity.worldCenter},
-        20.0, Vector2(1.0,0.0)))
+//    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
+//        { playerEntity.worldCenter},
+//        20.0, Vector2(1.0,0.0)))
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
