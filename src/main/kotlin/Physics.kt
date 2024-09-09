@@ -161,7 +161,6 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
         v.translate(componentDefinition.localTransform.position.copy())
         v.rotate(componentDefinition.localTransform.rotation.toRadians())
         val f = BodyFixture(v)
-        f.createMass()
         f.filter = teamFilter
         f.userData = PartInfo ({
             RenderableComponent(
@@ -203,6 +202,9 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                 val renderable = partInfo.renderableProducer()
                 if(renderable != null) {
                     val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                    if(uuid == 1 && renderable.model == Model.TRIANGLE){
+                        println(newPos)
+                    }
                     val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
                     val scale = renderable.transform.scale
 
@@ -267,7 +269,7 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
         val otherBody = if(data.body1 == this) data.body2 else data.body1
         val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
 
-        (otherFixture.userData as PartInfo).health -= 10000
+        (otherFixture.userData as PartInfo).health -= 10
         if((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed){
             (otherFixture.userData as PartInfo).removed = true
             otherBody.removeFixture(otherFixture)
@@ -276,8 +278,22 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
                 physicsLayer.removeEntity(otherBody);
                 controllerLayer.removeController(otherBody);
             }else{
+                val oldCenterOfMass = Vector2(otherBody.mass.center);
                 otherBody.setMass(MassType.NORMAL)
-                otherBody.recalculateComponents()
+                val newCenterOfMass = otherBody.mass.center
+
+                val centerOfMassDifference = newCenterOfMass.difference(oldCenterOfMass)
+                println(centerOfMassDifference)
+
+                //FIXME the reference to the removed part is invalid because the local transform that it should have applied might need to adjust based on the COM, which changes when the part (and further parts) are removed?
+                for (fixture in otherBody.fixtures) {
+                    val partInfo = (fixture.userData as PartInfo)
+                    partInfo.renderableProducer()?.let { oldRenderable ->
+                        val transform = oldRenderable.transform
+                        transform.position.subtract(centerOfMassDifference)
+                        fixture.userData = PartInfo({RenderableComponent(oldRenderable.model, transform, oldRenderable.graphicalData)}, partInfo.componentDefinition, partInfo.health, partInfo.removed)
+                    }
+                }
             }
         }
         hasCollided = true
