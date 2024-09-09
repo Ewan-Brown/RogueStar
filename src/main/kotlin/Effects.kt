@@ -28,6 +28,8 @@ class EffectsUtils{
                 val newPos = renderableData.transform.position.copy().rotate(entity.transform.rotation).add(entity.worldCenter)
                 val newAngle = Rotation(renderableData.transform.rotation.toRadians() + entity.transform.rotationAngle)
                 val scale = renderableData.transform.scale
+                val graphData = renderableData.graphicalData;
+                println(scale)
 
                 effectsLayer.addEntity(
                     BasicEffectEntity(
@@ -35,10 +37,10 @@ class EffectsUtils{
                         newPos.x,
                         newPos.y,
                         newAngle.toRadians(),
-                        renderableData.graphicalData,
+                        GraphicalData(graphData.red*0.5f, graphData.green*0.5f, graphData.blue*0.5f, graphData.z, graphData.health),
                         entity.changeInPosition.x,
                         entity.changeInPosition.y,
-                        entity.changeInOrientation, scale
+                        entity.changeInOrientation, scale = scale
                     )
                 )
             }
@@ -86,7 +88,7 @@ class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var ro
         val entityPos = Vector2(x, y)
         return listOf(RenderableComponent(
             model,
-            Transformation(entityPos, 1.0, rotation),
+            Transformation(entityPos, scale, rotation),
             graphicalData
         ))
 

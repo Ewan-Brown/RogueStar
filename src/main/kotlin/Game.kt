@@ -50,7 +50,7 @@ fun main() {
 
     val greenTeam = Team("Green")
 
-    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 1.0f, 0.0f, 0.0f, Team("Player")), 0.0, Vector2())
+    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
     controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
 
     val greenEntities = mutableListOf<PhysicsEntity>()
