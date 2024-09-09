@@ -202,9 +202,6 @@ abstract class PhysicsEntity protected constructor(compDefinitions: List<Physica
                 val renderable = partInfo.renderableProducer()
                 if(renderable != null) {
                     val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-                    if(uuid == 1 && renderable.model == Model.TRIANGLE){
-                        println(newPos)
-                    }
                     val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
                     val scale = renderable.transform.scale
 
@@ -283,7 +280,6 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
                 val newCenterOfMass = otherBody.mass.center
 
                 val centerOfMassDifference = newCenterOfMass.difference(oldCenterOfMass)
-                println(centerOfMassDifference)
 
                 //FIXME the reference to the removed part is invalid because the local transform that it should have applied might need to adjust based on the COM, which changes when the part (and further parts) are removed?
                 for (fixture in otherBody.fixtures) {
