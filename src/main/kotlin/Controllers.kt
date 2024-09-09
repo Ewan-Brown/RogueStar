@@ -134,10 +134,10 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Shi
         if(input[KeyEvent.VK_S]){
             x--
         }
-        if(input[KeyEvent.VK_D]){
+        if(input[KeyEvent.VK_A]){
             y++
         }
-        if(input[KeyEvent.VK_A]){
+        if(input[KeyEvent.VK_D]){
             y--
         }
 
