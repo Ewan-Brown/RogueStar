@@ -11,7 +11,6 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
-import kotlin.math.cos
 
 class PhysicsLayer : Layer{
 
@@ -66,6 +65,7 @@ class PhysicsLayer : Layer{
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
         entity.recalculateComponents()
+        entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
     }
@@ -73,6 +73,7 @@ class PhysicsLayer : Layer{
     fun <E : PhysicsEntity> addEntity(entity: E) : E{
         entity.setMass(MassType.NORMAL)
         entity.recalculateComponents()
+        entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
     }
@@ -128,19 +129,21 @@ class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<
     }
 }
 
-abstract class PhysicsEntity protected constructor(compDefinitions: List<PhysicalComponentDefinition>, private val teamFilter: TeamFilter) : AbstractPhysicsBody() {
+abstract class PhysicsEntity protected constructor(val originalComponentDefinitions: List<PhysicalComponentDefinition>, private val teamFilter: TeamFilter) : AbstractPhysicsBody() {
     val team = teamFilter.team
     private companion object {
         private var UUID_COUNTER = 0
     }
 
-    private val missingParts = mutableListOf<PhysicalComponentDefinition>()
+
+    var originalCenterOfMass: Vector2? = null
+    val missingParts = mutableListOf<PhysicalComponentDefinition>()
     class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition, var health: Int, var removed: Boolean = false){}
 
     val uuid = UUID_COUNTER++
 
     init {
-        for (componentDefinition in compDefinitions) {
+        for (componentDefinition in originalComponentDefinitions) {
             this.addFixture(createFixture(componentDefinition))
         }
     }
@@ -240,12 +243,23 @@ open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, 
     mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
 
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-        val isOtherBody = data.body1 == this
+
     }
 
     override fun isMarkedForRemoval() : Boolean = false
 
-    override fun update() {}
+    override fun update() {
+        if(missingParts.isNotEmpty()){
+            val first = missingParts.first()
+            val diff = mass.center.difference(originalCenterOfMass)
+            println(diff)
+            val newComp = PhysicalComponentDefinition(first.model, Transformation(first.localTransform.position.sum(diff.product(first.localTransform.scale)),
+                first.localTransform.scale,
+                first.localTransform.rotation),first.graphicalData)
+            addFixture(createFixture(newComp))
+            missingParts.remove(first)
+        }
+    }
 }
 
 //TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
@@ -265,7 +279,6 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
         val otherBody = if(data.body1 == this) data.body2 else data.body1
         val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
-
         (otherFixture.userData as PartInfo).health -= 10
         if((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed){
             (otherFixture.userData as PartInfo).removed = true
