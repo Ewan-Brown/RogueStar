@@ -55,8 +55,8 @@ fun main() {
 
     val greenEntities = mutableListOf<PhysicsEntity>()
     val blueEntities = mutableListOf<PhysicsEntity>()
-    for(i in 1..100){
-        greenEntities.add(physicsLayer.addEntity(ShipEntity(0.4, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+    for(i in 1..10){
+        greenEntities.add(physicsLayer.addEntity(ShipEntity(0.7, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
 
     }
 
