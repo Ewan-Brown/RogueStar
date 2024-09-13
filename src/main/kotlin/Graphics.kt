@@ -5,8 +5,9 @@ import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
+//TODO loadedModels shouldn't need to used like this, there should be a .loadModels() function that lets you pass in new ones/discard old?
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
-    private val VBOFieldsCount = 6;
+    private val VBOFieldsCount = VBOFields.entries.size;
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(VBOFieldsCount)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
