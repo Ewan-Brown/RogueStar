@@ -243,7 +243,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var instanceRotationDataIndex = 0
         var instanceScaleDataIndex = 0
         var instancedHealthDataIndex = 0
-        val instancePositionData = FloatArray(modelCount * 4)
+        val instancePositionData = FloatArray(modelCount * 3)
         val instanceColorData = FloatArray(modelCount * 3)
         val instanceRotationData = FloatArray(modelCount * 1)
         val instanceScaleData = FloatArray(modelCount * 1)
