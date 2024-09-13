@@ -421,6 +421,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
 
+    /**
+     * These indexes MUST match those in the shaders' "layout" term
+     */
     companion object {
         var POSITION_ATTRIB_INDICE: Int = 0
         var INSTANCE_POSITION_ATTRIB_INDICE: Int = 1
