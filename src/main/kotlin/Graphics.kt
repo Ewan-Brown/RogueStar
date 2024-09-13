@@ -2,12 +2,12 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.world.World
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
-    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
+    private val VBOFieldsCount = 6;
+    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(VBOFieldsCount)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
     private val clearColor: FloatBuffer = GLBuffers.newDirectFloatBuffer(4)
@@ -79,16 +79,17 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         }
     }
 
-    private interface Buffer {
-        companion object {
-            const val VERTEX: Int = 1
-            const val INSTANCED_POSITIONS: Int = 2
-            const val INSTANCED_ROTATIONS: Int = 3
-            const val INSTANCED_SCALES: Int = 4
-            const val INSTANCED_COLORS: Int = 5
-            const val INSTANCED_HEALTHS: Int = 6
-            const val MAX: Int = 7
-        }
+    /**
+     * Represents each of the VBOs that we use. Note that if 'instanced' is true, dataExtractor is expected to be on-null and vali
+     * index value is shared for VBO index as well as the respective attribute index
+     */
+    enum class VBOFields(val index: Int, val size: Int, val instanced: Boolean, val dataExtractor: ((Pair<Transformation, GraphicalData>) -> List<Float>)?){
+        VERTEX  (0,3,false, null),
+        POSITION(1,3,true, { listOf(it.first.position.x.toFloat(), it.first.position.y.toFloat(), it.second.z.toFloat())}),
+        ROTATION(2,1,true, {listOf(it.first.rotation.toRadians().toFloat())}),
+        SCALE   (3,1,true, {listOf(it.first.scale.toFloat())}),
+        COLOR   (4,3,true, { listOf(it.second.red, it.second.green, it.second.blue)}),
+        HEALTH  (5,1,true, {listOf(it.second.health.toFloat())})
     }
 
 
@@ -127,10 +128,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         val vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray)
 
-        gl.glGenBuffers(Buffer.MAX, VBOs) // Create VBOs (n = Buffer.max)
+        gl.glGenBuffers(VBOFieldsCount, VBOs) // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBOFields.VERTEX.index])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
             vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
@@ -153,75 +154,25 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private fun initVAOs(gl: GL3) {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
-        val stride = 3 * java.lang.Float.BYTES
-        var offset = 0
 
-        gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
-        gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
+        for (entry in VBOFields.entries) {
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[entry.index])
 
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
-        gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
-        gl.glVertexAttribPointer(
-            INSTANCE_POSITION_ATTRIB_INDICE,
-            3,
-            GL.GL_FLOAT,
-            false,
-            3 * java.lang.Float.BYTES,
-            0
-        )
+            gl.glEnableVertexAttribArray(entry.index)
+            gl.glVertexAttribPointer(
+                entry.index,
+                entry.size,
+                GL.GL_FLOAT,
+                false,
+                entry.size * java.lang.Float.BYTES,
+                0
+            )
 
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
-        gl.glEnableVertexAttribArray(INSTANCE_ROTATION_ATTRIB_INDICE)
-        gl.glVertexAttribPointer(
-            INSTANCE_ROTATION_ATTRIB_INDICE,
-            1,
-            GL.GL_FLOAT,
-            false,
-            1 * java.lang.Float.BYTES,
-            0
-        )
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
-        gl.glEnableVertexAttribArray(INSTANCE_SCALE_ATTRIB_INCIDE)
-        gl.glVertexAttribPointer(
-            INSTANCE_SCALE_ATTRIB_INCIDE,
-            1,
-            GL.GL_FLOAT,
-            false,
-            1 * java.lang.Float.BYTES,
-            0
-        )
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
-        gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
-        gl.glVertexAttribPointer(
-            INSTANCE_COLOR_ATTRIB_INDICE,
-            3,
-            GL.GL_FLOAT,
-            false,
-            3 * java.lang.Float.BYTES,
-            0
-        )
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
-        gl.glEnableVertexAttribArray(INSTANCE_HEALTH_ATTRIB_INDICE)
-        gl.glVertexAttribPointer(
-            INSTANCE_HEALTH_ATTRIB_INDICE,
-            1,
-            GL.GL_FLOAT,
-            false,
-            1 * java.lang.Float.BYTES,
-            0
-        )
-
+        }
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-        gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
-        gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
-        gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
-        gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
-        gl.glVertexAttribDivisor(INSTANCE_HEALTH_ATTRIB_INDICE, 1)
+        for(entry in VBOFields.entries.filter { it.instanced }){
+            gl.glVertexAttribDivisor(entry.index, 1)
+        }
         gl.glBindVertexArray(0)
 
         checkError(gl, "initVao")
@@ -237,87 +188,38 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         //TODO Clean this up.
         //TODO Maybe see if we can automate the insertion of new fields here this is getting silly
-        var indexCounter = 0
-        var instancePositionDataIndex = 0
-        var instanceColorDataIndex = 0
-        var instanceRotationDataIndex = 0
-        var instanceScaleDataIndex = 0
-        var instancedHealthDataIndex = 0
-        val instancePositionData = FloatArray(modelCount * 3)
-        val instanceColorData = FloatArray(modelCount * 3)
-        val instanceRotationData = FloatArray(modelCount * 1)
-        val instanceScaleData = FloatArray(modelCount * 1)
-        val instanceHealthData = FloatArray(modelCount * 1)
-        for (data in modelData.values) {
-            for ((transform, graphicalData) in data.instanceData) {
-                val x = transform.position.x
-                val y = transform.position.y
-                val z = graphicalData.z
-                val angle = transform.rotation.toRadians().toFloat()
-                val r = graphicalData.red
-                val g = graphicalData.green
-                val b = graphicalData.blue
-                val scale = transform.scale
-                val health = graphicalData.health
-                instancePositionData[instancePositionDataIndex++] = x.toFloat()
-                instancePositionData[instancePositionDataIndex++] = y.toFloat()
-                instancePositionData[instancePositionDataIndex++] = z
-                instanceColorData[instanceColorDataIndex++] = r
-                instanceColorData[instanceColorDataIndex++] = g
-                instanceColorData[instanceColorDataIndex++] = b
-                instanceRotationData[instanceRotationDataIndex++] = angle
-                instanceScaleData[instanceScaleDataIndex++] = scale.toFloat()
-                instanceHealthData[instancedHealthDataIndex++] = health
-            }
-            data.instanceIndex = indexCounter
-            indexCounter += data.instanceCount
+
+        val floatArrayMap = mutableMapOf<VBOFields, FloatArray>()
+        for (entry in VBOFields.entries.filter { it.instanced }) {
+            floatArrayMap[entry] = FloatArray(entry.size * modelCount)
         }
 
-        //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
-        val positionBuffer = GLBuffers.newDirectFloatBuffer(instancePositionData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            positionBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            positionBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
+        var indexMarker = 0
+        var indexCounter = 0
+        for (modelGroup in modelData.values){
+            for (model in modelGroup.instanceData){
+                for(VBO in VBOFields.entries.filter{ it.instanced }){
+                    val extractedFloats = VBO.dataExtractor!!(model) //TODO Can improve safety here? We just have to hope that we added a data extractor to every instanced field...
+                    val targetFloatArray = floatArrayMap[VBO]
+                    for ((floatIndex, extractedFloat) in extractedFloats.withIndex()) {
+                        val index = indexMarker * VBO.size + floatIndex
+                        targetFloatArray!![index] = extractedFloat
+                    }
+                }
+                indexMarker++
+            }
+            modelGroup.instanceIndex = indexCounter
+            indexCounter += modelGroup.instanceCount
+        }
 
-        val colorBuffer = GLBuffers.newDirectFloatBuffer(instanceColorData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            colorBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            colorBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val rotationBuffer = GLBuffers.newDirectFloatBuffer(instanceRotationData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            rotationBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            rotationBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val scaleBuffer = GLBuffers.newDirectFloatBuffer(instanceScaleData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            scaleBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            scaleBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val healthBuffer = GLBuffers.newDirectFloatBuffer(instanceHealthData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            healthBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            healthBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
+        for (entry in floatArrayMap.filter { it -> it.key.instanced }) {
+            val buffer = GLBuffers.newDirectFloatBuffer(entry.value)
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[entry.key.index])
+            gl.glBufferData(GL.GL_ARRAY_BUFFER,
+                buffer.capacity().toLong() * java.lang.Float.BYTES,
+                buffer,
+                GL.GL_DYNAMIC_DRAW)
+        }
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     }
@@ -407,7 +309,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         gl.glDeleteProgram(entityProgram!!.name)
         gl.glDeleteProgram(backgroundProgram!!.name)
         gl.glDeleteVertexArrays(1, VAOs)
-        gl.glDeleteBuffers(Buffer.MAX, VBOs)
+        gl.glDeleteBuffers(VBOFieldsCount, VBOs)
         checkError(gl, "dispose() : deleting resources")
     }
 
@@ -420,16 +322,4 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
-
-    /**
-     * These indexes MUST match those in the shaders' "layout" term
-     */
-    companion object {
-        var POSITION_ATTRIB_INDICE: Int = 0
-        var INSTANCE_POSITION_ATTRIB_INDICE: Int = 1
-        var INSTANCE_ROTATION_ATTRIB_INDICE: Int = 2
-        var INSTANCE_SCALE_ATTRIB_INCIDE: Int = 3
-        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 4
-        var INSTANCE_HEALTH_ATTRIB_INDICE: Int = 5;
-    }
 }
