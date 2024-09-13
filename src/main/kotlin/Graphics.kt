@@ -153,77 +153,75 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private fun initVAOs(gl: GL3) {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
-        run {
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
-            val stride = 3 * java.lang.Float.BYTES
-            var offset = 0
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
+        val stride = 3 * java.lang.Float.BYTES
+        var offset = 0
 
-            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
+        gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
+        gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
-            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_POSITION_ATTRIB_INDICE,
-                3,
-                GL.GL_FLOAT,
-                false,
-                3 * java.lang.Float.BYTES,
-                0
-            )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
+        gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
+        gl.glVertexAttribPointer(
+            INSTANCE_POSITION_ATTRIB_INDICE,
+            3,
+            GL.GL_FLOAT,
+            false,
+            3 * java.lang.Float.BYTES,
+            0
+        )
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
-            gl.glEnableVertexAttribArray(INSTANCE_ROTATION_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_ROTATION_ATTRIB_INDICE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
+        gl.glEnableVertexAttribArray(INSTANCE_ROTATION_ATTRIB_INDICE)
+        gl.glVertexAttribPointer(
+            INSTANCE_ROTATION_ATTRIB_INDICE,
+            1,
+            GL.GL_FLOAT,
+            false,
+            1 * java.lang.Float.BYTES,
+            0
+        )
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
-            gl.glEnableVertexAttribArray(INSTANCE_SCALE_ATTRIB_INCIDE)
-            gl.glVertexAttribPointer(
-                INSTANCE_SCALE_ATTRIB_INCIDE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
+        gl.glEnableVertexAttribArray(INSTANCE_SCALE_ATTRIB_INCIDE)
+        gl.glVertexAttribPointer(
+            INSTANCE_SCALE_ATTRIB_INCIDE,
+            1,
+            GL.GL_FLOAT,
+            false,
+            1 * java.lang.Float.BYTES,
+            0
+        )
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
-            gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_COLOR_ATTRIB_INDICE,
-                3,
-                GL.GL_FLOAT,
-                false,
-                3 * java.lang.Float.BYTES,
-                0
-            )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
+        gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
+        gl.glVertexAttribPointer(
+            INSTANCE_COLOR_ATTRIB_INDICE,
+            3,
+            GL.GL_FLOAT,
+            false,
+            3 * java.lang.Float.BYTES,
+            0
+        )
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
-            gl.glEnableVertexAttribArray(INSTANCE_HEALTH_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_HEALTH_ATTRIB_INDICE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
+        gl.glEnableVertexAttribArray(INSTANCE_HEALTH_ATTRIB_INDICE)
+        gl.glVertexAttribPointer(
+            INSTANCE_HEALTH_ATTRIB_INDICE,
+            1,
+            GL.GL_FLOAT,
+            false,
+            1 * java.lang.Float.BYTES,
+            0
+        )
 
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-            gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_HEALTH_ATTRIB_INDICE, 1)
-        }
+        gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
+        gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
+        gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
+        gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
+        gl.glVertexAttribDivisor(INSTANCE_HEALTH_ATTRIB_INDICE, 1)
         gl.glBindVertexArray(0)
 
         checkError(gl, "initVao")
