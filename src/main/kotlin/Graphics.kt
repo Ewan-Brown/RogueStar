@@ -7,9 +7,9 @@ import java.nio.IntBuffer
 
 //TODO loadedModels shouldn't need to used like this, there should be a .loadModels() function that lets you pass in new ones/discard old?
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
-    private val VBOFieldsCount = VBOFields.entries.size;
-    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(VBOFieldsCount)
-    private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
+    private val VBODefinitionsCount = VBODefinitions.entries.size;
+    private val VBOPointers: IntBuffer = GLBuffers.newDirectIntBuffer(VBODefinitionsCount)
+    private val VAOPointers: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
     private val clearColor: FloatBuffer = GLBuffers.newDirectFloatBuffer(4)
     private val clearDepth: FloatBuffer = GLBuffers.newDirectFloatBuffer(1)
@@ -84,7 +84,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
      * Represents each of the VBOs that we use. Note that if 'instanced' is true, dataExtractor is expected to be on-null and vali
      * index value is shared for VBO index as well as the respective attribute index
      */
-    enum class VBOFields(val index: Int, val size: Int, val instanced: Boolean, val dataExtractor: ((Pair<Transformation, GraphicalData>) -> List<Float>)?){
+    enum class VBODefinitions(val index: Int, val size: Int, val instanced: Boolean, val dataExtractor: ((Pair<Transformation, GraphicalData>) -> List<Float>)?){
         VERTEX  (0,3,false, null),
         POSITION(1,3,true, { listOf(it.first.position.x.toFloat(), it.first.position.y.toFloat(), it.second.z.toFloat())}),
         ROTATION(2,1,true, {listOf(it.first.rotation.toRadians().toFloat())}),
@@ -129,10 +129,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         val vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray)
 
-        gl.glGenBuffers(VBOFieldsCount, VBOs) // Create VBOs (n = Buffer.max)
+        gl.glGenBuffers(VBODefinitionsCount, VBOPointers) // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBOFields.VERTEX.index])
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOPointers[VBODefinitions.VERTEX.index])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
             vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
@@ -153,11 +153,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun initVAOs(gl: GL3) {
-        gl.glGenVertexArrays(1, VAOs) // Create VAO
-        gl.glBindVertexArray(VAOs[0])
+        gl.glGenVertexArrays(1, VAOPointers) // Create VAO
+        gl.glBindVertexArray(VAOPointers[0])
 
-        for (entry in VBOFields.entries) {
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[entry.index])
+        for (entry in VBODefinitions.entries) {
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOPointers[entry.index])
 
             gl.glEnableVertexAttribArray(entry.index)
             gl.glVertexAttribPointer(
@@ -171,7 +171,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         }
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        for(entry in VBOFields.entries.filter { it.instanced }){
+        for(entry in VBODefinitions.entries.filter { it.instanced }){
             gl.glVertexAttribDivisor(entry.index, 1)
         }
         gl.glBindVertexArray(0)
@@ -190,8 +190,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         //TODO Clean this up.
         //TODO Maybe see if we can automate the insertion of new fields here this is getting silly
 
-        val floatArrayMap = mutableMapOf<VBOFields, FloatArray>()
-        for (entry in VBOFields.entries.filter { it.instanced }) {
+        val floatArrayMap = mutableMapOf<VBODefinitions, FloatArray>()
+        for (entry in VBODefinitions.entries.filter { it.instanced }) {
             floatArrayMap[entry] = FloatArray(entry.size * modelCount)
         }
 
@@ -199,7 +199,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var indexCounter = 0
         for (modelGroup in modelData.values){
             for (model in modelGroup.instanceData){
-                for(VBO in VBOFields.entries.filter{ it.instanced }){
+                for(VBO in VBODefinitions.entries.filter{ it.instanced }){
                     val extractedFloats = VBO.dataExtractor!!(model) //TODO Can improve safety here? We just have to hope that we added a data extractor to every instanced field...
                     val targetFloatArray = floatArrayMap[VBO]
                     for ((floatIndex, extractedFloat) in extractedFloats.withIndex()) {
@@ -215,7 +215,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         for (entry in floatArrayMap.filter { it -> it.key.instanced }) {
             val buffer = GLBuffers.newDirectFloatBuffer(entry.value)
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[entry.key.index])
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOPointers[entry.key.index])
             gl.glBufferData(GL.GL_ARRAY_BUFFER,
                 buffer.capacity().toLong() * java.lang.Float.BYTES,
                 buffer,
@@ -260,7 +260,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
             gl.glClearBufferfv(GL2ES3.GL_DEPTH, 0, clearDepth.put(0, 1f))
 
-            gl.glBindVertexArray(VAOs[0])
+            gl.glBindVertexArray(VAOPointers[0])
 
             gl.glUseProgram(backgroundProgram!!.name)
             gl.glUniform1f(backgroundProgram!!.time, time)
@@ -309,8 +309,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
         gl.glDeleteProgram(entityProgram!!.name)
         gl.glDeleteProgram(backgroundProgram!!.name)
-        gl.glDeleteVertexArrays(1, VAOs)
-        gl.glDeleteBuffers(VBOFieldsCount, VBOs)
+        gl.glDeleteVertexArrays(1, VAOPointers)
+        gl.glDeleteBuffers(VBODefinitionsCount, VBOPointers)
         checkError(gl, "dispose() : deleting resources")
     }
 
