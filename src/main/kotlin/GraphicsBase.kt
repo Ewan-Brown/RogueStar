@@ -24,7 +24,6 @@ abstract class GraphicsBase : GLEventListener {
         window.addGLEventListener(this)
         window.addKeyListener(keyListener)
 
-        //        window.setAut
         val animator = Animator(window)
         animator.start()
 

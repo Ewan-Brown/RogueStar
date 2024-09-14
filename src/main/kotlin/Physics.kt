@@ -231,6 +231,7 @@ abstract class PhysicsEntity protected constructor(val originalComponentDefiniti
     }
 }
 
+//TODO Create a builder/factory pattern instead of this mess
 open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, team : Team) : PhysicsEntity(listOf(
     PhysicalComponentDefinition(
         Model.TRIANGLE,
@@ -276,6 +277,7 @@ class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
         this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))
     }
 
+    //TODO extract the 'fixture destruction' process from this
     override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
         val otherBody = if(data.body1 == this) data.body2 else data.body1
         val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
