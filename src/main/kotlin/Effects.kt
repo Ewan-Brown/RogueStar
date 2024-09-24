@@ -1,35 +1,32 @@
 import org.dyn4j.geometry.Vector2
 import Graphics.Model
-import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Rotation
 
 class EffectsUtils{
     companion object {
-        fun emitThrustParticles(entity: PhysicsEntity, thrust: Vector2) {
+        fun emitThrustParticles(data: PhysicsLayer.PhysicsBodyData, thrust: Vector2) {
             if (thrust.magnitude > 0) {
                 val adjustedThrust = thrust.product(-0.0002).rotate((Math.random() - 0.5) / 3)
                 effectsLayer.addEntity(
                     ParticleEntity(
                         Model.SQUARE1,
-                        entity.worldCenter.x,
-                        entity.worldCenter.y,
+                        data.position.x,
+                        data.position.y,
                         Math.random(),
-                        graphicsDataProvider = { GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife())},
-                                dx = entity.changeInPosition.x + adjustedThrust.x
-                        ,dy = entity.changeInPosition.y + adjustedThrust.y,
+                        graphicsDataProvider = { GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife()) },
+                                dx = data.changeInPosition.x + adjustedThrust.x
+                        ,dy = data.changeInPosition.y + adjustedThrust.y,
                         drotation = (Math.random() - 0.5)
                     )
                 )
             }
         }
-        fun debris(entity: PhysicsEntity, fixture: BodyFixture){
-            (fixture.userData as PhysicsEntity.PartInfo).renderableProducer()?.let{ renderableData ->
-
-                val newPos = renderableData.transform.position.copy().rotate(entity.transform.rotation).add(entity.worldCenter)
-                val newAngle = Rotation(renderableData.transform.rotation.toRadians() + entity.transform.rotationAngle)
+        fun debris(data: PhysicsLayer.PhysicsBodyData, partinfo: PhysicsLayer.PartInfo){
+            partinfo.renderableProducer()?.let{ renderableData ->
+                val newPos = renderableData.transform.position.copy().rotate(data.angle).add(data.position)
+                val newAngle = Rotation(renderableData.transform.rotation.toRadians() + data.angle)
                 val scale = renderableData.transform.scale
                 val graphData = renderableData.graphicalData;
-                println(scale)
 
                 effectsLayer.addEntity(
                     BasicEffectEntity(
@@ -38,9 +35,9 @@ class EffectsUtils{
                         newPos.y,
                         newAngle.toRadians(),
                         GraphicalData(graphData.red*0.5f, graphData.green*0.5f, graphData.blue*0.5f, graphData.z, graphData.health),
-                        entity.changeInPosition.x,
-                        entity.changeInPosition.y,
-                        entity.changeInOrientation, scale = scale
+                        data.changeInPosition.x,
+                        data.changeInPosition.y,
+                        data.changeInOrientation, scale = scale
                     )
                 )
             }
@@ -48,7 +45,7 @@ class EffectsUtils{
     }
 }
 
-class EffectsLayer : Layer{
+class EffectsLayer : Layer {
     private val entities = mutableListOf<EffectsEntity>()
 
     override fun update() {

@@ -2,8 +2,7 @@ import Graphics.Model
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
-import org.dyn4j.dynamics.AbstractPhysicsBody
-import org.dyn4j.dynamics.BodyFixture
+import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Rotation
@@ -12,7 +11,7 @@ import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
 
-class PhysicsLayer : Layer{
+class PhysicsLayer : Layer {
 
     enum class CollisionCategory(val bits: Long){
         CATEGORY_SHIP(      0b0001),
@@ -28,14 +27,25 @@ class PhysicsLayer : Layer{
 
     fun getBodyData() : List<Pair<Int, PhysicsBodyData>>{
         return physicsWorld.bodies.map {
-            it.uuid to PhysicsBodyData(it)
+            it.uuid to it.createBodyData()
         }
+    }
+    private fun getEntity(uuid : Int) : PhysicsEntity? {
+        return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
     }
 
     //TODO benchmark and see if a cachemap ;) is necessary
-    fun getEntity(uuid : Int) : PhysicsBodyData? {
-        val body = physicsWorld.bodies.firstOrNull { it.uuid == uuid }
-        return body?.let { PhysicsBodyData(it) }
+    public fun getEntityData(uuid : Int) : PhysicsBodyData? {
+        val body = getEntity(uuid)
+        return body?.let { it.createBodyData() }
+    }
+
+    public fun applyTorque(uuid : Int, torque: Double) {
+        getEntity(uuid)?.applyTorque(torque)
+    }
+
+    public fun applyForce(uuid : Int, force: Vector2){
+        getEntity(uuid)?.applyForce(force)
     }
 
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
@@ -60,7 +70,28 @@ class PhysicsLayer : Layer{
         physicsWorld.populateModelMap(modelDataMap)
     }
 
-    fun <E : PhysicsEntity> addEntity(entity: E, angle : Double, pos : Vector2) : E{
+    enum class RequestType{
+        SHIP, PROJECTILE
+    }
+
+    public fun requestEntity(request: EntityRequest){
+        when(request.type){
+            RequestType.SHIP -> {
+                ShipEntity(request.scale, request.r, request.g, request.b, request.team)
+            }
+            RequestType.PROJECTILE -> {
+                ProjectileEntity(request.team)
+            }
+        }
+    }
+
+    abstract class EntityRequest(val type: RequestType, val position: Vector2, val velocity: Vector2 = Vector2(),
+                                 val angle: Double = 0.0, val angularVelocity: Double = 0.0,
+                                 val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team){
+//        protected abstract fun process() : PhysicsEntity
+    }
+
+    private fun <E : PhysicsEntity> addEntity(entity: E, angle : Double, pos : Vector2) : E{
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
@@ -70,7 +101,7 @@ class PhysicsLayer : Layer{
         return entity
     }
 
-    fun <E : PhysicsEntity> addEntity(entity: E) : E{
+    private fun <E : PhysicsEntity> addEntity(entity: E) : E{
         entity.setMass(MassType.NORMAL)
         entity.recalculateComponents()
         entity.originalCenterOfMass = entity.mass.center
@@ -78,240 +109,263 @@ class PhysicsLayer : Layer{
         return entity
     }
 
-    fun removeEntity(entity: PhysicsEntity){
-        physicsWorld.removeBody(entity)
-    }
-
-}
-
-//physics DTOs
-open class PhysicsBodyData(val position: Vector2?, val velocity: Vector2?, val angle: Double, val traceRadius: Double, val team: Team){
-    constructor(body: PhysicsEntity) : this(body.worldCenter, body.linearVelocity, body.transform.rotationAngle, body.rotationDiscRadius, body.team)
-}
-
-private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
-
-    override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
-        super.processCollisions(iterator)
-        //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
-        contactCollisions.forEach {
-            it.pair.first.body.onCollide(it)
-            it.pair.second.body.onCollide(it)
-        }
-
-    }
-
-    override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
-        return WorldCollisionData(pair)
-    }
-
-    fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
-        for (body in this.bodies) {
-            for (component in body.getComponents()) {
-                map[component.model]!!.add(Pair(component.transform, component.graphicalData))
-            }
+    fun removeEntity(uuid: Int){
+        physicsWorld.bodies.find { it.uuid == uuid }.let {
+            if (it == null) throw Exception("Entity with uuid $uuid not found")
         }
     }
-}
 
-
-class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<Team> = Predicate { true }, val category : Long, val mask : Long) : Filter{
-    override fun isAllowed(filter: Filter?): Boolean {
-        filter ?: throw NullPointerException("filter can never be null...")
-
-        return if(filter is TeamFilter){
-            //Check that the category/mask matches both directions
-            //AND if team logic matches
-            (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(team)
-        }else{
-            true
-        }
-    }
-}
-
-abstract class PhysicsEntity protected constructor(val originalComponentDefinitions: List<PhysicalComponentDefinition>, private val teamFilter: TeamFilter) : AbstractPhysicsBody() {
-    val team = teamFilter.team
-    private companion object {
-        private var UUID_COUNTER = 0
-    }
-
-
-    var originalCenterOfMass: Vector2? = null
-    val missingParts = mutableListOf<PhysicalComponentDefinition>()
     class PartInfo(val renderableProducer: () -> RenderableComponent?, val componentDefinition: PhysicalComponentDefinition, var health: Int, var removed: Boolean = false){}
 
-    val uuid = UUID_COUNTER++
-
-    init {
-        for (componentDefinition in originalComponentDefinitions) {
-            this.addFixture(createFixture(componentDefinition))
+    private abstract class PhysicsEntity protected constructor(val originalComponentDefinitions: List<PhysicalComponentDefinition>, private val teamFilter: TeamFilter) : AbstractPhysicsBody() {
+        val team = teamFilter.team
+        private companion object {
+            private var UUID_COUNTER = 0
         }
-    }
 
-    override fun removeFixture(fixture: BodyFixture?): Boolean {
-        if(fixture != null){
-            missingParts.add((fixture.userData as PartInfo).componentDefinition)
-        }
-        return super.removeFixture(fixture)
-    }
 
-    fun createFixture(componentDefinition: PhysicalComponentDefinition) : BodyFixture{
-        val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
-        for (i in vertices.indices) {
-            vertices[i] = componentDefinition.model.asVectorData[i].copy().multiply(componentDefinition.localTransform.scale.toDouble())
-        }
-        val v = Polygon(*vertices)
-        v.translate(componentDefinition.localTransform.position.copy())
-        v.rotate(componentDefinition.localTransform.rotation.toRadians())
-        val f = BodyFixture(v)
-        f.filter = teamFilter
-        f.userData = PartInfo ({
-            RenderableComponent(
-                componentDefinition.model,
-                componentDefinition.localTransform,
-                componentDefinition.graphicalData
-            )
-        }, componentDefinition, 100)
-        return f
-    }
 
-    fun getLocalRenderables(): List<RenderableComponent> {
-        return getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }
-    }
+        var originalCenterOfMass: Vector2? = null
+        val missingParts = mutableListOf<PhysicalComponentDefinition>()
 
-    //Need to update the 'center'
-    fun recalculateComponents(){
-        for (renderable in getLocalRenderables()) {
-            renderable.transform.position.subtract(this.getMass().center)
-        }
-    }
+        val uuid = UUID_COUNTER++
 
-    abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>)
-
-    abstract fun isMarkedForRemoval() : Boolean
-
-    abstract fun update()
-
-    fun getComponents(): List<RenderableComponent> {
-        if(!isEnabled){
-            return listOf()
-        }else {
-            val result: MutableList<RenderableComponent> = ArrayList()
-
-            val entityAngle = getTransform().rotationAngle.toFloat()
-            val entityPos = this.worldCenter
-
-            for (partInfo in getFixtures().map { (it.userData as PartInfo)}) {
-                val renderable = partInfo.renderableProducer()
-                if(renderable != null) {
-                    val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
-                    val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
-                    val scale = renderable.transform.scale
-
-                    //TODO We should probably have two different types -
-                    //  'renderable data that is static and attached to fixture'
-                    //  and 'class that represents ephemeral data describing a fixture's rendering'
-                    result.add(
-                        RenderableComponent(
-                            renderable.model,
-                            Transformation(newPos, scale, newAngle),
-                            GraphicalData(
-                                renderable.graphicalData.red,
-                                renderable.graphicalData.green,
-                                renderable.graphicalData.blue,
-                                renderable.graphicalData.z,
-                                partInfo.health/100.0f
-                                )
-                        )
-                    )
-                }
+        init {
+            for (componentDefinition in originalComponentDefinitions) {
+                this.addFixture(createFixture(componentDefinition))
             }
-            return result
+        }
+
+        override fun removeFixture(fixture: BodyFixture?): Boolean {
+            if(fixture != null){
+                missingParts.add((fixture.userData as PartInfo).componentDefinition)
+            }
+            return super.removeFixture(fixture)
+        }
+
+        fun createFixture(componentDefinition: PhysicalComponentDefinition) : BodyFixture{
+            val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
+            for (i in vertices.indices) {
+                vertices[i] = componentDefinition.model.asVectorData[i].copy().multiply(componentDefinition.localTransform.scale.toDouble())
+            }
+            val v = Polygon(*vertices)
+            v.translate(componentDefinition.localTransform.position.copy())
+            v.rotate(componentDefinition.localTransform.rotation.toRadians())
+            val f = BodyFixture(v)
+            f.filter = teamFilter
+            f.userData = PartInfo ({
+                RenderableComponent(
+                    componentDefinition.model,
+                    componentDefinition.localTransform,
+                    componentDefinition.graphicalData
+                )
+            }, componentDefinition, 100)
+            return f
+        }
+
+        fun getLocalRenderables(): List<RenderableComponent> {
+            return getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }
+        }
+
+        //Need to update the 'center'
+        fun recalculateComponents(){
+            for (renderable in getLocalRenderables()) {
+                renderable.transform.position.subtract(this.getMass().center)
+            }
+        }
+
+        abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>)
+
+        abstract fun isMarkedForRemoval() : Boolean
+
+        abstract fun update()
+
+        fun getComponents(): List<RenderableComponent> {
+            if(!isEnabled){
+                return listOf()
+            }else {
+                val result: MutableList<RenderableComponent> = ArrayList()
+
+                val entityAngle = getTransform().rotationAngle.toFloat()
+                val entityPos = this.worldCenter
+
+                for (partInfo in getFixtures().map { (it.userData as PartInfo)}) {
+                    val renderable = partInfo.renderableProducer()
+                    if(renderable != null) {
+                        val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                        val newAngle = Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
+                        val scale = renderable.transform.scale
+
+                        //TODO We should probably have two different types -
+                        //  'renderable data that is static and attached to fixture'
+                        //  and 'class that represents ephemeral data describing a fixture's rendering'
+                        result.add(
+                            RenderableComponent(
+                                renderable.model,
+                                Transformation(newPos, scale, newAngle),
+                                GraphicalData(
+                                    renderable.graphicalData.red,
+                                    renderable.graphicalData.green,
+                                    renderable.graphicalData.blue,
+                                    renderable.graphicalData.z,
+                                    partInfo.health/100.0f
+                                )
+                            )
+                        )
+                    }
+                }
+                return result
+            }
+        }
+
+        fun createBodyData(): PhysicsBodyData {
+            return PhysicsBodyData(
+                uuid,
+                worldCenter,
+                linearVelocity,
+                transform.rotationAngle,
+                angularVelocity,
+                rotationDiscRadius,
+                changeInPosition,
+                changeInOrientation,
+                team
+            );
         }
     }
-}
 
-open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, team : Team) : PhysicsEntity(listOf(
-    PhysicalComponentDefinition(
-        Model.TRIANGLE,
-        Transformation(Vector2(0.0, 0.0), 1.0*scale, 0.0),
-        GraphicalData(red, green, blue, 0.0f)),
-    PhysicalComponentDefinition(
-        Model.SQUARE1,
-        Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
-        GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits,
-    mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits or PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits)) {
+    private open class ShipEntity(scale : Double, red : Float, green : Float, blue : Float, team : Team) : PhysicsEntity(listOf(
+        PhysicalComponentDefinition(
+            Model.TRIANGLE,
+            Transformation(Vector2(0.0, 0.0), 1.0*scale, 0.0),
+            GraphicalData(red, green, blue, 0.0f)),
+        PhysicalComponentDefinition(
+            Model.SQUARE1,
+            Transformation(Vector2(-1.0*scale, 0.0), 1.0*scale, 0.0),
+            GraphicalData(1.0f, 1.0f, 1.0f, 0.0f))), TeamFilter(team = team, teamPredicate = { it != team}, category = CollisionCategory.CATEGORY_SHIP.bits,
+        mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits)
+    ) {
 
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+        override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
 
-    }
+        }
 
-    override fun isMarkedForRemoval() : Boolean = false
+        override fun isMarkedForRemoval() : Boolean = false
 
-    override fun update() {
-        if(missingParts.isNotEmpty()){
-            val first = missingParts.first()
-            val diff = mass.center.difference(originalCenterOfMass)
-            println(diff)
-            val newComp = PhysicalComponentDefinition(first.model, Transformation(first.localTransform.position.sum(diff.product(first.localTransform.scale)),
-                first.localTransform.scale,
-                first.localTransform.rotation),first.graphicalData)
-            addFixture(createFixture(newComp))
-            missingParts.remove(first)
+        override fun update() {
+            if(missingParts.isNotEmpty()){
+                val first = missingParts.first()
+                val diff = mass.center.difference(originalCenterOfMass)
+                println(diff)
+                val newComp = PhysicalComponentDefinition(first.model, Transformation(first.localTransform.position.sum(diff.product(first.localTransform.scale)),
+                    first.localTransform.scale,
+                    first.localTransform.rotation),first.graphicalData)
+                addFixture(createFixture(newComp))
+                missingParts.remove(first)
+            }
         }
     }
-}
 
-//TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
+    //TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
 //  Maybe could collect these explosions and pass them to shader to do cool stuff...
-class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
-    PhysicalComponentDefinition(
-        Model.TRIANGLE,
-        Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
-        GraphicalData(1.0f, 0.0f, 0.0f, 0.0f))),
-    TeamFilter(team = team, teamPredicate = { it != team}, category = PhysicsLayer.CollisionCategory.CATEGORY_PROJECTILE.bits, mask = PhysicsLayer.CollisionCategory.CATEGORY_SHIP.bits)) {
-    var hasCollided = false
+    private class ProjectileEntity(team : Team) : PhysicsEntity(listOf(
+        PhysicalComponentDefinition(
+            Model.TRIANGLE,
+            Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
+            GraphicalData(1.0f, 0.0f, 0.0f, 0.0f))),
+        TeamFilter(team = team, teamPredicate = { it != team}, category = CollisionCategory.CATEGORY_PROJECTILE.bits, mask = CollisionCategory.CATEGORY_SHIP.bits)
+    ) {
+        var hasCollided = false
 
-    init {
-        this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))
-    }
+        init {
+            this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))
+        }
 
-    override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-        val otherBody = if(data.body1 == this) data.body2 else data.body1
-        val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
-        (otherFixture.userData as PartInfo).health -= 10
-        if((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed){
-            (otherFixture.userData as PartInfo).removed = true
-            otherBody.removeFixture(otherFixture)
-            EffectsUtils.debris(otherBody, otherFixture)
-            if(otherBody.fixtures.size == 0){
-                physicsLayer.removeEntity(otherBody);
-                controllerLayer.removeController(otherBody);
-            }else{
-                val oldCenterOfMass = Vector2(otherBody.mass.center);
-                otherBody.setMass(MassType.NORMAL)
-                val newCenterOfMass = otherBody.mass.center
+        override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+            val otherBody = if(data.body1 == this) data.body2 else data.body1
+            val otherFixture = if(data.body1 == this) data.fixture2 else data.fixture1
+            (otherFixture.userData as PartInfo).health -= 10
+            if((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed){
+                (otherFixture.userData as PartInfo).removed = true
+                otherBody.removeFixture(otherFixture)
+                EffectsUtils.debris(otherBody.createBodyData(), otherFixture.userData as PartInfo)
+                if(otherBody.fixtures.size == 0){
+                    physicsLayer.removeEntity(otherBody.uuid);
+                    controllerLayer.removeController(otherBody.uuid);
+                }else{
+                    val oldCenterOfMass = Vector2(otherBody.mass.center);
+                    otherBody.setMass(MassType.NORMAL)
+                    val newCenterOfMass = otherBody.mass.center
 
-                val centerOfMassDifference = newCenterOfMass.difference(oldCenterOfMass)
+                    val centerOfMassDifference = newCenterOfMass.difference(oldCenterOfMass)
 
-                //FIXME the reference to the removed part is invalid because the local transform that it should have applied might need to adjust based on the COM, which changes when the part (and further parts) are removed?
-                for (fixture in otherBody.fixtures) {
-                    val partInfo = (fixture.userData as PartInfo)
-                    partInfo.renderableProducer()?.let { oldRenderable ->
-                        val transform = oldRenderable.transform
-                        transform.position.subtract(centerOfMassDifference)
-                        fixture.userData = PartInfo({RenderableComponent(oldRenderable.model, transform, oldRenderable.graphicalData)}, partInfo.componentDefinition, partInfo.health, partInfo.removed)
+                    //FIXME the reference to the removed part is invalid because the local transform that it should have applied might need to adjust based on the COM, which changes when the part (and further parts) are removed?
+                    for (fixture in otherBody.fixtures) {
+                        val partInfo = (fixture.userData as PartInfo)
+                        partInfo.renderableProducer()?.let { oldRenderable ->
+                            val transform = oldRenderable.transform
+                            transform.position.subtract(centerOfMassDifference)
+                            fixture.userData = PartInfo({RenderableComponent(oldRenderable.model, transform, oldRenderable.graphicalData)}, partInfo.componentDefinition, partInfo.health, partInfo.removed)
+                        }
                     }
                 }
             }
+            hasCollided = true
+            isEnabled = false
         }
-        hasCollided = true
-        isEnabled = false
+
+        override fun isMarkedForRemoval() : Boolean = hasCollided
+
+        override fun update() {
+            this.applyForce(Vector2(transform.rotationAngle).product(2.0))
+        }
     }
 
-    override fun isMarkedForRemoval() : Boolean = hasCollided
+    //physics DTOs
+    open class PhysicsBodyData(val uuid: Int, val position: Vector2, val velocity: Vector2,
+                               val angle: Double, val angularVelocity: Double, val traceRadius: Double,
+                               val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team){
+    }
 
-    override fun update() {
-        this.applyForce(Vector2(transform.rotationAngle).product(2.0))
+
+
+    private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
+
+        override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
+            super.processCollisions(iterator)
+            //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
+            contactCollisions.forEach {
+                it.pair.first.body.onCollide(it)
+                it.pair.second.body.onCollide(it)
+            }
+
+        }
+
+        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
+            return WorldCollisionData(pair)
+        }
+
+        fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
+            for (body in this.bodies) {
+                for (component in body.getComponents()) {
+                    map[component.model]!!.add(Pair(component.transform, component.graphicalData))
+                }
+            }
+        }
+    }
+
+    class TeamFilter(val team : Team = Team.TEAMLESS, val teamPredicate : Predicate<Team> = Predicate { true }, val category : Long, val mask : Long) : Filter{
+        override fun isAllowed(filter: Filter?): Boolean {
+            filter ?: throw NullPointerException("filter can never be null...")
+
+            return if(filter is TeamFilter){
+                //Check that the category/mask matches both directions
+                //AND if team logic matches
+                (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(team)
+            }else{
+                true
+            }
+        }
     }
 }
+
+
