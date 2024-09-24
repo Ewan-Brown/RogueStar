@@ -1,6 +1,7 @@
 import Graphics.Model
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import PhysicsLayer
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.util.*
@@ -17,7 +18,7 @@ class PhysicalComponentDefinition(val model : Model, val localTransform: Transfo
 
 class Team(val name : String){
     companion object{
-        private var UUID_COUNTER : Long = 0
+        private var UUID_COUNTER : Int = 0
         val TEAMLESS = Team("Teamless")
     }
     val UUID = UUID_COUNTER++
@@ -50,19 +51,19 @@ fun main() {
 
     val greenTeam = Team("Green")
 
-    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
-    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
-
-    val greenEntities = mutableListOf<PhysicsEntity>()
-    val blueEntities = mutableListOf<PhysicsEntity>()
-    for(i in 1..10){
-        greenEntities.add(physicsLayer.addEntity(ShipEntity(0.7, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-
-    }
-
-    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
-        { playerEntity.worldCenter},
-        20.0, Vector2(1.0,0.0)))
+//    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
+//    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
+//
+//    val greenEntities = mutableListOf<PhysicsEntity>()
+//    val blueEntities = mutableListOf<PhysicsEntity>()
+//    for(i in 1..10){
+//        greenEntities.add(physicsLayer.addEntity(ShipEntity(0.7, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
+//
+//    }
+//
+//    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
+//        { playerEntity.worldCenter},
+//        20.0, Vector2(1.0,0.0)))
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -78,9 +79,9 @@ fun main() {
         controllerLayer.populateModelMap(modelDataMap)
 
         //New entities created from controllers, like projectiles or summoned ships
-        val controllerEntityRequestList = controllerLayer.getNewEntityRequests()
+//        val controllerEntityRequestList = controllerLayer.getNewEntityRequests()
 
-        gui.updateDrawables(modelDataMap, playerEntity.worldCenter.copy())
+//        gui.updateDrawables(modelDataMap, playerEntity.worldCenter.copy())
     }
 
     populateData()

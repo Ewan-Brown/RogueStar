@@ -2,7 +2,6 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.world.World
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
