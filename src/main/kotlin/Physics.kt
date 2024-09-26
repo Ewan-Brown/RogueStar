@@ -74,8 +74,11 @@ class PhysicsLayer : Layer {
         SHIP, PROJECTILE
     }
 
-    public fun requestEntity(request: EntityRequest){
-        when(request.type){
+    /**
+     * Put in a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
+     */
+    public fun requestEntity(request: EntityRequest): Int? {
+        val entity = when(request.type){
             RequestType.SHIP -> {
                 ShipEntity(request.scale, request.r, request.g, request.b, request.team)
             }
@@ -83,9 +86,11 @@ class PhysicsLayer : Layer {
                 ProjectileEntity(request.team)
             }
         }
+        addEntity(entity)
+        return entity.uuid
     }
 
-    abstract class EntityRequest(val type: RequestType, val position: Vector2, val velocity: Vector2 = Vector2(),
+    class EntityRequest(val type: RequestType, val position: Vector2, val velocity: Vector2 = Vector2(),
                                  val angle: Double = 0.0, val angularVelocity: Double = 0.0,
                                  val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team){
 //        protected abstract fun process() : PhysicsEntity

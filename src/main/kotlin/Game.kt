@@ -51,6 +51,11 @@ fun main() {
 
     val greenTeam = Team("Green")
 
+    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=1.0f, g=0.0f, b=0.0f, team=Team("Player")))
+
+    if(uuid != null){
+        controllerLayer.addControllerEntry(PlayerController(bitSet), mutableListOf(uuid))
+    }
 //    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
 //    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
 //
@@ -81,7 +86,7 @@ fun main() {
         //New entities created from controllers, like projectiles or summoned ships
 //        val controllerEntityRequestList = controllerLayer.getNewEntityRequests()
 
-//        gui.updateDrawables(modelDataMap, playerEntity.worldCenter.copy())
+        gui.updateDrawables(modelDataMap, Vector2())
     }
 
     populateData()
