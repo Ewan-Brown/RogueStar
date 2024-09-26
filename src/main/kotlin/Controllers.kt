@@ -9,7 +9,7 @@ class ControllerLayer : Layer{
 
     fun removeController(uuid: Int){
         controllerList.removeIf {
-            it.input.removeIf { it2 -> it2.uuid == uuid } //Remove this entry from the input list
+            it.input.removeIf { it2 -> it2 == uuid } //Remove this entry from the input list
             it.input.size == 0 //If that was the last entry for this controller, remove the controller too :)
         }
     }
@@ -102,13 +102,20 @@ class ControllerLayer : Layer{
 
     }
 
-    fun <E : PhysicsBodyData> addControllerEntry(group: MutableList<E>, controller: Controller<E>){
+    fun <E : PhysicsBodyData> addControllerEntry(controller: Controller<E>, group: MutableList<Int>, ){
         controllerList.add(ControllerInputEntry(controller, group))
     }
 
-    private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, var input: MutableList<E>){
+    private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, var input: MutableList<Int>){
         fun update(){
-            controller.update(input)
+            val entities = try {
+                input.mapNotNull { it ->
+                    physicsLayer.getEntityData(it)?.let { physicsBodyData -> physicsBodyData as E }
+                }
+            }catch (e : ClassCastException){
+                error(e)
+            }
+            controller.update(entities)
         }
     }
 
