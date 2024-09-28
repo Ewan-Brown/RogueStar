@@ -24,11 +24,11 @@ class Team(val name : String){
     val UUID = UUID_COUNTER++
 }
 
-val physicsLayer = PhysicsLayer()
-val effectsLayer = EffectsLayer()
-val controllerLayer = ControllerLayer()
-
 fun main() {
+
+    val physicsLayer = PhysicsLayer()
+    val effectsLayer = EffectsLayer()
+    val controllerLayer = ControllerLayer()
 
     val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.BACKPLATE)
     val gui = Graphics(models)
@@ -51,7 +51,7 @@ fun main() {
 
     val greenTeam = Team("Green")
 
-    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=1.0f, g=0.0f, b=0.0f, team=Team("Player")))
+    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))
 
     if(uuid != null){
         controllerLayer.addControllerEntry(PlayerController(bitSet), mutableListOf(uuid))
@@ -104,7 +104,7 @@ fun main() {
 }
 
 interface Layer{
-    fun update()
+//    fun update()
 }
 
 
