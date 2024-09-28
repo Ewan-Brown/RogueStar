@@ -13,13 +13,14 @@ class ControllerLayer : Layer{
             it.input.size == 0 //If that was the last entry for this controller, remove the controller too :)
         }
     }
+    //TODO class that represents the controlled object so we can functionally-oriented amalgamate the actions taken upon that object before processing at a later step
 
     private fun calcTorqueToTurnTo(desiredAngleVec: Vector2, angle: Double, angularVelocity: Double) : Double{
         val angleDiff = desiredAngleVec.getAngleBetween(angle)
         return (-angleDiff*8 - angularVelocity*4)
     }
 
-    private fun doPositionalControl(data: PhysicsLayer.PhysicsBodyData, targetPos: Vector2, targetOrientation: Vector2, targetVelocity: Vector2 = Vector2()){
+    private fun calculatePositionalControl(data: PhysicsLayer.PhysicsBodyData, targetPos: Vector2, targetOrientation: Vector2, targetVelocity: Vector2 = Vector2()) : Pair<Vector2, Double>{
         val velocityDiff: Vector2 = data.velocity.to(targetVelocity)
         val vecToTarget = data.position.to(targetPos)
 
@@ -31,31 +32,34 @@ class ControllerLayer : Layer{
         val thrust : Vector2 = calcThrustToGetTo(targetPos)
         val torque : Double = calcTorqueToTurnTo(targetOrientation, data.angle, data.angularVelocity)
 
-        physicsLayer.applyForce(data.uuid, thrust)
-        physicsLayer.applyTorque(data.uuid, torque)
+//        physicsLayer.applyForce(data.uuid, thrust)
+//        physicsLayer.applyTorque(data.uuid, torque)
         emitThrustParticles(data, thrust)
+
+        return Pair(thrust, torque)
     }
 
     abstract class BaseController<E : PhysicsBodyData>{
-        abstract fun update(input: List<E>)
+        abstract fun update(input: List<E>) : Map<Int, List<ControlAction>>
     }
 
-    abstract class Controller<E : PhysicsBodyData> : BaseController<E>() {
-        abstract override fun update(input : List<E>)
+    abstract class GroupController<E : PhysicsBodyData> : BaseController<E>() {
+        abstract override fun update(input : List<E>) : Map<Int, List<ControlAction>>
     }
 
-    abstract class SingleController<E : PhysicsBodyData> : Controller<E>(){
-        final override fun update(input: List<E>) {
+    abstract class SingleController<E : PhysicsBodyData> : BaseController<E>(){
+        final override fun update(input: List<E>) : Map<Int, List<ControlAction>> {
             if(input.size != 1){
                 throw IllegalArgumentException("A $javaClass should only ever be attached to one entity at a time ")
             }
-            update(input.first())
+            val uuid = input.first().uuid
+            return mapOf(Pair(uuid, update(input.first())))
         }
 
-        abstract fun update(input: E);
+        abstract fun update(input: E) : List<ControlAction>;
     }
 
-    inner class BubbleMultiController<E : PhysicsBodyData>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : Controller<E>(){
+    inner class BubbleMultiController<E : PhysicsBodyData>(inline val centerGenerator: () -> Vector2 , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : GroupController<E>(){
 
         val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
@@ -64,7 +68,7 @@ class ControllerLayer : Layer{
             bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(Math.random()*2*Math.PI)
         }
 
-        override fun update(data: List<E>) {
+        override fun update(data: List<E>) : Map<Int, List<ControlAction>> {
             if(bubbleAnchorMap.isEmpty()){
                 for(datum in data){
                     val index = datum.uuid
@@ -78,7 +82,7 @@ class ControllerLayer : Layer{
                     val vecToBubbleCenter = datum.position.to(centerGenerator())
                     if (abs(vecToBubbleCenter.magnitude) < radius) {
                         inBubbleTrackerMap[index] = true
-                        doPositionalControl(
+                        calculatePositionalControl(
                             datum,
                             centerGenerator().sum(bubbleAnchorMap[index]),
                             Vector2(datum.angle),
@@ -89,7 +93,7 @@ class ControllerLayer : Layer{
                             inBubbleTrackerMap[index] = false
                             randomizeAnchor(index)
                         }
-                        doPositionalControl(
+                        calculatePositionalControl(
                             datum,
                             centerGenerator().sum(bubbleAnchorMap[index]),
                             Vector2(datum.angle),
@@ -98,33 +102,27 @@ class ControllerLayer : Layer{
                     }
                 }
             }
+            return TODO("Provide the return value")
         }
 
     }
 
-    fun <E : PhysicsBodyData> addControllerEntry(controller: Controller<E>, group: MutableList<Int>, ){
+    fun <E : PhysicsBodyData> addControllerEntry(controller: GroupController<E>, group: MutableList<Int>, ){
         controllerList.add(ControllerInputEntry(controller, group))
     }
 
-    private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, var input: MutableList<Int>){
-        fun update(){
-            val entities = try {
-                input.mapNotNull { it ->
-                    physicsLayer.getEntityData(it)?.let { physicsBodyData -> physicsBodyData as E }
-                }
-            }catch (e : ClassCastException){
-                error(e)
-            }
-            controller.update(entities)
+    private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, val input: MutableList<Int>){
+        fun update(data: List<PhysicsBodyData>){
+            controller.update(data as List<E>) //TODO We can do better than this
         }
     }
 
-
     private val controllerList = mutableListOf<ControllerInputEntry<*>>()
 
-    override fun update() {
+fun update(entityDataMap: Map<Int, PhysicsBodyData>) {
         for (controllerEntityEntry in controllerList) {
-            controllerEntityEntry.update()
+            val data = controllerEntityEntry.input.mapNotNull{ entityDataMap[it] } //TODO Deal with disappeared entities?
+            controllerEntityEntry.update(data)
         }
     }
 
@@ -134,7 +132,7 @@ class ControllerLayer : Layer{
 }
 
 class PlayerController(val input: BitSet) : ControllerLayer.SingleController<PhysicsBodyData>(){
-    override fun update(entityData: PhysicsBodyData) {
+    override fun update(entityData: PhysicsBodyData): List<ControlAction> {
         var x = 0.0
         var y = 0.0
         var r = 0.0
@@ -182,9 +180,15 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
         val thrust = desiredVelocity.product(100.0)
 
         emitThrustParticles(entityData, thrust)
-        physicsLayer.applyForce(entityData.uuid, thrust)
-
         val rotate = r*5 - entityData.angularVelocity
-        physicsLayer.applyTorque(entityData.uuid, rotate*10.0)
+
+        return listOf(ControlAction.ThrustAction(thrust), ControlAction.TurnAction(rotate))
     }
+}
+
+
+sealed class ControlAction(){
+    data class ThrustAction(val thrust: Vector2)  : ControlAction()
+    data class TurnAction(val torque: Double)  : ControlAction()
+    data object ShootAction : ControlAction()
 }
