@@ -1,4 +1,3 @@
-import EffectsUtils.Companion.emitThrustParticles
 import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
@@ -34,7 +33,7 @@ class ControllerLayer : Layer{
 
 //        physicsLayer.applyForce(data.uuid, thrust)
 //        physicsLayer.applyTorque(data.uuid, torque)
-        emitThrustParticles(data, thrust)
+//        emitThrustParticles(data, thrust)
 
         return Pair(thrust, torque)
     }
@@ -111,20 +110,27 @@ class ControllerLayer : Layer{
         controllerList.add(ControllerInputEntry(controller, group))
     }
 
+    fun <E : PhysicsBodyData> addControllerEntry(controller: SingleController<E>, entity: Int, ){
+        controllerList.add(ControllerInputEntry(controller, mutableListOf(entity)))
+    }
+
     private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, val input: MutableList<Int>){
-        fun update(data: List<PhysicsBodyData>){
-            controller.update(data as List<E>) //TODO We can do better than this
+        fun update(data: List<PhysicsBodyData>) : Map<Int, List<ControlAction>>{
+            return controller.update(data as List<E>) //TODO We can do better than this
         }
     }
 
     private val controllerList = mutableListOf<ControllerInputEntry<*>>()
 
-fun update(entityDataMap: Map<Int, PhysicsBodyData>) {
-        for (controllerEntityEntry in controllerList) {
-            val data = controllerEntityEntry.input.mapNotNull{ entityDataMap[it] } //TODO Deal with disappeared entities?
-            controllerEntityEntry.update(data)
-        }
+fun update(entityDataMap: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
+    val amalgamatedMap = mutableMapOf<Int, List<ControlAction>>()
+    for (controllerEntityEntry in controllerList) {
+        val data = controllerEntityEntry.input.mapNotNull { entityDataMap[it] } //TODO Deal with disappeared entities?
+        val map = controllerEntityEntry.update(data)
+        amalgamatedMap.putAll(map)
     }
+    return amalgamatedMap
+}
 
     fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         //Add renderables for player perspective?? Interesting idea
@@ -179,7 +185,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
 
         val thrust = desiredVelocity.product(100.0)
 
-        emitThrustParticles(entityData, thrust)
+//        emitThrustParticles(entityData, thrust)
         val rotate = r*5 - entityData.angularVelocity
 
         return listOf(ControlAction.ThrustAction(thrust), ControlAction.TurnAction(rotate))

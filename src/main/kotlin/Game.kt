@@ -5,6 +5,7 @@ import PhysicsLayer
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.util.*
+import javax.naming.ldap.Control
 
 class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
@@ -54,7 +55,7 @@ fun main() {
     val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))
 
     if(uuid != null){
-        controllerLayer.addControllerEntry(PlayerController(bitSet), mutableListOf(uuid))
+        controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
     }
 //    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
 //    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
@@ -92,12 +93,14 @@ fun main() {
     populateData()
     gui.setup(keyListener)
 
+    var lastControlActions = mapOf<Int, List<ControlAction>>()
+
     while(true){
         Thread.sleep(15)
 
-        physicsLayer.update()
+        physicsLayer.update(lastControlActions)
+        val lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
         effectsLayer.update()
-        controllerLayer.update()
 
         populateData()
     }
