@@ -98,9 +98,9 @@ fun main() {
     while(true){
         Thread.sleep(15)
 
-        physicsLayer.update(lastControlActions)
-        val lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
-        effectsLayer.update()
+        val effectsRequests = physicsLayer.update(lastControlActions)
+        lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
+        effectsLayer.update(effectsRequests)
 
         populateData()
     }

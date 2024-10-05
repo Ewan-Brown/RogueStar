@@ -20,6 +20,7 @@ class PhysicsLayer : Layer {
         CATEGORY_SHIELD(0b0100)
     }
 
+    private var effectsRequests = mutableListOf<EffectsRequest>()
     private val physicsWorld = PhysicsWorld()
     private var time = 0.0
 
@@ -28,7 +29,7 @@ class PhysicsLayer : Layer {
     }
 
     fun getBodyData(): Map<Int, PhysicsBodyData> {
-        return physicsWorld.bodies.map { it.uuid to it.createBodyData() }.toMap()
+        return physicsWorld.bodies.associate { it.uuid to it.createBodyData() }
     }
 
     private fun getEntity(uuid: Int): PhysicsEntity? {
@@ -51,7 +52,7 @@ class PhysicsLayer : Layer {
 
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
     //therefore onCollide should simply flag things and store data, allowing .update() to clean up.
-    fun update(controlActions: Map<Int, List<ControlAction>>) {
+    fun update(controlActions: Map<Int, List<ControlAction>>) : List<EffectsRequest>{
         time++
         physicsWorld.update(1.0)
         var i = physicsWorld.bodies.size
@@ -67,6 +68,9 @@ class PhysicsLayer : Layer {
                 i--
             }
         }
+        val retVal = effectsRequests
+        effectsRequests = mutableListOf()
+        return retVal
     }
 
     //TODO Can we delegate this or something
@@ -146,7 +150,7 @@ class PhysicsLayer : Layer {
 
         val team = teamFilter.team
         var originalCenterOfMass: Vector2? = null
-        private val missingParts = mutableListOf<PhysicalComponentDefinition>()
+        val missingParts = mutableListOf<PhysicalComponentDefinition>()
 
         val uuid = UUID_COUNTER++
 
@@ -279,21 +283,28 @@ class PhysicsLayer : Layer {
 
         override fun isMarkedForRemoval(): Boolean = false
 
-        override fun update() {
-            if (missingParts.isNotEmpty()) {
-                val first = missingParts.first()
-                val diff = mass.center.difference(originalCenterOfMass)
-                println(diff)
-                val newComp = PhysicalComponentDefinition(
-                    first.model, Transformation(
-                        first.localTransform.position.sum(diff.product(first.localTransform.scale)),
-                        first.localTransform.scale,
-                        first.localTransform.rotation
-                    ), first.graphicalData
-                )
-                addFixture(createFixture(newComp))
-                missingParts.remove(first)
+        override fun update(actions: List<ControlAction>) {
+            for (action in actions) {
+                when(action){
+                    is ControlAction.ShootAction -> TODO()
+                    is ControlAction.ThrustAction -> applyForce(action.thrust)
+                    is ControlAction.TurnAction -> applyTorque(action.torque)
+                }
             }
+//            if (missingParts.isNotEmpty()) {
+//                val first = missingParts.first()
+//                val diff = mass.center.difference(originalCenterOfMass)
+//                println(diff)
+//                val newComp = PhysicalComponentDefinition(
+//                    first.model, Transformation(
+//                        first.localTransform.position.sum(diff.product(first.localTransform.scale)),
+//                        first.localTransform.scale,
+//                        first.localTransform.rotation
+//                    ), first.graphicalData
+//                )
+//                addFixture(createFixture(newComp))
+//                missingParts.remove(first)
+//            }
         }
     }
 
@@ -361,7 +372,7 @@ class PhysicsLayer : Layer {
 
         override fun isMarkedForRemoval(): Boolean = hasCollided
 
-        override fun update() {
+        override fun update(actions: List<ControlAction>) {
             this.applyForce(Vector2(transform.rotationAngle).product(2.0))
         }
     }
