@@ -12,7 +12,6 @@ class ControllerLayer : Layer{
             it.input.size == 0 //If that was the last entry for this controller, remove the controller too :)
         }
     }
-    //TODO class that represents the controlled object so we can functionally-oriented amalgamate the actions taken upon that object before processing at a later step
 
     private fun calcTorqueToTurnTo(desiredAngleVec: Vector2, angle: Double, angularVelocity: Double) : Double{
         val angleDiff = desiredAngleVec.getAngleBetween(angle)
@@ -68,6 +67,8 @@ class ControllerLayer : Layer{
         }
 
         override fun update(data: List<E>) : Map<Int, List<ControlAction>> {
+            val controlMap = mutableMapOf<Int, List<ControlAction>>()
+
             if(bubbleAnchorMap.isEmpty()){
                 for(datum in data){
                     val index = datum.uuid
@@ -79,31 +80,26 @@ class ControllerLayer : Layer{
                 if(datum.position != null) {
                     val index = datum.uuid
                     val vecToBubbleCenter = datum.position.to(centerGenerator())
+
                     if (abs(vecToBubbleCenter.magnitude) < radius) {
                         inBubbleTrackerMap[index] = true
-                        calculatePositionalControl(
-                            datum,
-                            centerGenerator().sum(bubbleAnchorMap[index]),
-                            Vector2(datum.angle),
-                            bubbleVelocity
-                        )
                     } else {
                         if (inBubbleTrackerMap[index]!!) {
                             inBubbleTrackerMap[index] = false
                             randomizeAnchor(index)
                         }
-                        calculatePositionalControl(
-                            datum,
-                            centerGenerator().sum(bubbleAnchorMap[index]),
-                            Vector2(datum.angle),
-                            bubbleVelocity
-                        )
                     }
+                    val pairResult = calculatePositionalControl(
+                        datum,
+                        centerGenerator().sum(bubbleAnchorMap[index]),
+                        Vector2(datum.angle),
+                        bubbleVelocity
+                    )
+                    controlMap[datum.uuid] = listOf(ControlAction.ThrustAction(pairResult.first), ControlAction.TurnAction(pairResult.second))
                 }
             }
-            return TODO("Provide the return value")
+            return controlMap
         }
-
     }
 
     fun <E : PhysicsBodyData> addControllerEntry(controller: GroupController<E>, group: MutableList<Int>, ){
