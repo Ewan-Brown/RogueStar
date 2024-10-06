@@ -74,35 +74,32 @@ fun main() {
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
-    val populateData = fun () {
+    val populateData = fun (details : Graphics.CameraDetails) {
         for (model in models) {
             modelDataMap[model] = mutableListOf()
         }
-
         //Let each world append data to the model data map
         physicsLayer.populateModelMap(modelDataMap)
         effectsLayer.populateModelMap(modelDataMap)
         controllerLayer.populateModelMap(modelDataMap)
 
-        //New entities created from controllers, like projectiles or summoned ships
-//        val controllerEntityRequestList = controllerLayer.getNewEntityRequests()
-
-        gui.updateDrawables(modelDataMap, Vector2())
+        gui.updateDrawables(modelDataMap, details)
     }
 
-    populateData()
+    populateData(Graphics.CameraDetails(Vector2(), 1.0, 0.0))
     gui.setup(keyListener)
 
     var lastControlActions = mapOf<Int, List<ControlAction>>()
 
     while(true){
-        Thread.sleep(15)
-
+        Thread.sleep(16)
         val effectsRequests = physicsLayer.update(lastControlActions)
         lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
         effectsLayer.update(effectsRequests)
 
-        populateData()
+        val playerPos = physicsLayer.getEntityData(uuid!!)?.position!!
+        println(playerPos)
+        populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
     }
 }
 

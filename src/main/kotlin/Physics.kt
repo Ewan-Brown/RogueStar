@@ -10,7 +10,6 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
-import javax.naming.ldap.Control
 
 class PhysicsLayer : Layer {
 
@@ -147,7 +146,6 @@ class PhysicsLayer : Layer {
             private var UUID_COUNTER = 0
         }
 
-
         val team = teamFilter.team
         var originalCenterOfMass: Vector2? = null
         val missingParts = mutableListOf<PhysicalComponentDefinition>()
@@ -173,19 +171,19 @@ class PhysicsLayer : Layer {
                 vertices[i] = componentDefinition.model.asVectorData[i].copy()
                     .multiply(componentDefinition.localTransform.scale.toDouble())
             }
-            val v = Polygon(*vertices)
-            v.translate(componentDefinition.localTransform.position.copy())
-            v.rotate(componentDefinition.localTransform.rotation.toRadians())
-            val f = BodyFixture(v)
-            f.filter = teamFilter
-            f.userData = PartInfo({
+            val polygon = Polygon(*vertices)
+            polygon.translate(componentDefinition.localTransform.position.copy())
+            polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
+            val fixture = BodyFixture(polygon)
+            fixture.filter = teamFilter
+            fixture.userData = PartInfo({
                 RenderableComponent(
                     componentDefinition.model,
                     componentDefinition.localTransform,
                     componentDefinition.graphicalData
                 )
             }, componentDefinition, 100)
-            return f
+            return fixture
         }
 
         fun getLocalRenderables(): List<RenderableComponent> {

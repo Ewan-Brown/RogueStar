@@ -18,7 +18,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     //The position to shift the background by
     var cameraPos: Vector2 = Vector2()
-    var cameraTargetPos: Vector2 = Vector2()
+    var lastCameraDetails: CameraDetails = CameraDetails(Vector2(), 1.0, 0.0);
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
@@ -35,12 +35,13 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             get() = instanceData.size
     }
 
-    fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraTarget: Vector2) {
+    data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
+    fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
-            this.cameraTargetPos = cameraTarget
+            this.lastCameraDetails = cameraDetails
         }
     }
 
@@ -228,9 +229,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         checkError(gl, "initVao")
     }
 
-
     private fun updateInstanceData(gl: GL3) {
-        cameraPos = cameraTargetPos
+//        cameraPos = cameraTargetPos
+        cameraPos.add(lastCameraDetails.targetPosition.to(cameraPos).product(-0.1))
 
         val modelCount =
             modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
