@@ -98,8 +98,7 @@ fun main() {
         effectsLayer.update(effectsRequests)
 
         val playerPos = physicsLayer.getEntityData(uuid!!)?.position!!
-        println(playerPos)
-        populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
+        populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
     }
 }
 
