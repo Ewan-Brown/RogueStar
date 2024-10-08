@@ -20,7 +20,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     //The position to shift the background by
     var cameraPos: Vector2 = Vector2()
     var cameraVelocity: Vector2 = Vector2()
-    var lastCameraDetails: CameraDetails = CameraDetails(Vector2(), 1.0, 0.0);
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
@@ -40,10 +39,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
     fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
+            cameraPos.add(cameraPos.to(cameraDetails.targetPosition).multiply(0.2))
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
-            this.lastCameraDetails = cameraDetails
         }
     }
 
@@ -232,13 +231,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun updateInstanceData(gl: GL3) {
-//        cameraPos = cameraTargetPos
-
-//        cameraVelocity.add(diff.product(0.01))
-//        cameraVelocity.multiply(0.9)
-//        cameraPos.add(cameraVelocity)
-//        cameraPos.add(lastCameraDetails.targetPosition.to(cameraPos).product(-0.1))
-
         val modelCount =
             modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
                 .sum()
@@ -348,13 +340,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         val gl = drawable.gl.gL3
 
         synchronized(modelData) {
-            val diff = cameraPos.to(lastCameraDetails.targetPosition)
-//            cameraPos.add(diff.product(0.01))
-            val cameraAccel = diff.product(0.001).subtract(cameraVelocity.product(0.01))
-            cameraVelocity.add(cameraAccel)
-            cameraPos.add(cameraVelocity)
-            println(cameraVelocity)
-            cameraPos = lastCameraDetails.targetPosition
             updateInstanceData(gl)
             // view matrix
             val view = FloatArray(16)
