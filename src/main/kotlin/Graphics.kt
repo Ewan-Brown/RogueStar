@@ -5,6 +5,8 @@ import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.time.times
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
@@ -17,9 +19,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     private val modelData = mutableMapOf<Model, ModelData>()
 
-    //The position to shift the background by
     var cameraPos: Vector2 = Vector2()
     var cameraVelocity: Vector2 = Vector2()
+    var cameraScale: Float = 1.0f
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
@@ -40,8 +42,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
             //Update camera
-            cameraPos.add(cameraPos.to(cameraDetails.targetPosition).multiply(0.2))
-
+            val diff = cameraPos.to(cameraDetails.targetPosition)
+            cameraVelocity = diff.multiply(0.3)
+            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
+            cameraPos.add(cameraVelocity)
             //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
@@ -348,7 +352,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
 
-            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f, 0.06f, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
+            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
             val translate =
                 FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
             val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
