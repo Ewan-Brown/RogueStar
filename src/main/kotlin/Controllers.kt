@@ -61,7 +61,7 @@ class ControllerLayer : Layer{
         abstract fun update(input: E, data: Map<Int, PhysicsBodyData>) : List<ControlAction>;
     }
 
-    class BubbleMultiController<E : PhysicsBodyData>(val targetUUID: Int , val radius: Double, var bubbleVelocity: Vector2 = Vector2()) : GroupController<E>(){
+    class BubbleMultiController<E : PhysicsBodyData>(val targetUUID: Int , val radius: Double) : GroupController<E>(){
 
         val bubbleAnchorMap = mutableMapOf<Int, Vector2>()
         val inBubbleTrackerMap = mutableMapOf<Int, Boolean>()
@@ -73,7 +73,7 @@ class ControllerLayer : Layer{
         override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
 //            val centerGenerator: () -> Vector2 = data.
             val controlMap = mutableMapOf<Int, List<ControlAction>>()
-
+            var bubbleVelocity: Vector2 = Vector2()
             if(bubbleAnchorMap.isEmpty()){
                 for(datum in input){
                     val index = datum.uuid

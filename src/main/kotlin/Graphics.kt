@@ -39,7 +39,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
     fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
+            //Update camera
             cameraPos.add(cameraPos.to(cameraDetails.targetPosition).multiply(0.2))
+
+            //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
