@@ -51,25 +51,15 @@ fun main() {
     }
 
     val greenTeam = Team("Green")
+    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
 
-    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))
+    controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
-    if(uuid != null){
-        controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
+    val idList = List(10) {
+        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*2).multiply(10.0), r=1.0f, g=0.0f, b=1.0f, team=greenTeam))!!
     }
-//    val playerEntity = physicsLayer.addEntity(ShipEntity(1.0, 0.0f, 0.0f, 1.0f, Team("Player")), 0.0, Vector2())
-//    controllerLayer.addControllerEntry(listOf(playerEntity), PlayerController(bitSet))
-//
-//    val greenEntities = mutableListOf<PhysicsEntity>()
-//    val blueEntities = mutableListOf<PhysicsEntity>()
-//    for(i in 1..10){
-//        greenEntities.add(physicsLayer.addEntity(ShipEntity(0.7, 0.0f, 1.0f, 0.0f, greenTeam), 0.0, Vector2(Math.random()-0.5, Math.random() - 0.5).multiply(30.0)))
-//
-//    }
-//
-//    controllerLayer.addControllerEntry(greenEntities, controllerLayer.BubbleMultiController(
-//        { playerEntity.worldCenter},
-//        20.0, Vector2(1.0,0.0)))
+
+//    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(), idList)
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
