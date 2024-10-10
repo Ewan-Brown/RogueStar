@@ -4,9 +4,8 @@ import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import kotlin.math.cos
+import java.util.EnumMap
 import kotlin.math.exp
-import kotlin.time.times
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
@@ -161,77 +160,34 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private fun initVAOs(gl: GL3) {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
-        run {
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
-            val stride = 3 * java.lang.Float.BYTES
-            var offset = 0
 
-            gl.glEnableVertexAttribArray(POSITION_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(POSITION_ATTRIB_INDICE, 3, GL.GL_FLOAT, false, stride, offset.toLong())
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
-            gl.glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_INDICE)
+        for (attribute in GENERAL_ATTRIBUTES.entries){
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
+            gl.glEnableVertexAttribArray(attribute.index)
             gl.glVertexAttribPointer(
-                INSTANCE_POSITION_ATTRIB_INDICE,
-                3,
+                attribute.index,
+                attribute.size,
                 GL.GL_FLOAT,
                 false,
-                3 * java.lang.Float.BYTES,
+                attribute.size * java.lang.Float.BYTES,
                 0
             )
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
-            gl.glEnableVertexAttribArray(INSTANCE_ROTATION_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_ROTATION_ATTRIB_INDICE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
-            gl.glEnableVertexAttribArray(INSTANCE_SCALE_ATTRIB_INCIDE)
-            gl.glVertexAttribPointer(
-                INSTANCE_SCALE_ATTRIB_INCIDE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
-            gl.glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_COLOR_ATTRIB_INDICE,
-                3,
-                GL.GL_FLOAT,
-                false,
-                3 * java.lang.Float.BYTES,
-                0
-            )
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
-            gl.glEnableVertexAttribArray(INSTANCE_HEALTH_ATTRIB_INDICE)
-            gl.glVertexAttribPointer(
-                INSTANCE_HEALTH_ATTRIB_INDICE,
-                1,
-                GL.GL_FLOAT,
-                false,
-                1 * java.lang.Float.BYTES,
-                0
-            )
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-            gl.glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_ROTATION_ATTRIB_INDICE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_SCALE_ATTRIB_INCIDE, 1)
-            gl.glVertexAttribDivisor(INSTANCE_HEALTH_ATTRIB_INDICE, 1)
         }
+
+        for (attribute in INSTANCED_ATTRIBUTE.entries) {
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
+            gl.glEnableVertexAttribArray(attribute.index)
+            gl.glVertexAttribPointer(
+                attribute.index,
+                attribute.size,
+                GL.GL_FLOAT,
+                false,
+                attribute.size * java.lang.Float.BYTES,
+                0
+            )
+            gl.glVertexAttribDivisor(attribute.index, 1)
+        }
+
         gl.glBindVertexArray(0)
 
         checkError(gl, "initVao")
@@ -243,88 +199,38 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
                 .sum()
 
         //TODO Clean this up.
-        //TODO Maybe see if we can automate the insertion of new fields here this is getting silly
+        //For each model type
+
+        val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {FloatArray(it.size * modelCount)}
+        val attributeMarkerMap : MutableMap<INSTANCED_ATTRIBUTE, Int> = mutableMapOf()
+        INSTANCED_ATTRIBUTE.entries.forEach {attributeMarkerMap[it] = 0}
         var indexCounter = 0
-        var instancePositionDataIndex = 0
-        var instanceColorDataIndex = 0
-        var instanceRotationDataIndex = 0
-        var instanceScaleDataIndex = 0
-        var instancedHealthDataIndex = 0
-        val instancePositionData = FloatArray(modelCount * 4)
-        val instanceColorData = FloatArray(modelCount * 3)
-        val instanceRotationData = FloatArray(modelCount * 1)
-        val instanceScaleData = FloatArray(modelCount * 1)
-        val instanceHealthData = FloatArray(modelCount * 1)
-        for (data in modelData.values) {
-            for ((transform, graphicalData) in data.instanceData) {
-                val x = transform.position.x
-                val y = transform.position.y
-                val z = graphicalData.z
-                val angle = transform.rotation.toRadians().toFloat()
-                val r = graphicalData.red
-                val g = graphicalData.green
-                val b = graphicalData.blue
-                val scale = transform.scale
-                val health = graphicalData.health
-                instancePositionData[instancePositionDataIndex++] = x.toFloat()
-                instancePositionData[instancePositionDataIndex++] = y.toFloat()
-                instancePositionData[instancePositionDataIndex++] = z
-                instanceColorData[instanceColorDataIndex++] = r
-                instanceColorData[instanceColorDataIndex++] = g
-                instanceColorData[instanceColorDataIndex++] = b
-                instanceRotationData[instanceRotationDataIndex++] = angle
-                instanceScaleData[instanceScaleDataIndex++] = scale.toFloat()
-                instanceHealthData[instancedHealthDataIndex++] = health
+        for ((model, data) in modelData) {
+            //For each instance of that motel
+            for (instancedDatum in data.instanceData) {
+                for(attribute in INSTANCED_ATTRIBUTE.entries){
+                    val floats = attribute.gen(instancedDatum)
+                    val floatBuffer = attributeMap[attribute]
+                    for ((index, float) in floats.withIndex()) {
+                        floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
+                    }
+                    attributeMarkerMap[attribute] = attributeMarkerMap[attribute]!! + floats.size
+                }
             }
             data.instanceIndex = indexCounter
             indexCounter += data.instanceCount
         }
-
         //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
-        val positionBuffer = GLBuffers.newDirectFloatBuffer(instancePositionData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_POSITIONS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            positionBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            positionBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val colorBuffer = GLBuffers.newDirectFloatBuffer(instanceColorData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_COLORS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            colorBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            colorBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val rotationBuffer = GLBuffers.newDirectFloatBuffer(instanceRotationData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_ROTATIONS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            rotationBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            rotationBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val scaleBuffer = GLBuffers.newDirectFloatBuffer(instanceScaleData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_SCALES])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            scaleBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            scaleBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
-
-        val healthBuffer = GLBuffers.newDirectFloatBuffer(instanceHealthData)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.INSTANCED_HEALTHS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            healthBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            healthBuffer,
-            GL.GL_DYNAMIC_DRAW
-        )
+        for (attribute in INSTANCED_ATTRIBUTE.entries) {
+            val buffer = GLBuffers.newDirectFloatBuffer(attributeMap[attribute])
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
+            gl.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                buffer.capacity().toLong() * java.lang.Float.BYTES,
+                buffer,
+                GL.GL_DYNAMIC_DRAW
+            )
+        }
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     }
@@ -428,12 +334,15 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
 
-    companion object {
-        var POSITION_ATTRIB_INDICE: Int = 0
-        var INSTANCE_POSITION_ATTRIB_INDICE: Int = 1
-        var INSTANCE_ROTATION_ATTRIB_INDICE: Int = 2
-        var INSTANCE_SCALE_ATTRIB_INCIDE: Int = 3
-        var INSTANCE_COLOR_ATTRIB_INDICE: Int = 4
-        var INSTANCE_HEALTH_ATTRIB_INDICE: Int = 5;
+    //TODO If you add to this what happens to the indices...?
+    enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
+        POSITION(0, 3, Buffer.VERTEX)
+    }
+    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val gen: (Pair<Transformation, GraphicalData>) -> List<Float>, val VBOBuffer: Int){
+        POSITION(1, 3, {listOf(it.first.position.x.toFloat(), it.first.position.y.toFloat(), it.second.z)}, Buffer.INSTANCED_POSITIONS),
+        ROTATION(2, 1, {listOf(it.first.rotation.toRadians().toFloat())}, Buffer.INSTANCED_ROTATIONS),
+        SCALE(3, 1, {listOf(it.first.scale.toFloat())}, Buffer.INSTANCED_SCALES),
+        COLOR(4, 3, {listOf(it.second.red, it.second.green, it.second.blue)}, Buffer.INSTANCED_COLORS),
+        HEALTH(5, 1, {listOf(it.second.health)}, Buffer.INSTANCED_HEALTHS)
     }
 }
