@@ -2,62 +2,6 @@ import org.dyn4j.geometry.Vector2
 import Graphics.Model
 import org.dyn4j.geometry.Rotation
 
-class EffectsUtils{
-//    companion object {
-//        fun emitThrustParticles(data: PhysicsLayer.PhysicsBodyData, thrust: Vector2) : List<EffectsRequest>{
-//            if (thrust.magnitude > 0) {
-//                val adjustedThrust = thrust.product(-0.0002).rotate((Math.random() - 0.5) / 3)
-//                effectsLayer.addEntity(
-//                    ExhaustEntity(
-//                        Model.SQUARE1,
-//                        data.position.x,
-//                        data.position.y,
-//                        Math.random(),
-//                        graphicsDataProvider = { GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife()) },
-//                                dx = data.changeInPosition.x + adjustedThrust.x
-//                        ,dy = data.changeInPosition.y + adjustedThrust.y,
-//                        drotation = (Math.random() - 0.5)
-//                    )
-//                )
-//            }
-//        }
-//        fun debris(data: PhysicsLayer.PhysicsBodyData, partinfo: PhysicsLayer.PartInfo){
-//            partinfo.renderableProducer()?.let{ renderableData ->
-//                val newPos = renderableData.transform.position.copy().rotate(data.angle).add(data.position)
-//                val newAngle = Rotation(renderableData.transform.rotation.toRadians() + data.angle)
-//                val scale = renderableData.transform.scale
-//                val graphData = renderableData.graphicalData;
-//
-//                effectsLayer.addEntity(
-//                    BasicEffectEntity(
-//                        renderableData.model,
-//                        newPos.x,
-//                        newPos.y,
-//                        newAngle.toRadians(),
-//                        GraphicalData(graphData.red*0.5f, graphData.green*0.5f, graphData.blue*0.5f, graphData.z, graphData.health),
-//                        data.changeInPosition.x,
-//                        data.changeInPosition.y,
-//                        data.changeInOrientation, scale = scale
-//                    )
-//                )
-//            }
-//        }
-//    }
-}
-
-//effectsLayer.addEntity(
-//ParticleEntity(
-//Model.SQUARE1,
-//data.position.x,
-//data.position.y,
-//Math.random(),
-//graphicsDataProvider = { GraphicalData(it.getLife(),0.0f,0.0f,10-it.getLife()) },
-//dx = data.changeInPosition.x + adjustedThrust.x
-//,dy = data.changeInPosition.y + adjustedThrust.y,
-//drotation = (Math.random() - 0.5)
-//)
-//)
-
 sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val initialAngle: Double){
     class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
 }
