@@ -58,15 +58,22 @@ class EffectsUtils{
 //)
 //)
 
-sealed class EffectsRequest(val model: Model, initialPosition: Vector2, initialAngle: Double){
-    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, var health: Float) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
+sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val initialAngle: Double){
+    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
 }
 
 class EffectsLayer : Layer {
     private val entities = mutableListOf<EffectsEntity>()
 
     fun update(effectsRequests: List<EffectsRequest>) {
-
+        for (effect in effectsRequests) {
+            when (effect) {
+                is EffectsRequest.ExhaustRequest -> {
+                    val exhaust = with(effect) {ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
+                    entities.add(exhaust)
+                }
+            }
+        }
         for (entity in entities) {
             entity.update()
         }
@@ -80,20 +87,15 @@ class EffectsLayer : Layer {
             }
         }
     }
-
-    fun addEntity(entity : EffectsEntity){
-        entities.add(entity)
-    }
 }
 
-abstract class EffectsEntity{
+private abstract class EffectsEntity{
     abstract fun getComponents(): List<RenderableComponent>
     abstract fun update(): Unit
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-
-class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var rotation : Double,
+private class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var rotation : Double,
                              val graphicalData: GraphicalData, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
 
     private var isDead = false
@@ -119,7 +121,7 @@ class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var ro
 }
 
 
-class ExhaustEntity(val model: Model, var x : Double, var y : Double, var rotation : Double, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0)
+private class ExhaustEntity(val model: Model, val position: Vector2, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
     : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
@@ -132,12 +134,11 @@ class ExhaustEntity(val model: Model, var x : Double, var y : Double, var rotati
 
     override fun getComponents(): List<RenderableComponent> {
 
-        val entityPos = Vector2(x, y)
         val variableScale = getLife().toDouble()
         if (variableScale < 0.01) {
             isDead = true
         }
-        val transform = Transformation(entityPos, variableScale, rotation)
+        val transform = Transformation(position, variableScale, rotation)
         return listOf(
             RenderableComponent(
                 model,
@@ -149,8 +150,7 @@ class ExhaustEntity(val model: Model, var x : Double, var y : Double, var rotati
 
     override fun update() {
         lifetime--
-        x += dx * getLife()
-        y += dy * getLife()
+        position.add(velocity)
         rotation += drotation * getLife()
     }
 

@@ -19,7 +19,6 @@ class PhysicsLayer : Layer {
         CATEGORY_SHIELD(0b0100)
     }
 
-    private var effectsRequests = mutableListOf<EffectsRequest>()
     private val physicsWorld = PhysicsWorld()
     private var time = 0.0
 
@@ -58,18 +57,17 @@ class PhysicsLayer : Layer {
         if(controlActions.size > i){
             error("More controlActions were supplied than there are entities in the PhysicsWorld!")
         }
+        val effectsRequests = mutableListOf<EffectsRequest>()
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
-            body.update(controlActions.getOrElse(i) { emptyList() })
+            effectsRequests.addAll(body.update(controlActions.getOrElse(i) { emptyList() }))
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
                 i--
             }
         }
-        val retVal = effectsRequests
-        effectsRequests = mutableListOf()
-        return retVal
+        return effectsRequests
     }
 
     //TODO Can we delegate this or something
@@ -201,7 +199,7 @@ class PhysicsLayer : Layer {
 
         abstract fun isMarkedForRemoval(): Boolean
 
-        abstract fun update(actions: List<ControlAction>)
+        abstract fun update(actions: List<ControlAction>): List<EffectsRequest>
 
         fun getComponents(): List<RenderableComponent> {
             if (!isEnabled) {
@@ -281,14 +279,19 @@ class PhysicsLayer : Layer {
 
         override fun isMarkedForRemoval(): Boolean = false
 
-        override fun update(actions: List<ControlAction>) {
+        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
+            val effectsList = mutableListOf<EffectsRequest>()
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
-                    is ControlAction.ThrustAction -> applyForce(action.thrust)
+                    is ControlAction.ThrustAction -> {
+                        applyForce(action.thrust)
+                        effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
+                    }
                     is ControlAction.TurnAction -> applyTorque(action.torque)
                 }
             }
+            return effectsList
 //            if (missingParts.isNotEmpty()) {
 //                val first = missingParts.first()
 //                val diff = mass.center.difference(originalCenterOfMass)
@@ -370,8 +373,9 @@ class PhysicsLayer : Layer {
 
         override fun isMarkedForRemoval(): Boolean = hasCollided
 
-        override fun update(actions: List<ControlAction>) {
+        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
             this.applyForce(Vector2(transform.rotationAngle).product(2.0))
+            return listOf()
         }
     }
 
