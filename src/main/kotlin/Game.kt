@@ -55,11 +55,11 @@ fun main() {
 
     controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
-    val idList = MutableList(10) {
+    val idList = MutableList(100) {
         physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*2).multiply(10.0), r=1.0f, g=0.0f, b=1.0f, team=greenTeam))!!
     }
-
     controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
+
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
@@ -84,10 +84,11 @@ fun main() {
         Thread.sleep(16)
         val effectsRequests = physicsLayer.update(lastControlActions)
         lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
-        effectsLayer.update(effectsRequests)
 
         val playerPos = physicsLayer.getEntityData(uuid!!)?.position!!
         populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
+        effectsLayer.update(effectsRequests)
+
     }
 }
 
