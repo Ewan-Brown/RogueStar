@@ -21,10 +21,10 @@ class EffectsLayer : Layer {
         for (entity in entities) {
             entity.update()
         }
+        entities.removeIf(EffectsEntity::isMarkedForRemoval)
     }
 
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
-        entities.removeIf(EffectsEntity::isMarkedForRemoval)
         for (entity in entities) {
             for (component in entity.getComponents()) {
                 modelDataMap[component.model]!!.add(Pair(component.transform, component.graphicalData))
@@ -82,7 +82,7 @@ private class ExhaustEntity(val model: Model, val position: Vector2, var rotatio
         if (variableScale < 0.01) {
             isDead = true
         }
-        val transform = Transformation(position, variableScale, rotation)
+        val transform = Transformation(position.copy(), variableScale, rotation)
         return listOf(
             RenderableComponent(
                 model,
