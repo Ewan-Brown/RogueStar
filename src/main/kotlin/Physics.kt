@@ -2,6 +2,7 @@ import Graphics.Model
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
+import org.dyn4j.collision.Fixture
 import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
@@ -92,7 +93,7 @@ class PhysicsLayer : Layer {
                 ProjectileEntity(request.team)
             }
         }
-        addEntity(entity)
+        addEntity(entity, request.angle, request.position)
         return entity.uuid
     }
 
@@ -108,14 +109,12 @@ class PhysicsLayer : Layer {
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
-        entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
     }
 
     private fun <E : PhysicsEntity> addEntity(entity: E): E {
         entity.setMass(MassType.NORMAL)
-        entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
     }
@@ -143,7 +142,6 @@ class PhysicsLayer : Layer {
         }
 
         val team = teamFilter.team
-        var originalCenterOfMass: Vector2? = null
         val missingParts = mutableListOf<PhysicalComponentDefinition>()
 
         val uuid = UUID_COUNTER++
@@ -253,19 +251,35 @@ class PhysicsLayer : Layer {
         }
     }
 
+    companion object{
+        private fun createShip(scale: Double, red: Float, green: Float, blue: Float) : List<PhysicalComponentDefinition>{
+            val list = mutableListOf<PhysicalComponentDefinition>()
+            IntRange(0, 10).forEach { a ->
+                IntRange(0, 10).forEach { b ->
+                    list.add(PhysicalComponentDefinition(
+                        Model.SQUARE1,
+                        Transformation(Vector2(a.toDouble()*0.3, b.toDouble()*0.3), scale * 0.2, 0.0),
+                        GraphicalData(red, green, blue, 0.0f)
+                    ))
+                }
+            }
+//                list.add(PhysicalComponentDefinition(
+//                    Model.TRIANGLE,
+//                    Transformation(Vector2(0.0, 0.0), 1.0 * scale, 0.0),
+//                    GraphicalData(red, green, blue, 0.0f)
+//                ))
+//                PhysicalComponentDefinition(
+//                    Model.SQUARE1,
+//                    Transformation(Vector2(-1.0 * scale, 0.0), 1.0 * scale, 0.0),
+//                    GraphicalData(1.0f, 1.0f, 1.0f, 0.0f)
+//                )
+//            )
+            return list
+        }
+    }
+
     private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team) : PhysicsEntity(
-        listOf(
-            PhysicalComponentDefinition(
-                Model.TRIANGLE,
-                Transformation(Vector2(0.0, 0.0), 1.0 * scale, 0.0),
-                GraphicalData(red, green, blue, 0.0f)
-            ),
-            PhysicalComponentDefinition(
-                Model.SQUARE1,
-                Transformation(Vector2(-1.0 * scale, 0.0), 1.0 * scale, 0.0),
-                GraphicalData(1.0f, 1.0f, 1.0f, 0.0f)
-            )
-        ), TeamFilter(
+        createShip(scale, red, green, blue), TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         )
@@ -273,50 +287,29 @@ class PhysicsLayer : Layer {
 
         override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
             //Do nothing
+            val thisOnesFixture = if(data.pair.first.body == this) data.pair.first.fixture else data.pair.second.fixture
+            removeFixture(thisOnesFixture)
+            setMass(MassType.NORMAL)
         }
 
         override fun isMarkedForRemoval(): Boolean = false
 
         private var isFrontFlipped = false
+        private var oldPart: Fixture? = null
         fun testFlipFrontPart(){
             if(!isFrontFlipped) {
-                println("testFlipFrontPart")
-                println("Raw")
-                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
-
+                oldPart = getFixture(0)
                 this.removeFixture(0)
-                println("Removed Fixture")
-                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
-
-                val oldCenter = this.getMass().center.copy()
                 this.setMass(MassType.NORMAL)
-                println("Reset mass")
-                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
-                val newCenter = this.getMass().center.copy()
-                this.localCenter
-                val centerDiff = newCenter.subtract(oldCenter)
-//                recalculateComponents()
-//                println("Recalculated Components")
-//                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
-                isFrontFlipped = !isFrontFlipped
             }else{
-                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
-                //            if (missingParts.isNotEmpty()) {
-//                val first = missingParts.first()
-//                val diff = mass.center.difference(originalCenterOfMass)
-//                println(diff)
-//                val newComp = PhysicalComponentDefinition(
-//                    first.model, Transformation(
-//                        first.localTransform.position.sum(diff.product(first.localTransform.scale)),
-//                        first.localTransform.scale,
-//                        first.localTransform.rotation
-//                    ), first.graphicalData
-//                )
-//                addFixture(createFixture(newComp))
-//                missingParts.remove(first)
-//            }
+                val info = oldPart!!.userData as PartInfo
+                addFixture(createFixture(PhysicalComponentDefinition(
+                    info.componentDefinition.model,
+                    info.componentDefinition.localTransform,
+                    info.componentDefinition.graphicalData
+                )))
             }
-
+            isFrontFlipped = !isFrontFlipped
         }
 
         override fun update(actions: List<ControlAction>): List<EffectsRequest> {
