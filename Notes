@@ -1,28 +1,7 @@
-X Get a working OpenGL 3.0 demo that can render X number of static models in dynamic positions
-X Get a simple Dyn4J world running
-X Define Ships, Planets, and Debris(Effects)
-X Get a simple control interface up
-X Setup background shader
-X individual entity colors/opacity
-X Simple projectile with collision filtering
+TODO
 
-\ Something's wrong with the collisions/physics after fixtures have been removed.
-\ Get a model for ship information -> Ship Perception -> decision (AI or player) -> Ship controls
-
-= Use fixture.setSensor for projectiles and shields!
-= Clean up Components vs Transform vs Category etc etc.
-= Add shader code for HUD
-= Write a group AI that organizes AIs in a list around the player
-  * need to have the controller target not only position but a velocity that matches the target's velocity!!! This will need to be added to body data DTO
--    Square
-= Write 'spectator' multiplayer code
--  First get a single whole frame
--  Then define patch type updates
--  Maybe effects can be done client side if wished... As long as layers stay separate this should be easy, but will require its own sort of websocket to get updates
-.      Websocket... Maybe this data can be processed an entire separate thread from the rest of game... Leave this layer as synchronized data access for Effect threaded data
--  Maybe give a go at rewriting the keyframe/patch with basic predictive (e.x store metadata like velocity)
-= Write 'client' multiplayer code (controls...)
-= Write recorder for each layer? Allows reversing/jumping in time?
+- Stretch background (or atleast the stars) proportional to player speed
+- Add more background stuff (planets? Distant battles?)
 
 
 
