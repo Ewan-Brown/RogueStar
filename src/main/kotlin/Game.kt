@@ -55,8 +55,8 @@ fun main() {
 
     controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
-    val idList = MutableList(100) {
-        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*2).multiply(10.0), r=1.0f, g=0.0f, b=1.0f, team=greenTeam))!!
+    val idList = MutableList(10) {
+        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*3).multiply(20.0), r=1.0f, g=0.0f, b=1.0f, team=greenTeam))!!
     }
     controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
 
