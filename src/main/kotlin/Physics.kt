@@ -108,7 +108,6 @@ class PhysicsLayer : Layer {
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
-        entity.recalculateComponents()
         entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
@@ -116,7 +115,6 @@ class PhysicsLayer : Layer {
 
     private fun <E : PhysicsEntity> addEntity(entity: E): E {
         entity.setMass(MassType.NORMAL)
-        entity.recalculateComponents()
         entity.originalCenterOfMass = entity.mass.center
         physicsWorld.addBody(entity)
         return entity
@@ -213,7 +211,7 @@ class PhysicsLayer : Layer {
                 for (partInfo in getFixtures().map { (it.userData as PartInfo) }) {
                     val renderable = partInfo.renderableProducer()
                     if (renderable != null) {
-                        val newPos = renderable.transform.position.copy().rotate(entityAngle.toDouble()).add(entityPos)
+                        val newPos = renderable.transform.position.copy().subtract(this.getMass().center).rotate(entityAngle.toDouble()).add(entityPos)
                         val newAngle =
                             Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
                         val scale = renderable.transform.scale
@@ -274,25 +272,36 @@ class PhysicsLayer : Layer {
     ) {
 
         override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-
+            //Do nothing
         }
 
         override fun isMarkedForRemoval(): Boolean = false
 
-        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
-            val effectsList = mutableListOf<EffectsRequest>()
-            for (action in actions) {
-                when(action){
-                    is ControlAction.ShootAction -> TODO()
-                    is ControlAction.ThrustAction -> {
-                        applyForce(action.thrust)
-                        effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
-                    }
-                    is ControlAction.TurnAction -> applyTorque(action.torque)
-                }
-            }
-            return effectsList
-//            if (missingParts.isNotEmpty()) {
+        private var isFrontFlipped = false
+        fun testFlipFrontPart(){
+            if(!isFrontFlipped) {
+                println("testFlipFrontPart")
+                println("Raw")
+                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
+
+                this.removeFixture(0)
+                println("Removed Fixture")
+                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
+
+                val oldCenter = this.getMass().center.copy()
+                this.setMass(MassType.NORMAL)
+                println("Reset mass")
+                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
+                val newCenter = this.getMass().center.copy()
+                this.localCenter
+                val centerDiff = newCenter.subtract(oldCenter)
+//                recalculateComponents()
+//                println("Recalculated Components")
+//                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
+                isFrontFlipped = !isFrontFlipped
+            }else{
+                println("world: $worldCenter,local: $localCenter, mass: ${mass.center}")
+                //            if (missingParts.isNotEmpty()) {
 //                val first = missingParts.first()
 //                val diff = mass.center.difference(originalCenterOfMass)
 //                println(diff)
@@ -306,6 +315,29 @@ class PhysicsLayer : Layer {
 //                addFixture(createFixture(newComp))
 //                missingParts.remove(first)
 //            }
+            }
+
+        }
+
+        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
+            val effectsList = mutableListOf<EffectsRequest>()
+            for (action in actions) {
+                when(action){
+                    is ControlAction.ShootAction -> TODO()
+                    is ControlAction.ThrustAction -> {
+                        applyForce(action.thrust)
+                        effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
+                    }
+                    is ControlAction.TurnAction -> {
+                        applyTorque(action.torque)
+                    }
+                    is ControlAction.TestAction -> {
+                        testFlipFrontPart()
+                    }
+                }
+            }
+            return effectsList
+
         }
     }
 

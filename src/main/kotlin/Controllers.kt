@@ -141,6 +141,7 @@ fun update(entityDataMap: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlActi
 
 class PlayerController(val input: BitSet) : ControllerLayer.SingleController<PhysicsBodyData>(){
     override fun update(entityData: PhysicsBodyData, data: Map<Int, PhysicsBodyData>): List<ControlAction> {
+        val actions = mutableListOf<ControlAction>()
         var x = 0.0
         var y = 0.0
         var r = 0.0
@@ -175,6 +176,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
         }
 
         if(input[KeyEvent.VK_X]){
+            actions.add(ControlAction.TestAction)
 //            val newEntity = ProjectileEntity(entity.team)
 //            val addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter.sum(Vector2(entity.transform.rotation.toVector().product(entity.rotationDiscRadius+1))))
 //            addedEntity.linearVelocity = entity.linearVelocity.copy()
@@ -190,7 +192,9 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
 //        emitThrustParticles(entityData, thrust)
         val rotate = r*5 - entityData.angularVelocity
 
-        return listOf(ControlAction.ThrustAction(thrust), ControlAction.TurnAction(rotate))
+        actions.add(ControlAction.TurnAction(rotate))
+        actions.add(ControlAction.ThrustAction(thrust))
+        return actions
     }
 }
 
@@ -199,4 +203,5 @@ sealed class ControlAction(){
     data class ThrustAction(val thrust: Vector2)  : ControlAction()
     data class TurnAction(val torque: Double)  : ControlAction()
     data object ShootAction : ControlAction()
+    data object TestAction : ControlAction()
 }
