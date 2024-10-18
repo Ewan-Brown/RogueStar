@@ -12,6 +12,10 @@ import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
 
+fun Fixture.getPartInfo(): PhysicsLayer.PartInfo {
+    return userData as PhysicsLayer.PartInfo
+}
+
 class PhysicsLayer : Layer {
 
     enum class CollisionCategory(val bits: Long) {
@@ -154,7 +158,7 @@ class PhysicsLayer : Layer {
 
         override fun removeFixture(fixture: BodyFixture?): Boolean {
             if (fixture != null) {
-                missingParts.add((fixture.userData as PartInfo).componentDefinition)
+                missingParts.add((fixture.getPartInfo()).componentDefinition)
             }
             return super.removeFixture(fixture)
         }
@@ -181,7 +185,7 @@ class PhysicsLayer : Layer {
         }
 
         fun getLocalRenderables(): List<RenderableComponent> {
-            return getFixtures().mapNotNull { (it.userData as PartInfo).renderableProducer() }
+            return getFixtures().mapNotNull { (it.getPartInfo()).renderableProducer() }
         }
 
         //Need to update the 'center'
@@ -206,7 +210,7 @@ class PhysicsLayer : Layer {
                 val entityAngle = getTransform().rotationAngle.toFloat()
                 val entityPos = this.worldCenter
 
-                for (partInfo in getFixtures().map { (it.userData as PartInfo) }) {
+                for (partInfo in getFixtures().map { (it.getPartInfo()) }) {
                     val renderable = partInfo.renderableProducer()
                     if (renderable != null) {
                         val newPos = renderable.transform.position.copy().subtract(this.getMass().center).rotate(entityAngle.toDouble()).add(entityPos)
@@ -302,7 +306,7 @@ class PhysicsLayer : Layer {
                 this.removeFixture(0)
                 this.setMass(MassType.NORMAL)
             }else{
-                val info = oldPart!!.userData as PartInfo
+                val info = oldPart!!.getPartInfo()
                 addFixture(createFixture(PhysicalComponentDefinition(
                     info.componentDefinition.model,
                     info.componentDefinition.localTransform,
