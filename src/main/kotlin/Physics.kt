@@ -133,8 +133,9 @@ class PhysicsLayer : Layer {
         val renderableProducer: () -> RenderableComponent?,
         val componentDefinition: PhysicalComponentDefinition,
         var health: Int,
-        var removed: Boolean = false
     ) {}
+
+
 
     private abstract class PhysicsEntity protected constructor(
         val originalComponentDefinitions: List<PhysicalComponentDefinition>,
@@ -156,12 +157,17 @@ class PhysicsLayer : Layer {
             }
         }
 
-        override fun removeFixture(fixture: BodyFixture?): Boolean {
-            if (fixture != null) {
-                missingParts.add((fixture.getPartInfo()).componentDefinition)
-            }
-            return super.removeFixture(fixture)
+        class Component(val definition: PhysicalComponentDefinition, var health: Int, var alive: Boolean = true){
+
         }
+
+
+//        override fun removeFixture(fixture: BodyFixture?): Boolean {
+//            if (fixture != null) {
+//                missingParts.add((fixture.getPartInfo()).componentDefinition)
+//            }
+//            return super.removeFixture(fixture)
+//        }
 
         fun createFixture(componentDefinition: PhysicalComponentDefinition): BodyFixture {
             val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
@@ -262,7 +268,7 @@ class PhysicsLayer : Layer {
                 IntRange(0, 10).forEach { b ->
                     list.add(PhysicalComponentDefinition(
                         Model.SQUARE1,
-                        Transformation(Vector2(a.toDouble()*0.3, b.toDouble()*0.3), scale * 0.2, 0.0),
+                        Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
                         GraphicalData(red, green, blue, 0.0f)
                     ))
                 }
@@ -303,15 +309,15 @@ class PhysicsLayer : Layer {
         fun testFlipFrontPart(){
             if(!isFrontFlipped) {
                 oldPart = getFixture(0)
-                this.removeFixture(0)
+//                this.removeFixture(0)
                 this.setMass(MassType.NORMAL)
             }else{
                 val info = oldPart!!.getPartInfo()
-                addFixture(createFixture(PhysicalComponentDefinition(
-                    info.componentDefinition.model,
-                    info.componentDefinition.localTransform,
-                    info.componentDefinition.graphicalData
-                )))
+//                addFixture(createFixture(PhysicalComponentDefinition(
+//                    info.componentDefinition.model,
+//                    info.componentDefinition.localTransform,
+//                    info.componentDefinition.graphicalData
+//                )))
             }
             isFrontFlipped = !isFrontFlipped
         }
