@@ -1,9 +1,2 @@
-TODO
-
-- Stretch background (or atleast the stars) proportional to player speed
-- Add more background stuff (planets? Distant battles?)
-
-
-
-SPLATOON BUT IN SPACE?
-SQUAD-SIZE CONTROLS
+Working on making making relations to fixtures even if they get removed and re added
+maybe data like which fixture does what function should be stored as a fixture<->data map instead of fixture.dataField
