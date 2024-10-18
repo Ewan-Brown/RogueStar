@@ -358,40 +358,7 @@ class PhysicsLayer : Layer {
         }
 
         override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-//            val otherBody = if (data.body1 == this) data.body2 else data.body1
-//            val otherFixture = if (data.body1 == this) data.fixture2 else data.fixture1
-//            (otherFixture.userData as PartInfo).health -= 10
-//            if ((otherFixture.userData as PartInfo).health <= 0 && !(otherFixture.userData as PartInfo).removed) {
-//                (otherFixture.userData as PartInfo).removed = true
-//                otherBody.removeFixture(otherFixture)
-//                EffectsUtils.debris(otherBody.createBodyData(), otherFixture.userData as PartInfo)
-//                if (otherBody.fixtures.size == 0) {
-//                    physicsLayer.removeEntity(otherBody.uuid);
-//                    controllerLayer.removeController(otherBody.uuid);
-//                } else {
-//                    val oldCenterOfMass = Vector2(otherBody.mass.center);
-//                    otherBody.setMass(MassType.NORMAL)
-//                    val newCenterOfMass = otherBody.mass.center
-//
-//                    val centerOfMassDifference = newCenterOfMass.difference(oldCenterOfMass)
-//
-//                    //FIXME the reference to the removed part is invalid because the local transform that it should have applied might need to adjust based on the COM, which changes when the part (and further parts) are removed?
-//                    for (fixture in otherBody.fixtures) {
-//                        val partInfo = (fixture.userData as PartInfo)
-//                        partInfo.renderableProducer()?.let { oldRenderable ->
-//                            val transform = oldRenderable.transform
-//                            transform.position.subtract(centerOfMassDifference)
-//                            fixture.userData = PartInfo({
-//                                RenderableComponent(
-//                                    oldRenderable.model,
-//                                    transform,
-//                                    oldRenderable.graphicalData
-//                                )
-//                            }, partInfo.componentDefinition, partInfo.health, partInfo.removed)
-//                        }
-//                    }
-//                }
-//            }
+            //Cause damage to the other part!
             hasCollided = true
             isEnabled = false
         }
