@@ -1,2 +1,3 @@
-Working on making making relations to fixtures even if they get removed and re added
-maybe data like which fixture does what function should be stored as a fixture<->data map instead of fixture.dataField
+Working on making fixture regenerable.
+
+Should look at making this regenerate inner->outer
