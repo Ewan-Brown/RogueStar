@@ -46,7 +46,7 @@ class PhysicsLayer : Layer {
     }
 
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
-    //therefore onCollide should simply flag things and store data, allowing .update() to clean up.
+    //therefore maybe onCollide should simply flag things and store data, allowing .update() to clean up.
     fun update(controlActions: Map<Int, List<ControlAction>>) : List<EffectsRequest>{
         time++
         physicsWorld.update(1.0)
@@ -58,6 +58,7 @@ class PhysicsLayer : Layer {
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
+            effectsRequests.addAll(body.updateFixtures())
             effectsRequests.addAll(body.update(controlActions.getOrElse(i) { emptyList() }))
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
@@ -151,6 +152,7 @@ class PhysicsLayer : Layer {
                if(component.getRespectiveFixture() == null){
                    throw IllegalStateException("tried to kill a component that is already dead under this entity")
                }else{
+                   println("Removing")
                    removeFixture(component.getRespectiveFixture())
                    component.killFixture()
                }
@@ -171,7 +173,6 @@ class PhysicsLayer : Layer {
         }
 
         open class EntityComponent(val definition: PhysicalComponentDefinition){
-            fun getHealth() : Int = 100
             private var respectiveFixture: CustomFixture? = null
             fun killFixture(){ respectiveFixture = null}
             fun reviveFixture(): CustomFixture  {
@@ -187,7 +188,7 @@ class PhysicsLayer : Layer {
                     RenderableComponent(definition.model, definition.localTransform, definition.graphicalData)
                 }
             }
-            fun createFixture(componentDefinition: PhysicalComponentDefinition): CustomFixture {
+            private fun createFixture(componentDefinition: PhysicalComponentDefinition): CustomFixture {
                 val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
                 for (i in vertices.indices) {
                     vertices[i] = componentDefinition.model.asVectorData[i].copy()
@@ -203,11 +204,21 @@ class PhysicsLayer : Layer {
 
         class ThrusterComponent(definition: PhysicalComponentDefinition, val localExhaustDirection: Rotation) : EntityComponent(definition)
 
-
-        abstract fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>)
-
         abstract fun isMarkedForRemoval(): Boolean
 
+        fun updateFixtures() : List<EffectsRequest>{
+            var didLoseParts = false;
+            for (internalComponent in internalComponents) {
+                internalComponent.getRespectiveFixture()?.let {
+                    if (it.isMarkedForRemoval()){
+                        killComponent(internalComponent)
+                        didLoseParts = true
+                    }
+                }
+            }
+            if(didLoseParts) setMass(MassType.NORMAL)
+            return listOf()
+        }
         abstract fun update(actions: List<ControlAction>): List<EffectsRequest>
 
         fun getComponents(): List<RenderableComponent> {
@@ -240,7 +251,7 @@ class PhysicsLayer : Layer {
                                     renderable.graphicalData.green,
                                     renderable.graphicalData.blue,
                                     renderable.graphicalData.z,
-                                    comp.getHealth().toFloat() / 100.0f
+                                    comp.getRespectiveFixture()!!.getHealth().toFloat() / 100.0f
                                 )
                             )
                         )
@@ -304,13 +315,6 @@ class PhysicsLayer : Layer {
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         )
     ) {
-
-        override fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
-            //Do nothing
-            val thisOnesFixture = if(data.pair.first.body == this) data.pair.first.fixture else data.pair.second.fixture
-//            removeFixture(thisOnesFixture)
-            setMass(MassType.NORMAL)
-        }
 
         override fun isMarkedForRemoval(): Boolean = false
 
@@ -393,8 +397,8 @@ class PhysicsLayer : Layer {
             super.processCollisions(iterator)
             //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
             contactCollisions.forEach {
-                it.pair.first.body.onCollide(it)
-                it.pair.second.body.onCollide(it)
+                it.pair.first.fixture.onCollide(it)
+                it.pair.second.fixture.onCollide(it)
             }
 
         }
@@ -432,8 +436,15 @@ class PhysicsLayer : Layer {
             }
         }
     }
+
+    private class CustomFixture(shape: Convex?): BodyFixture(shape) {
+        private var health = 100;
+        fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
+            health -= 10;
+        }
+        fun getHealth(): Int = health
+        fun isMarkedForRemoval(): Boolean = health <= 0
+        fun onDestruction() {}
+    }
 }
 
-class CustomFixture(shape: Convex?): BodyFixture(shape) {
-
-}
