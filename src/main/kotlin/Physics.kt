@@ -86,7 +86,8 @@ class PhysicsLayer : Layer {
     public fun requestEntity(request: EntityRequest): Int? {
         val entity = when (request.type) {
             RequestType.SHIP -> {
-                ShipEntity(request.scale, request.r, request.g, request.b, request.team)
+                val pair = createShip(request.scale, request.r, request.g, request.b);
+                ShipEntity(request.scale, request.r, request.g, request.b, request.team, pair.first, pair.second)
             }
 
             RequestType.PROJECTILE -> {
@@ -145,7 +146,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        class EntityComponent(val definition: PhysicalComponentDefinition){
+        open class EntityComponent(val definition: PhysicalComponentDefinition){
             fun getHealth() : Int = 100
             var respectiveFixture: Fixture? = null
             fun generateRenderable(): RenderableComponent? {
@@ -156,6 +157,8 @@ class PhysicsLayer : Layer {
                 }
             }
         }
+
+        class ThrusterComponent(definition: PhysicalComponentDefinition, val localExhaustDirection: Rotation) : EntityComponent(definition)
 
 
         override fun removeFixture(fixture: BodyFixture?): Boolean {
@@ -241,37 +244,40 @@ class PhysicsLayer : Layer {
     }
 
     companion object{
-        private fun createShip(scale: Double, red: Float, green: Float, blue: Float) : List<PhysicsEntity.EntityComponent>{
-            val list = mutableListOf<PhysicsEntity.EntityComponent>()
+        private fun createShip(scale: Double, red: Float, green: Float, blue: Float) : Pair<List<PhysicsEntity.EntityComponent>, List<PhysicsEntity.EntityComponent>>{
+            val body = mutableListOf<PhysicsEntity.EntityComponent>()
+            val thruster = mutableListOf<PhysicsEntity.EntityComponent>()
             IntRange(0, 10).forEach { a ->
                 IntRange(0, 10).forEach { b ->
-                    list.add(
-                        PhysicsEntity.EntityComponent(
+                    if(a == 0){
+                        val comp = PhysicsEntity.EntityComponent(
+                            PhysicalComponentDefinition(
+                                Model.SQUARE1,
+                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
+                                GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)
+                            )
+                        )
+                        body.add(comp)
+                        thruster.add(comp)
+                    }else{
+                        val comp = PhysicsEntity.EntityComponent(
                             PhysicalComponentDefinition(
                                 Model.SQUARE1,
                                 Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
                                 GraphicalData(red, green, blue, 0.0f)
                             )
-                        ))
+                        )
+                        body.add(comp)
+                    }
                 }
             }
-//                list.add(PhysicalComponentDefinition(
-//                    Model.TRIANGLE,
-//                    Transformation(Vector2(0.0, 0.0), 1.0 * scale, 0.0),
-//                    GraphicalData(red, green, blue, 0.0f)
-//                ))
-//                PhysicalComponentDefinition(
-//                    Model.SQUARE1,
-//                    Transformation(Vector2(-1.0 * scale, 0.0), 1.0 * scale, 0.0),
-//                    GraphicalData(1.0f, 1.0f, 1.0f, 0.0f)
-//                )
-//            )
-            return list
+
+            return Pair(body, thruster)
         }
     }
 
-    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team) : PhysicsEntity(
-        createShip(scale, red, green, blue), TeamFilter(
+    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, comp: List<EntityComponent>, val thrusterComponents: List<EntityComponent>) : PhysicsEntity(
+        comp, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         )
@@ -296,7 +302,9 @@ class PhysicsLayer : Layer {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
                     is ControlAction.ThrustAction -> {
-                        applyForce(action.thrust)
+                        //Count thrusters
+                        val thrusterCount = thrusterComponents.count { return@count it.respectiveFixture != null }
+                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                         effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
                     }
                     is ControlAction.TurnAction -> {
