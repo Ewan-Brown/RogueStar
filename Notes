@@ -1,3 +1,11 @@
-Working on making fixture regenerable.
+Major rework of Dyn4J for generics.
 
-Should look at making this regenerate inner->outer
+TODO
+- It looks like teamfilter isn't working between enemy ships? They shouldn't be colliding. Debugger not pausing on TeamFilter.isAllowed() breakpoint
+- Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
+- Clean up the references to color values (introduce a Color class?)
+- Make broken parts fall off as effects particles
+- Figure out a way to regenerate parts in a realistic order (inner -> outer as opposed to FIFO queue)
+- Make the background effect stretch with camera speed
+
+- POC Client<->Server ???
