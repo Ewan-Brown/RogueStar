@@ -189,7 +189,6 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
 
         val thrust = desiredVelocity.product(100.0)
 
-//        emitThrustParticles(entityData, thrust)
         val rotate = r*5 - entityData.angularVelocity
 
         actions.add(ControlAction.TurnAction(rotate))

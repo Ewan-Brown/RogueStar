@@ -11,11 +11,6 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
-import javax.swing.text.html.parser.Entity
-
-//fun Fixture.getPartInfo(): PhysicsLayer.PartInfo {
-//    return userData as PhysicsLayer.PartInfo
-//}
 
 class PhysicsLayer : Layer {
 
@@ -107,9 +102,7 @@ class PhysicsLayer : Layer {
         val type: RequestType, val position: Vector2, val velocity: Vector2 = Vector2(),
         val angle: Double = 0.0, val angularVelocity: Double = 0.0,
         val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team
-    ) {
-//        protected abstract fun process() : PhysicsEntity
-    }
+    )
 
     private fun <E : PhysicsEntity> addEntity(entity: E, angle: Double, pos: Vector2): E {
         entity.rotate(angle)
@@ -131,14 +124,6 @@ class PhysicsLayer : Layer {
         }
     }
 
-//    class PartInfo(
-//        val renderableProducer: () -> RenderableComponent?,
-//        val componentDefinition: PhysicalComponentDefinition,
-//        var health: Int,
-//    ) {}
-
-
-
     private abstract class PhysicsEntity protected constructor(
         private val internalComponents: List<EntityComponent>,
         private val teamFilter: TeamFilter
@@ -158,9 +143,6 @@ class PhysicsLayer : Layer {
                 this.addFixture(fixture)
                 component.respectiveFixture = fixture
             }
-//            for (componentDefinition in originalComponentDefinitions) {
-//                this.addFixture(createFixture(componentDefinition))
-//            }
         }
 
         class EntityComponent(val definition: PhysicalComponentDefinition){
@@ -193,7 +175,6 @@ class PhysicsLayer : Layer {
             polygon.translate(componentDefinition.localTransform.position.copy())
             polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
             val fixture = BodyFixture(polygon)
-            fixture.filter = teamFilter
             return fixture
         }
 
