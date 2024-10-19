@@ -205,7 +205,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         val attributeMarkerMap : MutableMap<INSTANCED_ATTRIBUTE, Int> = mutableMapOf()
         INSTANCED_ATTRIBUTE.entries.forEach {attributeMarkerMap[it] = 0}
         var indexCounter = 0
-        for ((model, data) in modelData) {
+        for ((_, data) in modelData) {
             //For each instance of that motel
             for (instancedDatum in data.instanceData) {
                 for(attribute in INSTANCED_ATTRIBUTE.entries){
