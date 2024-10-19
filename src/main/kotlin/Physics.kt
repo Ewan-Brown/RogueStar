@@ -145,6 +145,12 @@ class PhysicsLayer : Layer {
             }
         }
 
+        fun testFunc(){
+            for (internalComponent in internalComponents.filter { it.getRespectiveFixture() == null }) {
+                reviveComponent(internalComponent)
+            }
+        }
+
         private fun killComponent(component: EntityComponent){
             if(!internalComponents.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
@@ -317,10 +323,6 @@ class PhysicsLayer : Layer {
     ) {
 
         override fun isMarkedForRemoval(): Boolean = false
-
-        fun testFunc(){
-            println("testFunc()!")
-        }
 
         override fun update(actions: List<ControlAction>): List<EffectsRequest> {
             val effectsList = mutableListOf<EffectsRequest>()
