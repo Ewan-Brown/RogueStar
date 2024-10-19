@@ -2,12 +2,8 @@ import Graphics.Model
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
-import org.dyn4j.collision.Fixture
 import org.dyn4j.dynamics.*
-import org.dyn4j.geometry.MassType
-import org.dyn4j.geometry.Polygon
-import org.dyn4j.geometry.Rotation
-import org.dyn4j.geometry.Vector2
+import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
@@ -128,7 +124,7 @@ class PhysicsLayer : Layer {
     private abstract class PhysicsEntity protected constructor(
         private val internalComponents: List<EntityComponent>,
         private val teamFilter: TeamFilter
-    ) : AbstractPhysicsBody() {
+    ) : AbstractPhysicsBody<CustomFixture>() {
 
         private companion object {
             private var UUID_COUNTER = 0
@@ -140,32 +136,50 @@ class PhysicsLayer : Layer {
 
         init {
             for (component in internalComponents){
-                component.createFixture()
+                reviveComponent(component)
+//                component.createFixture()
 //                val fixture = createFixture(component.definition)
 //                this.addFixture(fixture)
 //                component.setRespectiveFixture(fixture)
             }
         }
 
+        private fun killComponent(component: EntityComponent){
+            if(!internalComponents.contains(component)){
+                throw IllegalArgumentException("tried to kill a component that is not under this entity")
+            }else{
+               if(component.getRespectiveFixture() == null){
+                   throw IllegalStateException("tried to kill a component that is already dead under this entity")
+               }else{
+                   removeFixture(component.getRespectiveFixture())
+                   component.killFixture()
+               }
+            }
+        }
+
+        private fun reviveComponent(component: EntityComponent){
+            if(!internalComponents.contains(component)){
+                throw IllegalArgumentException("tried to kill a component that is not under this entity")
+            }else{
+                if(component.getRespectiveFixture() != null){
+                    throw IllegalStateException("tried to revive a component that is already alive")
+                }else{
+                    val newFixture = component.reviveFixture()
+                    addFixture(newFixture)
+                }
+            }
+        }
+
         open class EntityComponent(val definition: PhysicalComponentDefinition){
             fun getHealth() : Int = 100
-            private var respectiveFixture: BodyFixture? = null
-            fun createFixture() {
-                if (respectiveFixture != null){
-                    throw IllegalStateException("Tried to create a fixture that already exists")
-                }else{
-                    respectiveFixture = createFixture(definition)
-                }
+            private var respectiveFixture: CustomFixture? = null
+            fun killFixture(){ respectiveFixture = null}
+            fun reviveFixture(): CustomFixture  {
+                val newFixture = createFixture(definition)
+                respectiveFixture = newFixture
+                return newFixture
             }
-            fun destroyFixture() {
-                if(respectiveFixture == null){
-                    throw IllegalStateException("Tried to remove a fixture that does not exist")
-                }else{
-                    removeFixture(respectiveFixture!!)
-                    respectiveFixture = null
-                }
-            }
-            fun getRespectiveFixture(): Fixture? { return respectiveFixture }
+            fun getRespectiveFixture(): CustomFixture? { return respectiveFixture }
             fun generateRenderable(): RenderableComponent? {
                 return if (respectiveFixture == null){
                     null
@@ -173,33 +187,24 @@ class PhysicsLayer : Layer {
                     RenderableComponent(definition.model, definition.localTransform, definition.graphicalData)
                 }
             }
+            fun createFixture(componentDefinition: PhysicalComponentDefinition): CustomFixture {
+                val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
+                for (i in vertices.indices) {
+                    vertices[i] = componentDefinition.model.asVectorData[i].copy()
+                        .multiply(componentDefinition.localTransform.scale.toDouble())
+                }
+                val polygon = Polygon(*vertices)
+                polygon.translate(componentDefinition.localTransform.position.copy())
+                polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
+                val fixture = CustomFixture(polygon)
+                return fixture
+            }
         }
 
         class ThrusterComponent(definition: PhysicalComponentDefinition, val localExhaustDirection: Rotation) : EntityComponent(definition)
 
 
-        override fun removeFixture(fixture: BodyFixture?): Boolean {
-            internalComponents.find { it.getRespectiveFixture() == fixture }?.let {
-                it.destroyFixture()
-            }
-            return super.removeFixture(fixture)
-        }
-
-        fun createFixture(componentDefinition: PhysicalComponentDefinition): BodyFixture {
-            val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
-            for (i in vertices.indices) {
-                vertices[i] = componentDefinition.model.asVectorData[i].copy()
-                    .multiply(componentDefinition.localTransform.scale.toDouble())
-            }
-            val polygon = Polygon(*vertices)
-            polygon.translate(componentDefinition.localTransform.position.copy())
-            polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
-            val fixture = BodyFixture(polygon)
-            return fixture
-        }
-
-
-        abstract fun onCollide(data: WorldCollisionData<PhysicsEntity>)
+        abstract fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>)
 
         abstract fun isMarkedForRemoval(): Boolean
 
@@ -300,10 +305,10 @@ class PhysicsLayer : Layer {
         )
     ) {
 
-        override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
+        override fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
             //Do nothing
             val thisOnesFixture = if(data.pair.first.body == this) data.pair.first.fixture else data.pair.second.fixture
-            removeFixture(thisOnesFixture)
+//            removeFixture(thisOnesFixture)
             setMass(MassType.NORMAL)
         }
 
@@ -382,9 +387,9 @@ class PhysicsLayer : Layer {
     ) {
     }
 
-    private class PhysicsWorld : AbstractPhysicsWorld<PhysicsEntity, WorldCollisionData<PhysicsEntity>>() {
+    private class PhysicsWorld : AbstractPhysicsWorld<CustomFixture, PhysicsEntity, WorldCollisionData<CustomFixture, PhysicsEntity>>() {
 
-        override fun processCollisions(iterator: Iterator<WorldCollisionData<PhysicsEntity>>) {
+        override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
             //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
             contactCollisions.forEach {
@@ -394,7 +399,7 @@ class PhysicsLayer : Layer {
 
         }
 
-        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BodyFixture>>?): WorldCollisionData<PhysicsEntity> {
+        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, CustomFixture>>?): WorldCollisionData<CustomFixture, PhysicsEntity> {
             return WorldCollisionData(pair)
         }
 
@@ -427,4 +432,8 @@ class PhysicsLayer : Layer {
             }
         }
     }
+}
+
+class CustomFixture(shape: Convex?): BodyFixture(shape) {
+
 }
