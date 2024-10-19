@@ -142,13 +142,16 @@ class PhysicsLayer : Layer {
             for (component in internalComponents){
                 val fixture = createFixture(component.definition)
                 this.addFixture(fixture)
-                component.respectiveFixture = fixture
+                component.setRespectiveFixture(fixture)
             }
         }
 
         open class EntityComponent(val definition: PhysicalComponentDefinition){
             fun getHealth() : Int = 100
-            var respectiveFixture: Fixture? = null
+            private var respectiveFixture: Fixture? = null
+            fun setRespectiveFixture(fix: Fixture) { respectiveFixture = fix }
+            fun removeRespectiveFixture() { respectiveFixture = null }
+            fun getRespectiveFixture(): Fixture? { return respectiveFixture }
             fun generateRenderable(): RenderableComponent? {
                 return if (respectiveFixture == null){
                     null
@@ -162,8 +165,8 @@ class PhysicsLayer : Layer {
 
 
         override fun removeFixture(fixture: BodyFixture?): Boolean {
-            internalComponents.find { it.respectiveFixture == fixture }?.let {
-                it.respectiveFixture = null
+            internalComponents.find { it.getRespectiveFixture() == fixture }?.let {
+                it.removeRespectiveFixture()
             }
             return super.removeFixture(fixture)
         }
@@ -303,7 +306,7 @@ class PhysicsLayer : Layer {
                     is ControlAction.ShootAction -> TODO()
                     is ControlAction.ThrustAction -> {
                         //Count thrusters
-                        val thrusterCount = thrusterComponents.count { return@count it.respectiveFixture != null }
+                        val thrusterCount = thrusterComponents.count { return@count it.getRespectiveFixture() != null }
                         applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                         effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
                     }
