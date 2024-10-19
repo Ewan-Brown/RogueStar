@@ -140,17 +140,31 @@ class PhysicsLayer : Layer {
 
         init {
             for (component in internalComponents){
-                val fixture = createFixture(component.definition)
-                this.addFixture(fixture)
-                component.setRespectiveFixture(fixture)
+                component.createFixture()
+//                val fixture = createFixture(component.definition)
+//                this.addFixture(fixture)
+//                component.setRespectiveFixture(fixture)
             }
         }
 
         open class EntityComponent(val definition: PhysicalComponentDefinition){
             fun getHealth() : Int = 100
-            private var respectiveFixture: Fixture? = null
-            fun setRespectiveFixture(fix: Fixture) { respectiveFixture = fix }
-            fun removeRespectiveFixture() { respectiveFixture = null }
+            private var respectiveFixture: BodyFixture? = null
+            fun createFixture() {
+                if (respectiveFixture != null){
+                    throw IllegalStateException("Tried to create a fixture that already exists")
+                }else{
+                    respectiveFixture = createFixture(definition)
+                }
+            }
+            fun destroyFixture() {
+                if(respectiveFixture == null){
+                    throw IllegalStateException("Tried to remove a fixture that does not exist")
+                }else{
+                    removeFixture(respectiveFixture!!)
+                    respectiveFixture = null
+                }
+            }
             fun getRespectiveFixture(): Fixture? { return respectiveFixture }
             fun generateRenderable(): RenderableComponent? {
                 return if (respectiveFixture == null){
@@ -166,7 +180,7 @@ class PhysicsLayer : Layer {
 
         override fun removeFixture(fixture: BodyFixture?): Boolean {
             internalComponents.find { it.getRespectiveFixture() == fixture }?.let {
-                it.removeRespectiveFixture()
+                it.destroyFixture()
             }
             return super.removeFixture(fixture)
         }
