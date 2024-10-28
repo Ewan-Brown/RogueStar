@@ -8,6 +8,8 @@ import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.util.function.Predicate
 
+private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
+
 class PhysicsLayer : Layer {
 
     enum class CollisionCategory(val bits: Long) {
@@ -123,7 +125,7 @@ class PhysicsLayer : Layer {
     }
 
     private abstract class PhysicsEntity protected constructor(
-        private val internalComponents: List<EntityComponent>,
+        private val internalComponents: List<Component>,
         private val teamFilter: TeamFilter
     ) : AbstractPhysicsBody<CustomFixture>() {
 
@@ -138,10 +140,6 @@ class PhysicsLayer : Layer {
         init {
             for (component in internalComponents){
                 reviveComponent(component)
-//                component.createFixture()
-//                val fixture = createFixture(component.definition)
-//                this.addFixture(fixture)
-//                component.setRespectiveFixture(fixture)
             }
         }
 
@@ -151,7 +149,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        private fun killComponent(component: EntityComponent){
+        private fun killComponent(component: Component){
             if(!internalComponents.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -165,7 +163,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        private fun reviveComponent(component: EntityComponent){
+        private fun reviveComponent(component: Component){
             if(!internalComponents.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -178,7 +176,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        open class EntityComponent(val definition: PhysicalComponentDefinition, private val filter: TeamFilter){
+        open class Component(val definition: ComponentDefinition, private val filter: TeamFilter, val adjacentComponents: List<Component>){
             private var respectiveFixture: CustomFixture? = null
             fun killFixture(){ respectiveFixture = null}
             fun reviveFixture(): CustomFixture  {
@@ -194,7 +192,7 @@ class PhysicsLayer : Layer {
                     RenderableComponent(definition.model, definition.localTransform, definition.graphicalData)
                 }
             }
-            private fun createFixture(componentDefinition: PhysicalComponentDefinition): CustomFixture {
+            private fun createFixture(componentDefinition: ComponentDefinition): CustomFixture {
                 val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
                 for (i in vertices.indices) {
                     vertices[i] = componentDefinition.model.asVectorData[i].copy()
@@ -209,7 +207,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        class ThrusterComponent(definition: PhysicalComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : EntityComponent(definition, filter)
+        class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation, adjacentComponents: List<Component>) : Component(definition, filter, adjacentComponents)
 
         abstract fun isMarkedForRemoval(): Boolean
 
@@ -218,6 +216,7 @@ class PhysicsLayer : Layer {
             for (internalComponent in internalComponents) {
                 internalComponent.getRespectiveFixture()?.let {
                     if (it.isMarkedForRemoval()){
+                        it.onDestruction()
                         killComponent(internalComponent)
                         didLoseParts = true
                     }
@@ -284,47 +283,74 @@ class PhysicsLayer : Layer {
     }
 
     companion object{
-        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : Pair<List<PhysicsEntity.EntityComponent>, List<PhysicsEntity.EntityComponent>>{
-            val body = mutableListOf<PhysicsEntity.EntityComponent>()
-            val thruster = mutableListOf<PhysicsEntity.EntityComponent>()
-            IntRange(0, 10).forEach { a ->
-                IntRange(0, 10).forEach { b ->
-                    if(a == 0){
-                        val comp = PhysicsEntity.EntityComponent(
-                            PhysicalComponentDefinition(
-                                Model.SQUARE1,
-                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
-                                GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)
-                            ), TeamFilter(team, {it.UUID != team.UUID},
-                                category = CollisionCategory.CATEGORY_SHIP.bits,
-                                mask = CollisionCategory.CATEGORY_SHIP.bits))
-                        body.add(comp)
-                        thruster.add(comp)
-                    }else{
-                        val comp = PhysicsEntity.EntityComponent(
-                            PhysicalComponentDefinition(
-                                Model.SQUARE1,
-                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
-                                GraphicalData(red, green, blue, 0.0f)
-                            ), TeamFilter(team, {it.UUID != team.UUID},
-                                category = CollisionCategory.CATEGORY_SHIP.bits,
-                                mask = CollisionCategory.CATEGORY_SHIP.bits))
-                        body.add(comp)
-                    }
-                }
-            }
+        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : Pair<List<PhysicsEntity.Component>, List<PhysicsEntity.Component>>{
+            val body = mutableListOf<PhysicsEntity.Component>()
+            val thruster = mutableListOf<PhysicsEntity.Component>()
+            body.add(
+                PhysicsEntity.Component(
+                    ComponentDefinition(
+                        Model.SQUARE1,
+                        Transformation(Vector2(0.0), scale),
+                        GraphicalData(red, green, blue, 0.0f)),
+                    TeamFilter(team, {it.UUID != team.UUID},
+                        category = CollisionCategory.CATEGORY_SHIP.bits,
+                        mask = CollisionCategory.CATEGORY_SHIP.bits),
+                    listOf())
+            )
+            thruster.add(
+                PhysicsEntity.Component(
+                    ComponentDefinition(
+                        Model.SQUARE1,
+                        Transformation(Vector2(0.0), scale),
+                        GraphicalData(red, green, blue, 0.0f)),
+                    TeamFilter(team, {it.UUID != team.UUID},
+                        category = CollisionCategory.CATEGORY_SHIP.bits,
+                        mask = CollisionCategory.CATEGORY_SHIP.bits),
+                    listOf())
+            )
+//            IntRange(0, 10).forEach { a ->
+//                IntRange(0, 10).forEach { b ->
+//                    if(a == 0){
+//                        val comp = PhysicsEntity.Component(
+//                            ComponentDefinition(
+//                                Model.SQUARE1,
+//                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
+//                                GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)
+//                            ), TeamFilter(team, {it.UUID != team.UUID},
+//                                category = CollisionCategory.CATEGORY_SHIP.bits,
+//                                mask = CollisionCategory.CATEGORY_SHIP.bits))
+//                        body.add(comp)
+//                        thruster.add(comp)
+//                    }else{
+//                        val comp = PhysicsEntity.Component(
+//                            ComponentDefinition(
+//                                Model.SQUARE1,
+//                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
+//                                GraphicalData(red, green, blue, 0.0f)
+//                            ), TeamFilter(team, {it.UUID != team.UUID},
+//                                category = CollisionCategory.CATEGORY_SHIP.bits,
+//                                mask = CollisionCategory.CATEGORY_SHIP.bits))
+//                        body.add(comp)
+//                    }
+//                }
+//            }
 
             return Pair(body, thruster)
         }
     }
 
-    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, comp: List<EntityComponent>, val thrusterComponents: List<EntityComponent>) : PhysicsEntity(
+    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, comp: List<Component>, val thrusterComponents: List<Component>) : PhysicsEntity(
         comp, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         )
     ) {
 
+        init {
+            if(thrusterComponents.isEmpty()){
+                throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
+            }
+        }
         override fun isMarkedForRemoval(): Boolean = false
 
         override fun update(actions: List<ControlAction>): List<EffectsRequest> {
@@ -351,43 +377,6 @@ class PhysicsLayer : Layer {
         }
     }
 
-    //TODO use the physics engine to create ephemeral colliding/form-changing entities that represent explosions' force etc.
-//  Maybe could collect these explosions and pass them to shader to do cool stuff...
-//    private class ProjectileEntity(team: Team) : PhysicsEntity(
-//        listOf(
-//            PhysicalComponentDefinition(
-//                Model.TRIANGLE,
-//                Transformation(Vector2(0.0, 0.0), 0.2, 0.0),
-//                GraphicalData(1.0f, 0.0f, 0.0f, 0.0f)
-//            )
-//        ),
-//        TeamFilter(
-//            team = team,
-//            teamPredicate = { it != team },
-//            category = CollisionCategory.CATEGORY_PROJECTILE.bits,
-//            mask = CollisionCategory.CATEGORY_SHIP.bits
-//        )
-//    ) {
-//        var hasCollided = false
-//
-//        init {
-//            this.linearVelocity.add(Vector2(this.transform.rotationAngle).multiply(50.0))
-//        }
-//
-//        override fun onCollide(data: WorldCollisionData<PhysicsEntity>) {
-//            //Cause damage to the other part!
-//            hasCollided = true
-//            isEnabled = false
-//        }
-//
-//        override fun isMarkedForRemoval(): Boolean = hasCollided
-//
-//        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
-//            this.applyForce(Vector2(transform.rotationAngle).product(2.0))
-//            return listOf()
-//        }
-//    }
-//
 //    //physics DTOs
     open class PhysicsBodyData(
         val uuid: Int, val position: Vector2, val velocity: Vector2,
@@ -449,7 +438,7 @@ class PhysicsLayer : Layer {
         }
         fun getHealth(): Int = health
         fun isMarkedForRemoval(): Boolean = health <= 0
-        fun onDestruction() {}
+        fun onDestruction() : List<EffectsRequest> {return listOf()}
     }
 }
 
