@@ -83,7 +83,7 @@ class PhysicsLayer : Layer {
     public fun requestEntity(request: EntityRequest): Int? {
         val entity = when (request.type) {
             RequestType.SHIP -> {
-                val pair = createShip(request.scale, request.r, request.g, request.b);
+                val pair = createShip(request.scale, request.r, request.g, request.b, request.team);
                 ShipEntity(request.scale, request.r, request.g, request.b, request.team, pair.first, pair.second)
             }
 
@@ -178,7 +178,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        open class EntityComponent(val definition: PhysicalComponentDefinition){
+        open class EntityComponent(val definition: PhysicalComponentDefinition, private val filter: TeamFilter){
             private var respectiveFixture: CustomFixture? = null
             fun killFixture(){ respectiveFixture = null}
             fun reviveFixture(): CustomFixture  {
@@ -204,11 +204,12 @@ class PhysicsLayer : Layer {
                 polygon.translate(componentDefinition.localTransform.position.copy())
                 polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
                 val fixture = CustomFixture(polygon)
+                fixture.filter = filter
                 return fixture
             }
         }
 
-        class ThrusterComponent(definition: PhysicalComponentDefinition, val localExhaustDirection: Rotation) : EntityComponent(definition)
+        class ThrusterComponent(definition: PhysicalComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : EntityComponent(definition, filter)
 
         abstract fun isMarkedForRemoval(): Boolean
 
@@ -283,7 +284,7 @@ class PhysicsLayer : Layer {
     }
 
     companion object{
-        private fun createShip(scale: Double, red: Float, green: Float, blue: Float) : Pair<List<PhysicsEntity.EntityComponent>, List<PhysicsEntity.EntityComponent>>{
+        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : Pair<List<PhysicsEntity.EntityComponent>, List<PhysicsEntity.EntityComponent>>{
             val body = mutableListOf<PhysicsEntity.EntityComponent>()
             val thruster = mutableListOf<PhysicsEntity.EntityComponent>()
             IntRange(0, 10).forEach { a ->
@@ -294,8 +295,9 @@ class PhysicsLayer : Layer {
                                 Model.SQUARE1,
                                 Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
                                 GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)
-                            )
-                        )
+                            ), TeamFilter(team, {it.UUID != team.UUID},
+                                category = CollisionCategory.CATEGORY_SHIP.bits,
+                                mask = CollisionCategory.CATEGORY_SHIP.bits))
                         body.add(comp)
                         thruster.add(comp)
                     }else{
@@ -304,8 +306,9 @@ class PhysicsLayer : Layer {
                                 Model.SQUARE1,
                                 Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
                                 GraphicalData(red, green, blue, 0.0f)
-                            )
-                        )
+                            ), TeamFilter(team, {it.UUID != team.UUID},
+                                category = CollisionCategory.CATEGORY_SHIP.bits,
+                                mask = CollisionCategory.CATEGORY_SHIP.bits))
                         body.add(comp)
                     }
                 }
