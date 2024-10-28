@@ -185,7 +185,7 @@ class PhysicsLayer : Layer {
                 return newFixture
             }
             fun getRespectiveFixture(): CustomFixture? { return respectiveFixture }
-            fun generateRenderable(): RenderableComponent? {
+            fun generateLocalRenderable(): RenderableComponent? {
                 return if (respectiveFixture == null){
                     null
                 }else{
@@ -237,34 +237,42 @@ class PhysicsLayer : Layer {
                 val entityPos = this.worldCenter
 
                 for (comp in internalComponents){
-                    val renderable = comp.generateRenderable()
+                    val renderable = transformLocalRenderableToGlobal(comp)
                     if(renderable != null) {
-                        val newPos = renderable.transform.position.copy().subtract(this.getMass().center)
-                            .rotate(entityAngle.toDouble()).add(entityPos)
-                        val newAngle =
-                            Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
-                        val scale = renderable.transform.scale
-
-                        //TODO We should probably have two different types -
-                        //  'renderable data that is static and attached to fixture'
-                        //  and 'class that represents ephemeral data describing a fixture's rendering'
-                        result.add(
-                            RenderableComponent(
-                                renderable.model,
-                                Transformation(newPos, scale, newAngle),
-                                GraphicalData(
-                                    renderable.graphicalData.red,
-                                    renderable.graphicalData.green,
-                                    renderable.graphicalData.blue,
-                                    renderable.graphicalData.z,
-                                    comp.getRespectiveFixture()!!.getHealth().toFloat() / 100.0f
-                                )
-                            )
-                        )
+                        result.add(renderable)
                     }
                 }
                 return result
             }
+        }
+
+        fun transformLocalRenderableToGlobal(component: Component) : RenderableComponent?{
+            val renderable = component.generateLocalRenderable()
+            if(renderable != null) {
+                val entityAngle = getTransform().rotationAngle.toFloat()
+                val entityPos = this.worldCenter
+                val newPos = renderable.transform.position.copy().subtract(this.getMass().center)
+                    .rotate(entityAngle.toDouble()).add(entityPos)
+                val newAngle =
+                    Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
+                val scale = renderable.transform.scale
+
+                //TODO We should probably have two different types -
+                //  'renderable data that is static and attached to fixture'
+                //  and 'class that represents ephemeral data describing a fixture's rendering'
+                return RenderableComponent(
+                    renderable.model,
+                    Transformation(newPos, scale, newAngle),
+                    GraphicalData(
+                        renderable.graphicalData.red,
+                        renderable.graphicalData.green,
+                        renderable.graphicalData.blue,
+                        renderable.graphicalData.z,
+                        component.getRespectiveFixture()!!.getHealth().toFloat() / 100.0f
+                    )
+                )
+            }
+            return null
         }
 
         fun createBodyData(): PhysicsBodyData {
@@ -285,57 +293,30 @@ class PhysicsLayer : Layer {
     companion object{
         private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : Pair<List<PhysicsEntity.Component>, List<PhysicsEntity.Component>>{
             val body = mutableListOf<PhysicsEntity.Component>()
-            val thruster = mutableListOf<PhysicsEntity.Component>()
+            val thrusters = mutableListOf<PhysicsEntity.Component>()
             body.add(
                 PhysicsEntity.Component(
                     ComponentDefinition(
                         Model.SQUARE1,
-                        Transformation(Vector2(0.0), scale),
+                        Transformation(Vector2(), scale),
                         GraphicalData(red, green, blue, 0.0f)),
                     TeamFilter(team, {it.UUID != team.UUID},
                         category = CollisionCategory.CATEGORY_SHIP.bits,
                         mask = CollisionCategory.CATEGORY_SHIP.bits),
                     listOf())
             )
-            thruster.add(
-                PhysicsEntity.Component(
-                    ComponentDefinition(
-                        Model.SQUARE1,
-                        Transformation(Vector2(0.0), scale),
-                        GraphicalData(red, green, blue, 0.0f)),
-                    TeamFilter(team, {it.UUID != team.UUID},
-                        category = CollisionCategory.CATEGORY_SHIP.bits,
-                        mask = CollisionCategory.CATEGORY_SHIP.bits),
-                    listOf())
-            )
-//            IntRange(0, 10).forEach { a ->
-//                IntRange(0, 10).forEach { b ->
-//                    if(a == 0){
-//                        val comp = PhysicsEntity.Component(
-//                            ComponentDefinition(
-//                                Model.SQUARE1,
-//                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
-//                                GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)
-//                            ), TeamFilter(team, {it.UUID != team.UUID},
-//                                category = CollisionCategory.CATEGORY_SHIP.bits,
-//                                mask = CollisionCategory.CATEGORY_SHIP.bits))
-//                        body.add(comp)
-//                        thruster.add(comp)
-//                    }else{
-//                        val comp = PhysicsEntity.Component(
-//                            ComponentDefinition(
-//                                Model.SQUARE1,
-//                                Transformation(Vector2(a.toDouble()*0.2, b.toDouble()*0.2), scale * 0.2, 0.0),
-//                                GraphicalData(red, green, blue, 0.0f)
-//                            ), TeamFilter(team, {it.UUID != team.UUID},
-//                                category = CollisionCategory.CATEGORY_SHIP.bits,
-//                                mask = CollisionCategory.CATEGORY_SHIP.bits))
-//                        body.add(comp)
-//                    }
-//                }
-//            }
-
-            return Pair(body, thruster)
+            val thruster = PhysicsEntity.Component(
+                ComponentDefinition(
+                    Model.SQUARE1,
+                    Transformation(Vector2(-1.0, 0.0), scale),
+                    GraphicalData(red, green/2.0f, blue, 0.0f)),
+                TeamFilter(team, {it.UUID != team.UUID},
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits),
+                listOf())
+            thrusters.add(thruster)
+            body.add(thruster)
+            return Pair(body, thrusters)
         }
     }
 
@@ -362,7 +343,12 @@ class PhysicsLayer : Layer {
                         //Count thrusters
                         val thrusterCount = thrusterComponents.count { return@count it.getRespectiveFixture() != null }
                         applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
-                        effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
+                        for (thrusterComponent in thrusterComponents) {
+                            transformLocalRenderableToGlobal(thrusterComponent)!!.transform!!.let{
+                                effectsList.add(EffectsRequest.ExhaustRequest(it.position, it.rotation.toRadians(), Vector2()))
+                            }
+//                            effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
+                        }
                     }
                     is ControlAction.TurnAction -> {
                         applyTorque(action.torque)
