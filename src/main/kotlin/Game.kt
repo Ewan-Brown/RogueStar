@@ -55,10 +55,10 @@ fun main() {
 
     controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
-    val idList = MutableList(1) {
-        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
-    }
-    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
+//    val idList = MutableList(1) {
+//        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
+//    }
+//    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
