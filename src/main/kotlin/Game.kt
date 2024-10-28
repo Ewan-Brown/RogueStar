@@ -15,7 +15,6 @@ class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0
 open class TransformedComponent(val model : Model, val transform: Transformation)
 class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val health: Float = 1.0f) //Construction to represent the % this part is done being built
 class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
-class PhysicalComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
 class Team(val name : String){
     companion object{
@@ -52,12 +51,12 @@ fun main() {
 
     val greenTeam = Team("Green")
 //    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
-    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=greenTeam))!!
+    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
 
     controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
     val idList = MutableList(1) {
-        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=0.0f, b=1.0f, team=greenTeam))!!
+        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
     }
     controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
 
