@@ -17,7 +17,9 @@ vec2 hash2(vec2 v){
 
 vec3 voronoi( in vec2 x )
 {
+    //Cell Index
     vec2 ip = floor(x);
+    //Local Position
     vec2 fp = fract(x);
 
     //----------------------------------
@@ -46,18 +48,13 @@ vec3 voronoi( in vec2 x )
 }
 
 void main() {
-    vec4 adjustedPos = inverse(view) * vec4(xyVarying,0,1);
-    vec2 st = adjustedPos.xy/100.0;
-    vec3 color = vec3(.0);
-    vec3 c = voronoi( 8.0*st );
+    vec2 localPos = xyVarying;
+    vec4 globalPos = inverse(view) * vec4(localPos,0,1);
+    vec2 scaledPos = globalPos.xy/100.0;
+    vec3 color = voronoi( 8.0*scaledPos );
 
-    // isolines
-    vec3 col = c.x*(0.5 + 0.5*sin(64.0*c.x))*vec3(1.0);
-    // borders
-//    col = mix( vec3(1.0,0.6,0.0), col, smoothstep( 0.04, 0.07, c.x ) );
-    // feature points
-    float dd = length( c.yz );
+    vec3 col = color.x*(0.5 + 0.5*sin(64.0*color.x))*vec3(1.0);
+    float dd = length( color.yz );
     col = mix( vec3(0.0,0.0,0.0), col, smoothstep( 0.0, 0.05, dd) );
-//    col += vec3(1.0,0.6,0.1)*(1.0-smoothstep( 0.0, 0.04, dd));
-    outputColor = vec4(1-col.x, 1-col.y, 0,1.0);
+    outputColor = vec4(col.x, col.y, 0,1.0);
 }

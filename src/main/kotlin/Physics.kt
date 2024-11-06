@@ -85,12 +85,11 @@ class PhysicsLayer : Layer {
     public fun requestEntity(request: EntityRequest): Int? {
         val entity = when (request.type) {
             RequestType.SHIP -> {
-                val pair = createShip(request.scale, request.r, request.g, request.b, request.team);
-                ShipEntity(request.scale, request.r, request.g, request.b, request.team, pair.first, pair.second)
+                val details = createShip(request.scale, request.r, request.g, request.b, request.team);
+                ShipEntity(request.scale, request.r, request.g, request.b, request.team, details)
             }
 
             RequestType.PROJECTILE -> {
-//                ProjectileEntity(request.team)
                 TODO()
             }
         }
@@ -126,7 +125,8 @@ class PhysicsLayer : Layer {
 
     private abstract class PhysicsEntity protected constructor(
         private val internalComponents: List<Component>,
-        private val teamFilter: TeamFilter
+        private val teamFilter: TeamFilter,
+        private val connectionMap: Map<Component, Component>
     ) : AbstractPhysicsBody<CustomFixture>() {
 
         private companion object {
@@ -176,7 +176,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        open class Component(val definition: ComponentDefinition, private val filter: TeamFilter, val adjacentComponents: List<Component>){
+        open class Component(val definition: ComponentDefinition, private val filter: TeamFilter){
             private var respectiveFixture: CustomFixture? = null
             fun killFixture(){ respectiveFixture = null}
             fun reviveFixture(): CustomFixture  {
@@ -207,7 +207,7 @@ class PhysicsLayer : Layer {
             }
         }
 
-        class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation, adjacentComponents: List<Component>) : Component(definition, filter, adjacentComponents)
+        class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : Component(definition, filter)
 
         abstract fun isMarkedForRemoval(): Boolean
 
@@ -290,10 +290,12 @@ class PhysicsLayer : Layer {
         }
     }
 
+    private data class ShipDetails(val components: List<PhysicsEntity.Component>, val thrusters: List<PhysicsEntity.Component>, val connectionMap: Map<PhysicsEntity.Component, PhysicsEntity.Component>)
+
     companion object{
-        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : Pair<List<PhysicsEntity.Component>, List<PhysicsEntity.Component>>{
+        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails{
             val body = mutableListOf<PhysicsEntity.Component>()
-            val thrusters = mutableListOf<PhysicsEntity.Component>()
+            val thrusters = mutableListOf<PhysicsEntity.ThrusterComponent>()
             body.add(
                 PhysicsEntity.Component(
                     ComponentDefinition(
@@ -302,10 +304,9 @@ class PhysicsLayer : Layer {
                         GraphicalData(red, green, blue, 0.0f)),
                     TeamFilter(team, {it.UUID != team.UUID},
                         category = CollisionCategory.CATEGORY_SHIP.bits,
-                        mask = CollisionCategory.CATEGORY_SHIP.bits),
-                    listOf())
+                        mask = CollisionCategory.CATEGORY_SHIP.bits))
             )
-            val thruster = PhysicsEntity.Component(
+            val thruster = PhysicsEntity.ThrusterComponent(
                 ComponentDefinition(
                     Model.SQUARE1,
                     Transformation(Vector2(-1.0, 0.0), scale),
@@ -313,20 +314,22 @@ class PhysicsLayer : Layer {
                 TeamFilter(team, {it.UUID != team.UUID},
                     category = CollisionCategory.CATEGORY_SHIP.bits,
                     mask = CollisionCategory.CATEGORY_SHIP.bits),
-                listOf())
+                Rotation()
+            )
             thrusters.add(thruster)
             body.add(thruster)
-            return Pair(body, thrusters)
+            return ShipDetails(body, thrusters, mapOf())
         }
     }
 
-    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, comp: List<Component>, val thrusterComponents: List<Component>) : PhysicsEntity(
-        comp, TeamFilter(
+    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, shipDetails: ShipDetails) : PhysicsEntity(
+        shipDetails.components, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
-        )
+        ), shipDetails.connectionMap
     ) {
 
+        val thrusterComponents = shipDetails.thrusters
         init {
             if(thrusterComponents.isEmpty()){
                 throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
@@ -347,7 +350,6 @@ class PhysicsLayer : Layer {
                             transformLocalRenderableToGlobal(thrusterComponent)!!.transform!!.let{
                                 effectsList.add(EffectsRequest.ExhaustRequest(it.position, it.rotation.toRadians(), Vector2()))
                             }
-//                            effectsList.add(EffectsRequest.ExhaustRequest(this.worldCenter, this.transform.rotationAngle, this.changeInPosition!!))
                         }
                     }
                     is ControlAction.TurnAction -> {
@@ -375,7 +377,6 @@ class PhysicsLayer : Layer {
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
-            //Note that this list is ephemeral and should not be accessed or referenced outside this very small scope.
             contactCollisions.forEach {
                 it.pair.first.fixture.onCollide(it)
                 it.pair.second.fixture.onCollide(it)
@@ -402,9 +403,8 @@ class PhysicsLayer : Layer {
         val category: Long,
         val mask: Long
     ) : Filter {
-        override fun isAllowed(filter: Filter?): Boolean {
+        override fun isAllowed(filter: Filter): Boolean {
             filter ?: throw NullPointerException("filter can never be null...")
-
             return if (filter is TeamFilter) {
                 //Check that the category/mask matches both directions
                 //AND if team logic matches
@@ -417,7 +417,7 @@ class PhysicsLayer : Layer {
         }
     }
 
-    private class CustomFixture(shape: Convex?): BodyFixture(shape) {
+    private class CustomFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
             health -= 10;
