@@ -4,7 +4,10 @@ import java.util.BitSet
 import kotlin.math.abs
 import PhysicsLayer.PhysicsBodyData
 
-class ControllerLayer : Layer{
+data class ControllerInput(val map: Map<Int, PhysicsBodyData>)
+data class ControllerOutput(val map: Map<Int, List<ControlAction>>)
+
+class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
     fun removeController(uuid: Int){
         controllerList.removeIf {
@@ -124,15 +127,16 @@ class ControllerLayer : Layer{
 
     private val controllerList = mutableListOf<ControllerInputEntry<*>>()
 
-fun update(entityDataMap: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
-    val amalgamatedMap = mutableMapOf<Int, List<ControlAction>>()
-    for (controllerEntityEntry in controllerList) {
-        val input = controllerEntityEntry.input.mapNotNull { entityDataMap[it] } //TODO Deal with disappeared entities?
-        val map = controllerEntityEntry.update(input, entityDataMap)
-        amalgamatedMap.putAll(map)
+    override fun update(input: ControllerInput) : ControllerOutput {
+        val entityDataMap = input.map
+        val amalgamatedMap = mutableMapOf<Int, List<ControlAction>>()
+        for (controllerEntityEntry in controllerList) {
+            val input = controllerEntityEntry.input.mapNotNull { entityDataMap[it] } //TODO Deal with disappeared entities?
+            val map = controllerEntityEntry.update(input, entityDataMap)
+            amalgamatedMap.putAll(map)
+        }
+        return ControllerOutput(amalgamatedMap)
     }
-    return amalgamatedMap
-}
 
     fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Pair<Transformation, GraphicalData>>>) {
         //Add renderables for player perspective?? Interesting idea

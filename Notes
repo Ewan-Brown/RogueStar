@@ -1,7 +1,6 @@
 Working on untangling Ship/Component creation
 
 TODO
--
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
 - Clean up the references to color values (introduce a Color class?)
 - Make broken parts fall off as effects particles

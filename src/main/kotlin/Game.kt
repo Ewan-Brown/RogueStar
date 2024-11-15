@@ -82,18 +82,18 @@ fun main() {
 
     while(true){
         Thread.sleep(16)
-        val effectsRequests = physicsLayer.update(lastControlActions)
-        lastControlActions = controllerLayer.update(physicsLayer.getBodyData())
+        val effectsRequests = physicsLayer.update(PhysicsInput(lastControlActions)).requests
+        lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
+        effectsLayer.update(EffectsInput(effectsRequests))
 
         val playerPos = physicsLayer.getEntityData(uuid!!)?.position!!
         populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
-        effectsLayer.update(effectsRequests)
 
     }
 }
 
-interface Layer{
-//    fun update()
+interface Layer<in I, out O>{
+    fun update(input: I) : O
 }
 
 

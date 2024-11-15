@@ -6,10 +6,13 @@ sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val 
     class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
 }
 
-class EffectsLayer : Layer {
+data class EffectsInput(val input: List<EffectsRequest>)
+
+class EffectsLayer : Layer<EffectsInput, Unit> {
     private val entities = mutableListOf<EffectsEntity>()
 
-    fun update(effectsRequests: List<EffectsRequest>) {
+    override fun update(input: EffectsInput) {
+        val effectsRequests = input.input
         for (effect in effectsRequests) {
             when (effect) {
                 is EffectsRequest.ExhaustRequest -> {
