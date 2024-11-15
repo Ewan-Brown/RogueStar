@@ -10,7 +10,10 @@ import java.util.function.Predicate
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
-class PhysicsLayer : Layer {
+data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
+data class PhysicsOutput(val requests: List<EffectsRequest>)
+
+class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     enum class CollisionCategory(val bits: Long) {
         CATEGORY_SHIP(0b0001),
@@ -33,7 +36,6 @@ class PhysicsLayer : Layer {
         return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
     }
 
-    //TODO benchmark and see if a cachemap ;) is necessary
     public fun getEntityData(uuid: Int): PhysicsBodyData? {
         val body = getEntity(uuid)
         return body?.let { it.createBodyData() }
@@ -49,7 +51,8 @@ class PhysicsLayer : Layer {
 
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
     //therefore maybe onCollide should simply flag things and store data, allowing .update() to clean up.
-    fun update(controlActions: Map<Int, List<ControlAction>>) : List<EffectsRequest>{
+    override fun update(input: PhysicsInput) : PhysicsOutput{
+        val controlActions = input.map;
         time++
         physicsWorld.update(1.0)
         var i = physicsWorld.bodies.size
@@ -67,7 +70,7 @@ class PhysicsLayer : Layer {
                 i--
             }
         }
-        return effectsRequests
+        return PhysicsOutput(effectsRequests)
     }
 
     //TODO Can we delegate this or something
