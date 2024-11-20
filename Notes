@@ -1,4 +1,4 @@
-Working on untangling Ship/Component creation
+Making sure component rework didn't break component removal-revival
 
 TODO
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
