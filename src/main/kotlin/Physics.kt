@@ -88,7 +88,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     public fun requestEntity(request: EntityRequest): Int? {
         val entity = when (request.type) {
             RequestType.SHIP -> {
-                val details = createShip(request.scale, request.r, request.g, request.b, request.team);
+                val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
                 ShipEntity(request.scale, request.r, request.g, request.b, request.team, details)
             }
 
@@ -127,9 +127,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     }
 
     private abstract class PhysicsEntity protected constructor(
-        private val internalComponents: List<Component>,
+        internalComponents: List<Component>,
         private val teamFilter: TeamFilter,
-        private val connectionMap: Map<Component, Component>
+        private val connectionMap: Map<Component, List<Component>>
     ) : AbstractPhysicsBody<CustomFixture>() {
 
         private companion object {
@@ -139,71 +139,69 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         val team = teamFilter.team
 
         val uuid = UUID_COUNTER++
+        val componentFixtureMap: MutableMap<Component, CustomFixture?> = internalComponents.associateWith { null }.toMutableMap()
 
         init {
-            for (component in internalComponents){
-                reviveComponent(component)
+            for(value in internalComponents){
+                reviveComponent(value)
             }
         }
 
-        fun testFunc(){
-            for (internalComponent in internalComponents.filter { it.getRespectiveFixture() == null }) {
-                reviveComponent(internalComponent)
-            }
+        open fun testFunc(){
+            println("PhysicsEntity.testFunc")
         }
 
         private fun killComponent(component: Component){
-            if(!internalComponents.contains(component)){
+            if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
-               if(component.getRespectiveFixture() == null){
+               if(componentFixtureMap[component] == null){
                    throw IllegalStateException("tried to kill a component that is already dead under this entity")
                }else{
                    println("Removing")
-                   removeFixture(component.getRespectiveFixture())
-                   component.killFixture()
+                   removeFixture(componentFixtureMap[component])
+                   componentFixtureMap[component] = null
                }
             }
         }
 
         private fun reviveComponent(component: Component){
-            if(!internalComponents.contains(component)){
+            if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
-                if(component.getRespectiveFixture() != null){
+                if(componentFixtureMap[component] != null){
                     throw IllegalStateException("tried to revive a component that is already alive")
                 }else{
-                    val newFixture = component.reviveFixture()
-                    addFixture(newFixture)
+                    val fixture = component.createFixture()
+                    componentFixtureMap[component] = fixture
+                    addFixture(fixture)
                 }
             }
         }
 
+        fun getComponentRenderable(component: Component): RenderableComponent? {
+            return if (componentFixtureMap[component] == null){
+                null
+            }else{
+                RenderableComponent(component.definition.model, component.definition.localTransform, component.definition.graphicalData)
+            }
+        }
+
+        /**
+         * A Component describes the "slot" for a body fixture
+         * Component visibility is restricted to the Body they are a part of.
+         * Components references must be valid for the lifetime of the ship they are a part of, fixture destruction is inferred _through_ the component itself.
+         */
         open class Component(val definition: ComponentDefinition, private val filter: TeamFilter){
-            private var respectiveFixture: CustomFixture? = null
-            fun killFixture(){ respectiveFixture = null}
-            fun reviveFixture(): CustomFixture  {
-                val newFixture = createFixture(definition)
-                respectiveFixture = newFixture
-                return newFixture
-            }
-            fun getRespectiveFixture(): CustomFixture? { return respectiveFixture }
-            fun generateLocalRenderable(): RenderableComponent? {
-                return if (respectiveFixture == null){
-                    null
-                }else{
-                    RenderableComponent(definition.model, definition.localTransform, definition.graphicalData)
-                }
-            }
-            private fun createFixture(componentDefinition: ComponentDefinition): CustomFixture {
-                val vertices = arrayOfNulls<Vector2>(componentDefinition.model.points)
+            fun createFixture(): CustomFixture {
+                val vertices = arrayOfNulls<Vector2>(definition.model.points)
                 for (i in vertices.indices) {
-                    vertices[i] = componentDefinition.model.asVectorData[i].copy()
-                        .multiply(componentDefinition.localTransform.scale.toDouble())
+                    vertices[i] = definition.model.asVectorData[i].copy()
+                        .multiply(definition.localTransform.scale.toDouble())
                 }
                 val polygon = Polygon(*vertices)
-                polygon.translate(componentDefinition.localTransform.position.copy())
-                polygon.rotate(componentDefinition.localTransform.rotation.toRadians())
+                polygon.translate(definition.localTransform.position.copy())
+                polygon.rotate(definition.localTransform.rotation.toRadians())
                 val fixture = CustomFixture(polygon)
                 fixture.filter = filter
                 return fixture
@@ -216,11 +214,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         fun updateFixtures() : List<EffectsRequest>{
             var didLoseParts = false;
-            for (internalComponent in internalComponents) {
-                internalComponent.getRespectiveFixture()?.let {
+            for (entry in componentFixtureMap) {
+                entry.value?.let{
                     if (it.isMarkedForRemoval()){
                         it.onDestruction()
-                        killComponent(internalComponent)
+                        killComponent(entry.key)
                         didLoseParts = true
                     }
                 }
@@ -239,8 +237,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 val entityAngle = getTransform().rotationAngle.toFloat()
                 val entityPos = this.worldCenter
 
-                for (comp in internalComponents){
-                    val renderable = transformLocalRenderableToGlobal(comp)
+                for (comp in componentFixtureMap.entries){
+                    val renderable = transformLocalRenderableToGlobal(comp.key)
                     if(renderable != null) {
                         result.add(renderable)
                     }
@@ -250,8 +248,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
 
         fun transformLocalRenderableToGlobal(component: Component) : RenderableComponent?{
-            val renderable = component.generateLocalRenderable()
-            if(renderable != null) {
+            val fixture = componentFixtureMap[component]
+            if(fixture != null){
+                val renderable = RenderableComponent(component.definition.model, component.definition.localTransform, component.definition.graphicalData)
                 val entityAngle = getTransform().rotationAngle.toFloat()
                 val entityPos = this.worldCenter
                 val newPos = renderable.transform.position.copy().subtract(this.getMass().center)
@@ -271,7 +270,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         renderable.graphicalData.green,
                         renderable.graphicalData.blue,
                         renderable.graphicalData.z,
-                        component.getRespectiveFixture()!!.getHealth().toFloat() / 100.0f
+                        fixture.getHealth().toFloat() / 100.0f
                     )
                 )
             }
@@ -293,39 +292,52 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private data class ShipDetails(val components: List<PhysicsEntity.Component>, val thrusters: List<PhysicsEntity.Component>, val connectionMap: Map<PhysicsEntity.Component, PhysicsEntity.Component>)
+    private data class ShipDetails(val components: List<PhysicsEntity.Component>, val thrusters: List<PhysicsEntity.Component>, val connectionMap: Map<PhysicsEntity.Component, List<PhysicsEntity.Component>>)
 
     companion object{
-        private fun createShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails{
+        private fun createTestShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails {
             val body = mutableListOf<PhysicsEntity.Component>()
             val thrusters = mutableListOf<PhysicsEntity.ThrusterComponent>()
-            body.add(
-                PhysicsEntity.Component(
+            val cockpit = PhysicsEntity.Component(
                     ComponentDefinition(
-                        Model.SQUARE1,
+                        Model.TRIANGLE,
                         Transformation(Vector2(), scale),
                         GraphicalData(red, green, blue, 0.0f)),
                     TeamFilter(team, {it.UUID != team.UUID},
                         category = CollisionCategory.CATEGORY_SHIP.bits,
                         mask = CollisionCategory.CATEGORY_SHIP.bits))
-            )
-            val thruster = PhysicsEntity.ThrusterComponent(
+            val center = PhysicsEntity.ThrusterComponent(
                 ComponentDefinition(
                     Model.SQUARE1,
-                    Transformation(Vector2(-1.0, 0.0), scale),
+                    Transformation(Vector2(-1.5, 0.0), scale),
                     GraphicalData(red, green/2.0f, blue, 0.0f)),
                 TeamFilter(team, {it.UUID != team.UUID},
                     category = CollisionCategory.CATEGORY_SHIP.bits,
                     mask = CollisionCategory.CATEGORY_SHIP.bits),
                 Rotation()
             )
+            val thruster = PhysicsEntity.ThrusterComponent(
+                ComponentDefinition(
+                    Model.SQUARE1,
+                    Transformation(Vector2(-2.5, 0.0), scale),
+                    GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)),
+                TeamFilter(team, {it.UUID != team.UUID},
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits),
+                Rotation()
+            )
             thrusters.add(thruster)
+            body.add(cockpit)
+            body.add(center)
             body.add(thruster)
-            return ShipDetails(body, thrusters, mapOf())
+            val connectionMap = mapOf(cockpit to listOf(center),
+                center to listOf(cockpit, thruster),
+                thruster to listOf(center))
+            return ShipDetails(body, thrusters, connectionMap)
         }
     }
 
-    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, shipDetails: ShipDetails) : PhysicsEntity(
+    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, val shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
@@ -340,17 +352,21 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
         override fun isMarkedForRemoval(): Boolean = false
 
+        override fun testFunc(){
+            super.testFunc()
+            println("ShipEntity.testFunc")
+        }
+
         override fun update(actions: List<ControlAction>): List<EffectsRequest> {
             val effectsList = mutableListOf<EffectsRequest>()
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
                     is ControlAction.ThrustAction -> {
-                        //Count thrusters
-                        val thrusterCount = thrusterComponents.count { return@count it.getRespectiveFixture() != null }
+                        val thrusterCount = thrusterComponents.count { return@count componentFixtureMap[it] != null }
                         applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                         for (thrusterComponent in thrusterComponents) {
-                            transformLocalRenderableToGlobal(thrusterComponent)!!.transform!!.let{
+                            transformLocalRenderableToGlobal(thrusterComponent)?.transform?.let{
                                 effectsList.add(EffectsRequest.ExhaustRequest(it.position, it.rotation.toRadians(), Vector2()))
                             }
                         }
@@ -420,6 +436,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
+    /**
+     * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
+     */
     private class CustomFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
