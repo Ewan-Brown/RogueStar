@@ -17,7 +17,7 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
-    enum class CollisionCategory(val bits: Long) {
+    private enum class CollisionCategory(val bits: Long) {
         CATEGORY_SHIP(0b0001),
         CATEGORY_PROJECTILE(0b0010),
         CATEGORY_SHIELD(0b0100)
@@ -38,19 +38,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
     }
 
-    public fun getEntityData(uuid: Int): PhysicsBodyData? {
+    fun getEntityData(uuid: Int): PhysicsBodyData? {
         val body = getEntity(uuid)
         return body?.let { it.createBodyData() }
     }
 
-    public fun applyTorque(uuid: Int, torque: Double) {
-        getEntity(uuid)?.applyTorque(torque)
-    }
-
-    public fun applyForce(uuid: Int, force: Vector2) {
-        getEntity(uuid)?.applyForce(force)
-    }
-
+    //TODO this comment needsa  second thought
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
     //therefore maybe onCollide should simply flag things and store data, allowing .update() to clean up.
     override fun update(input: PhysicsInput) : PhysicsOutput{
@@ -80,14 +73,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         physicsWorld.populateModelMap(modelDataMap)
     }
 
-    enum class RequestType {
-        SHIP, PROJECTILE
-    }
-
     /**
-     * Put in a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
+     * Process a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
+     *
+     * TODO Maybe this should throw an error when it fails - when could we possibly expect entity spawning to fail?
      */
-    public fun requestEntity(request: EntityRequest): Int? {
+    fun requestEntity(request: EntityRequest): Int? {
         val entity = when (request.type) {
             RequestType.SHIP -> {
                 val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
@@ -100,6 +91,17 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
         addEntity(entity, request.angle, request.position)
         return entity.uuid
+    }
+
+    /**
+     * The input DTO for this layer - represents an outer request to create an entity.
+     * Generally only used at game start or when an entity is immaculately conceived.
+     * Otherwise, entities should be created here in Physics via other entities controls.
+     */
+
+
+    public enum class RequestType {
+        SHIP, PROJECTILE
     }
 
     class EntityRequest(
@@ -140,8 +142,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
 
         val team = teamFilter.team
-
         val uuid = UUID_COUNTER++
+
+        /**
+         * This serves two purposes - to keep a list of all the components (fixture slots) as well as a reference to each of the components' fixtures -
+         * if a reference is null it means the fixture is destroyed or removed
+         */
         val componentFixtureMap: MutableMap<Component, CustomFixture?> = internalComponents.associateWith { null }.toMutableMap()
 
         init {
@@ -150,15 +156,16 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
+        /**
+         * Function used purely for manually testing proof of concept or debugging.
+         */
         open fun testFunc(){
             println("PhysicsEntity.testFunc")
         }
 
         /**
          * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
-         * Will *NOT* do physics recalculations! You need to later call setMass(MassType.NORMAL) if you are using this!
          **/
-        //TODO Add codecheck rule to check that you use setMass after calling this.
         private fun killComponent(component: Component, doSplitCheck: Boolean = true){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
@@ -216,19 +223,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
-        private fun exploreBranch(root: Component, ignore: Component, list: MutableList<Component>) : List<Component>{
-            if(root == ignore){
-                throw IllegalArgumentException("You can't explore a branch where the root == ignore!")
-            }
-            list.add(root)
-            val nextComponents = connectionMap[root]!!.filter { it != ignore && !list.contains(it) }
-            for(nextRoot in nextComponents){
-                exploreBranch(nextRoot, ignore, list)
-            }
-            return list
-        }
-
-        fun reviveComponent(component: Component){
+        /**
+         * Assuming this component's fixture is 'dead' this will regenerate it and add it back to the body.
+         */
+        private fun reviveComponent(component: Component){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -243,18 +241,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
-        fun getComponentRenderable(component: Component): RenderableComponent? {
-            return if (componentFixtureMap[component] == null){
-                null
-            }else{
-                RenderableComponent(component.definition.model, component.definition.localTransform, component.definition.graphicalData)
-            }
-        }
-
         /**
          * A Component describes the "slot" for a body fixture
          * Component visibility is restricted to the Body they are a part of.
-         * Components references must be valid for the lifetime of the ship they are a part of, fixture destruction is inferred _through_ the component itself.
+         * Components references must be valid for the lifetime of the ship they are a part of, but a fixture may or may not be alive for a given component at any point in time (as represented in the connectionMap)
          */
         open class Component(val definition: ComponentDefinition, private val filter: TeamFilter){
             fun createFixture(): CustomFixture {
@@ -276,6 +266,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         abstract fun isMarkedForRemoval(): Boolean
 
+        //Check if any parts needs to be removed, and then calculate new center of mass.
         fun updateFixtures() : List<EffectsRequest>{
             var didLoseParts = false;
             for (entry in componentFixtureMap) {
@@ -292,7 +283,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
         abstract fun update(actions: List<ControlAction>): List<EffectsRequest>
 
-        fun getComponents(): List<RenderableComponent> {
+        fun getRenderableComponents(): List<RenderableComponent> {
             if (!isEnabled) {
                 return listOf()
             } else {
@@ -311,11 +302,14 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
+        /**
+         * Take a component (which has coordinates in local space) and transform it to global space, then wrap it with graphical details
+         */
         fun transformLocalRenderableToGlobal(component: Component) : RenderableComponent?{
             val fixture = componentFixtureMap[component]
             if(fixture != null){
                 val renderable = RenderableComponent(component.definition.model, component.definition.localTransform, component.definition.graphicalData)
-                val entityAngle = getTransform().rotationAngle.toFloat()
+                val entityAngle = getTransform().rotation.toRadians()
                 val entityPos = this.worldCenter
                 val newPos = renderable.transform.position.copy().subtract(this.getMass().center)
                     .rotate(entityAngle.toDouble()).add(entityPos)
@@ -434,10 +428,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             if(!flag) {
                 flag = true;
                 println("ShipEntity.testFunc - removing the middle bit")
-                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
+                componentFixtureMap.entries.stream().skip(2).findFirst().ifPresent {
                     it.value?.kill()
                 }
-                setMass(MassType.NORMAL)
             }
         }
 
@@ -468,14 +461,15 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-//    //physics DTOs
+    //physics DTO as layer output
     open class PhysicsBodyData(
         val uuid: Int, val position: Vector2, val velocity: Vector2,
         val angle: Double, val angularVelocity: Double, val traceRadius: Double,
         val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team
-    ) {
-    }
-
+    )
+    /**
+     * Extension of Dyn4J world
+     */
     private class PhysicsWorld : AbstractPhysicsWorld<CustomFixture, PhysicsEntity, WorldCollisionData<CustomFixture, PhysicsEntity>>() {
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
@@ -493,13 +487,16 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
             for (body in this.bodies) {
-                for (component in body.getComponents()) {
+                for (component in body.getRenderableComponents()) {
                     map[component.model]!!.add(Pair(component.transform, component.graphicalData))
                 }
             }
         }
     }
 
+    /**
+     * A bit-wise (and optional predicate) filter to determine if a given Fixture should intersect with one from another entity
+     */
     class TeamFilter(
         val team: Team = Team.TEAMLESS,
         val teamPredicate: Predicate<Team> = Predicate { true },
@@ -519,7 +516,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
     }
-
     /**
      * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
      */
