@@ -1,11 +1,9 @@
 import Graphics.Model
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
-import PhysicsLayer
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.util.*
-import javax.naming.ldap.Control
 
 class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))

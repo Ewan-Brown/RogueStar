@@ -4,7 +4,6 @@ import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import java.util.EnumMap
 import kotlin.math.exp
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
