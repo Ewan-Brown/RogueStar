@@ -1,4 +1,5 @@
 import Graphics.Model
+import PhysicsLayer.PhysicsEntity.*
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
@@ -6,6 +7,7 @@ import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
+import java.util.Stack
 import java.util.function.Predicate
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
@@ -128,6 +130,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
+        val cockpit: Component = internalComponents[0],
         private val teamFilter: TeamFilter,
         private val connectionMap: Map<Component, List<Component>>
     ) : AbstractPhysicsBody<CustomFixture>() {
@@ -151,21 +154,81 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             println("PhysicsEntity.testFunc")
         }
 
-        private fun killComponent(component: Component){
+        /**
+         * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
+         * Will *NOT* do physics recalculations! You need to later call setMass(MassType.NORMAL) if you are using this!
+         **/
+        //TODO Add codecheck rule to check that you use setMass after calling this.
+        fun killComponent(component: Component, doSplitCheck: Boolean = true){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
                if(componentFixtureMap[component] == null){
                    throw IllegalStateException("tried to kill a component that is already dead under this entity")
-               }else{
+               }else {
                    println("Removing")
                    removeFixture(componentFixtureMap[component])
                    componentFixtureMap[component] = null
+                   //Split check!
+                   if (doSplitCheck) {
+                       println("Split check...")
+                       val branchRoots = connectionMap[component]!!
+                       val nodesAlreadyCounted = mutableListOf<Component>()
+                       val branches: List<List<Component>> = branchRoots.mapNotNull {
+                           println("entering branch from root node")
+                           if (nodesAlreadyCounted.contains(it)) {
+                               println("this root node has already been counted, ignoring")
+                               null
+                           } else {
+                               println("exploring branch")
+                               val accumulator = mutableListOf<Component>()
+                               val toIgnore = component
+                               val nodesToExplore = Stack<Component>()
+                               nodesToExplore.push(it)
+                               while (nodesToExplore.isNotEmpty()) {
+                                   println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
+                                   val node = nodesToExplore.pop()
+                                   //Ignore the node that represents the broken piece that caused this split
+                                   if (node != toIgnore && !accumulator.contains(node)) {
+                                       println("\tfound a new node to explore")
+                                       accumulator.add(node)
+                                       nodesToExplore.addAll(connectionMap[node]!!)
+                                   } else {
+                                       println("\tignoring node")
+                                   }
+                               }
+                               println("\t completed this branch with ${accumulator.size} nodes found")
+                               accumulator
+                           }
+                       }
+                       println("completed exploring all branches")
+                       for (branch in branches) {
+                           if (branch.contains(cockpit)) {
+                               //This branch will remain a part of this entity - all other branches will be fragmented off!
+                           } else {
+                               for (branchComponent in branch) {
+                                   killComponent(branchComponent, false)
+                               }
+                           }
+                       }
+                   }
                }
             }
         }
 
-        private fun reviveComponent(component: Component){
+        private fun exploreBranch(root: Component, ignore: Component, list: MutableList<Component>) : List<Component>{
+            if(root == ignore){
+                throw IllegalArgumentException("You can't explore a branch where the root == ignore!")
+            }
+            list.add(root)
+            val nextComponents = connectionMap[root]!!.filter { it != ignore && !list.contains(it) }
+            for(nextRoot in nextComponents){
+                exploreBranch(nextRoot, ignore, list)
+            }
+            return list
+        }
+
+        fun reviveComponent(component: Component){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -175,6 +238,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     val fixture = component.createFixture()
                     componentFixtureMap[component] = fixture
                     addFixture(fixture)
+
                 }
             }
         }
@@ -292,13 +356,13 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private data class ShipDetails(val components: List<PhysicsEntity.Component>, val thrusters: List<PhysicsEntity.Component>, val connectionMap: Map<PhysicsEntity.Component, List<PhysicsEntity.Component>>)
+    private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
     companion object{
         private fun createTestShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails {
-            val body = mutableListOf<PhysicsEntity.Component>()
-            val thrusters = mutableListOf<PhysicsEntity.ThrusterComponent>()
-            val cockpit = PhysicsEntity.Component(
+            val body = mutableListOf<Component>()
+            val thrusters = mutableListOf<ThrusterComponent>()
+            val cockpit = Component(
                     ComponentDefinition(
                         Model.TRIANGLE,
                         Transformation(Vector2(), scale),
@@ -306,7 +370,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     TeamFilter(team, {it.UUID != team.UUID},
                         category = CollisionCategory.CATEGORY_SHIP.bits,
                         mask = CollisionCategory.CATEGORY_SHIP.bits))
-            val center = PhysicsEntity.ThrusterComponent(
+            val center1 = ThrusterComponent(
                 ComponentDefinition(
                     Model.SQUARE1,
                     Transformation(Vector2(-1.5, 0.0), scale),
@@ -316,10 +380,20 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     mask = CollisionCategory.CATEGORY_SHIP.bits),
                 Rotation()
             )
-            val thruster = PhysicsEntity.ThrusterComponent(
+            val center2 = ThrusterComponent(
                 ComponentDefinition(
                     Model.SQUARE1,
                     Transformation(Vector2(-2.5, 0.0), scale),
+                    GraphicalData(red, green/2.0f, blue, 0.0f)),
+                TeamFilter(team, {it.UUID != team.UUID},
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits),
+                Rotation()
+            )
+            val thruster = ThrusterComponent(
+                ComponentDefinition(
+                    Model.SQUARE1,
+                    Transformation(Vector2(-3.5, 0.0), scale),
                     GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)),
                 TeamFilter(team, {it.UUID != team.UUID},
                     category = CollisionCategory.CATEGORY_SHIP.bits,
@@ -328,17 +402,19 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             )
             thrusters.add(thruster)
             body.add(cockpit)
-            body.add(center)
+            body.add(center1)
+            body.add(center2)
             body.add(thruster)
-            val connectionMap = mapOf(cockpit to listOf(center),
-                center to listOf(cockpit, thruster),
-                thruster to listOf(center))
-            return ShipDetails(body, thrusters, connectionMap)
+            val connectionMap = mapOf(cockpit to listOf(center1),
+                center1 to listOf(cockpit, center2),
+                center2 to listOf(center1, thruster),
+                thruster to listOf(center2))
+            return ShipDetails(body, thrusters, connectionMap, cockpit)
         }
     }
 
     private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, val shipDetails: ShipDetails) : PhysicsEntity(
-        shipDetails.components, TeamFilter(
+        shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         ), shipDetails.connectionMap
@@ -352,9 +428,19 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
         override fun isMarkedForRemoval(): Boolean = false
 
+        var flag = false
         override fun testFunc(){
             super.testFunc()
-            println("ShipEntity.testFunc")
+            if(!flag) {
+                flag = true;
+                println("ShipEntity.testFunc - removing the middle bit")
+                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
+                    if (it.value != null) {
+                        killComponent(it.key)
+                    }
+                }
+                setMass(MassType.NORMAL)
+            }
         }
 
         override fun update(actions: List<ControlAction>): List<EffectsRequest> {
