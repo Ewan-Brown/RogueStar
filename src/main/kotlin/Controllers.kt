@@ -181,9 +181,6 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
 
         if(input[KeyEvent.VK_X]){
             actions.add(ControlAction.TestAction)
-//            val newEntity = ProjectileEntity(entity.team)
-//            val addedEntity = physicsLayer.addEntity(newEntity, entity.transform.rotationAngle, entity.worldCenter.sum(Vector2(entity.transform.rotation.toVector().product(entity.rotationDiscRadius+1))))
-//            addedEntity.linearVelocity = entity.linearVelocity.copy()
         }
 
         val desiredVelocity = Vector2(x, y)
