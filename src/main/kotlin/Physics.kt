@@ -179,13 +179,17 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                    //Split check!
                    if (doSplitCheck) {
                        println("Split check...")
-                       val branchRoots = connectionMap[component]!!
+                       val branchRoots = connectionMap[component]
                        val nodesAlreadyCounted = mutableListOf<Component>()
-                       val branches: List<List<Component>> = branchRoots.mapNotNull {
+                       val branches: List<List<Component>> = branchRoots!!.mapNotNull {
                            println("entering branch from root node")
+                           if (componentFixtureMap[it] == null){
+                               println("this root node is dead, ignoring")
+                               return@mapNotNull null
+                           }
                            if (nodesAlreadyCounted.contains(it)) {
                                println("this root node has already been counted, ignoring")
-                               null
+                               return@mapNotNull null
                            } else {
                                println("exploring branch")
                                val accumulator = mutableListOf<Component>()
@@ -196,7 +200,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
                                    val node = nodesToExplore.pop()
                                    //Ignore the node that represents the broken piece that caused this split
-                                   if (node != toIgnore && !accumulator.contains(node)) {
+                                   if (node != toIgnore && !accumulator.contains(node) && componentFixtureMap[node] != null) {
                                        println("\tfound a new node to explore")
                                        accumulator.add(node)
                                        nodesToExplore.addAll(connectionMap[node]!!)
@@ -213,6 +217,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                            if (branch.contains(cockpit)) {
                                //This branch will remain a part of this entity - all other branches will be fragmented off!
                            } else {
+                               val definitions = branch.map { it.definition }
                                for (branchComponent in branch) {
                                    killComponent(branchComponent, false)
                                }
