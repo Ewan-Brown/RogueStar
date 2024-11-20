@@ -159,7 +159,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * Will *NOT* do physics recalculations! You need to later call setMass(MassType.NORMAL) if you are using this!
          **/
         //TODO Add codecheck rule to check that you use setMass after calling this.
-        fun killComponent(component: Component, doSplitCheck: Boolean = true){
+        private fun killComponent(component: Component, doSplitCheck: Boolean = true){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -435,9 +435,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 flag = true;
                 println("ShipEntity.testFunc - removing the middle bit")
                 componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
-                    if (it.value != null) {
-                        killComponent(it.key)
-                    }
+                    it.value?.kill()
                 }
                 setMass(MassType.NORMAL)
             }
@@ -530,6 +528,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
             health -= 10;
         }
+
+        /**
+         * Just for testing at the moment
+         */
+        fun kill(){health = 0}
         fun getHealth(): Int = health
         fun isMarkedForRemoval(): Boolean = health <= 0
         fun onDestruction() : List<EffectsRequest> {return listOf()}
