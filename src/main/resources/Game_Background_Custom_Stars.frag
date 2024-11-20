@@ -56,5 +56,5 @@ void main() {
     vec3 col = color.x*(0.5 + 0.5*sin(64.0*color.x))*vec3(1.0);
     float dd = length( color.yz );
     col = mix( vec3(0.0,0.0,0.0), col, smoothstep( 0.0, 0.05, dd) );
-    outputColor = vec4(col.x, col.y, 0,1.0);
+    outputColor = vec4(1- col.x, 1- col.y, 0,1.0);
 }
