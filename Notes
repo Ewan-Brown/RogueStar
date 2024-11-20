@@ -1,4 +1,4 @@
-Making sure component rework didn't break component removal-revival
+Get working on making the splitting function
 
 TODO
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
@@ -9,3 +9,5 @@ TODO
 - Make it fail gracefully when you hit the exit button!
 
 - POC Client<->Server ???
+
+= Confirmed that fixture removal/revival and collisions/breaking still work
