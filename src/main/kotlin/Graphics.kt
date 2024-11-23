@@ -41,7 +41,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         synchronized(modelData) {
             //Update camera
             val diff = cameraPos.to(cameraDetails.targetPosition)
-            println(cameraPos.toString() + " " + cameraDetails.targetPosition)
             cameraVelocity = diff.multiply(0.3)
 //            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
             // TODO Control the camera velocity, there's currently no limit - velocity should have hysteresis
