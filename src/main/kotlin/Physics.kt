@@ -165,7 +165,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * Function used purely for manually testing proof of concept or debugging.
          */
         open fun testFunc(){
-            println("PhysicsEntity.testFunc")
+//            println("PhysicsEntity.testFunc")
         }
 
         /**
@@ -242,10 +242,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
-
                                val newShip = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
+//                               newShip.translate(1.6,0.0)
+                               newShip.translate(this.localCenter.product(-1.0))
                                newShip.rotate(this.transform.rotationAngle)
-                               println(this.worldCenter.toString() + " " + this.localCenter.toString())
                                newShip.translate(this.worldCenter)
                                entityList.add(newShip)
                            }
