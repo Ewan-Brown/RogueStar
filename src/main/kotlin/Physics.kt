@@ -65,9 +65,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 i--
             }
             effectsRequests.addAll(eff)
-//            for(entityReq in ent){
-//                addEntity(entityReq)
-//            }
+            for(entityReq in ent){
+                addEntity(entityReq)
+            }
         }
         return PhysicsOutput(effectsRequests)
     }
