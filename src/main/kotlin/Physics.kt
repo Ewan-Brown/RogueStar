@@ -25,6 +25,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private val physicsWorld = PhysicsWorld()
     private var time = 0.0
+    val thisVariable = "test"
 
     init {
         physicsWorld.setGravity(0.0, 0.0)
@@ -58,12 +59,15 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
-            effectsRequests.addAll(body.updateFixtures())
-            effectsRequests.addAll(body.update(controlActions.getOrElse(i) { emptyList() }))
+            val (eff, ent) = body.update(controlActions.getOrElse(i) { emptyList() })
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
                 i--
             }
+            effectsRequests.addAll(eff)
+//            for(entityReq in ent){
+//                addEntity(entityReq)
+//            }
         }
         return PhysicsOutput(effectsRequests)
     }
@@ -82,7 +86,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         val entity = when (request.type) {
             RequestType.SHIP -> {
                 val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
-                ShipEntity(request.scale, request.r, request.g, request.b, request.team, details)
+                ShipEntity(request.team, details)
             }
 
             RequestType.PROJECTILE -> {
@@ -132,8 +136,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
+        //TODO rename this to something ship-agnostic
         val cockpit: Component = internalComponents[0],
-        private val teamFilter: TeamFilter,
+        val teamFilter: TeamFilter,
         private val connectionMap: Map<Component, List<Component>>
     ) : AbstractPhysicsBody<CustomFixture>() {
 
@@ -165,8 +170,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         /**
          * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
-         **/
-        private fun killComponent(component: Component, doSplitCheck: Boolean = true){
+         * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
+         * */
+        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : updateOutput{
+            val entityList = mutableListOf<PhysicsEntity>()
+            val effectList = mutableListOf<EffectsRequest>()
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -177,7 +185,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                    removeFixture(componentFixtureMap[component])
                    componentFixtureMap[component] = null
                    //Split check!
-                   if (doSplitCheck) {
+                   if (trueDestruction) {
                        println("Split check...")
                        val branchRoots = connectionMap[component]
                        val nodesAlreadyCounted = mutableListOf<Component>()
@@ -209,23 +217,42 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    }
                                }
                                println("\t completed this branch with ${accumulator.size} nodes found")
-                               accumulator
+                               return@mapNotNull accumulator
                            }
                        }
                        println("completed exploring all branches")
+                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
                        for (branch in branches) {
                            if (branch.contains(cockpit)) {
                                //This branch will remain a part of this entity - all other branches will be fragmented off!
                            } else {
-                               val definitions = branch.map { it.definition }
+                               println("inspecting branch with ${branch.size} nodes")
+                               //Remove fragmented branch from this entity
+                               println("\tkilling branch")
                                for (branchComponent in branch) {
-                                   killComponent(branchComponent, false)
+                                   val (eff, ent) = processComponentDestruction(branchComponent, false)
+                                   effectList.addAll(eff)
+                                   entityList.addAll(ent)
                                }
+                               println("\trebuilding branch")
+                               //Generate a new connection map for this new entity
+                               val newConnections = mutableMapOf<Component, List<Component>>()
+                               val tempComponentMap = branch.associateWith { it -> Component(it.definition, teamFilter) }
+                               //Iterate across the connections of each component in this branch, creating a structural copy with the new components
+                               for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
+                                   newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
+                               }
+
+                               val newShip = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
+                               newShip.rotate(this.transform.rotationAngle)
+                               newShip.translate(this.worldCenter)
+                               entityList.add(newShip)
                            }
                        }
                    }
                }
             }
+            return updateOutput(effectList, entityList)
         }
 
         /**
@@ -265,6 +292,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 fixture.filter = filter
                 return fixture
             }
+            fun onDestruction() : updateOutput {return updateOutput(listOf(), listOf())
+            }
         }
 
         class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : Component(definition, filter)
@@ -272,21 +301,36 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         abstract fun isMarkedForRemoval(): Boolean
 
         //Check if any parts needs to be removed, and then calculate new center of mass.
-        fun updateFixtures() : List<EffectsRequest>{
+        private fun updateFixtures() : updateOutput{
             var didLoseParts = false;
+            val effectsList = mutableListOf<EffectsRequest>()
+            val entityList = mutableListOf<PhysicsEntity>();
             for (entry in componentFixtureMap) {
                 entry.value?.let{
                     if (it.isMarkedForRemoval()){
-                        it.onDestruction()
-                        killComponent(entry.key)
+                        entry.key.onDestruction()
+                        val (eff, ent) = processComponentDestruction(entry.key)
+                        effectsList.addAll(eff)
+                        entityList.addAll(ent)
                         didLoseParts = true
                     }
                 }
             }
             if(didLoseParts) setMass(MassType.NORMAL)
-            return listOf()
+            return updateOutput(effectsList, entityList)
         }
-        abstract fun update(actions: List<ControlAction>): List<EffectsRequest>
+
+        data class updateOutput(val effects : List<EffectsRequest>, val entities: List<PhysicsEntity>){
+            constructor(u1 : updateOutput, u2 : updateOutput) : this(u1.effects + u2.effects, u1.entities + u2.entities)
+        }
+
+        fun update(actions: List<ControlAction>) : updateOutput{
+            val out1 = updateFixtures();
+            val out2 = processControlActions(actions);
+            return updateOutput(out1, out2)
+        }
+
+        abstract fun processControlActions(actions: List<ControlAction>): updateOutput
 
         fun getRenderableComponents(): List<RenderableComponent> {
             if (!isEnabled) {
@@ -412,7 +456,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private open class ShipEntity(scale: Double, red: Float, green: Float, blue: Float, team: Team, val shipDetails: ShipDetails) : PhysicsEntity(
+    private open class ShipEntity(team: Team, val shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
@@ -421,9 +465,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         val thrusterComponents = shipDetails.thrusters
         init {
-            if(thrusterComponents.isEmpty()){
-                throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
-            }
+//            if(thrusterComponents.isEmpty()){
+//                throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
+//            }
         }
         override fun isMarkedForRemoval(): Boolean = false
 
@@ -439,7 +483,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
-        override fun update(actions: List<ControlAction>): List<EffectsRequest> {
+        override fun processControlActions(actions: List<ControlAction>): updateOutput {
             val effectsList = mutableListOf<EffectsRequest>()
             for (action in actions) {
                 when(action){
@@ -461,8 +505,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     }
                 }
             }
-            return effectsList
-
+            return updateOutput(effectsList, listOf())
         }
     }
 
@@ -536,7 +579,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         fun kill(){health = 0}
         fun getHealth(): Int = health
         fun isMarkedForRemoval(): Boolean = health <= 0
-        fun onDestruction() : List<EffectsRequest> {return listOf()}
     }
 }
 
