@@ -476,7 +476,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             super.testFunc()
             if(!flag) {
 //                println("ShipEntity.testFunc - removing the middle bit")
-                componentFixtureMap.entries.stream().skip(2).findFirst().ifPresent {
+                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
                     it.value?.kill()
                 }
             }else{
@@ -573,7 +573,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     private class CustomFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
-            health -= 10;
+            health -= 1;
         }
 
         /**
