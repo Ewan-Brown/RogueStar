@@ -42,32 +42,6 @@ private abstract class EffectsEntity{
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-private class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var rotation : Double,
-                             val graphicalData: GraphicalData, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
-
-    private var isDead = false
-
-    override fun getComponents(): List<RenderableComponent>{
-
-        val entityPos = Vector2(x, y)
-        return listOf(RenderableComponent(
-            model,
-            Transformation(entityPos, scale, rotation),
-            graphicalData
-        ))
-
-    }
-    override fun update() {
-        x += dx
-        y += dy
-        rotation += drotation
-    }
-    override fun isMarkedForRemoval(): Boolean{
-        return isDead
-    }
-}
-
-
 private class ExhaustEntity(val model: Model, val position: Vector2, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
     : EffectsEntity() {
 
