@@ -27,8 +27,8 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
             val vecToTarget = data.position.to(targetPos)
 
             val calcThrustToGetTo : (Vector2) -> Vector2 = fun(desiredPosition) : Vector2{
-                val posDiff = desiredPosition.difference(data.position)
-                return Vector2(posDiff.multiply(8.0)).add(velocityDiff.product(4.0))
+                    val posDiff = desiredPosition.difference(data.position)
+                return posDiff * 8.0 + velocityDiff * 4.0
             }
 
             val thrust : Vector2 = calcThrustToGetTo(targetPos)
@@ -88,7 +88,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
                 if(datum.position != null) {
                     val index = datum.uuid
                     val target = data[targetUUID]!!.position
-                    val vecToBubbleCenter = datum.position.to(target)
+                    val vecToBubbleCenter = target - datum.position
 
                     if (abs(vecToBubbleCenter.magnitude) < radius) {
                         inBubbleTrackerMap[index] = true
@@ -163,6 +163,8 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
             y--
         }
 
+        var direction = Vector2(x, y)
+
         if(input[KeyEvent.VK_Q]){
             r++
         }
@@ -174,8 +176,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
         var needsRotation = true
 
         if(input[KeyEvent.VK_SPACE]){
-            x = -entityData.velocity.x/10.0
-            y = -entityData.velocity.y/10.0
+            direction = entityData.changeInPosition.flip() * 3.0
             needsRotation = false
         }
 
@@ -183,13 +184,11 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
             actions.add(ControlAction.TestAction)
         }
 
-        val desiredVelocity = Vector2(x, y)
         if(needsRotation){
-            desiredVelocity.rotate(entityData.angle)
+            direction.rotate(entityData.angle)
         }
 
-        val thrust = desiredVelocity.product(100.0)
-
+        val thrust = direction.product(100.0)
         val rotate = r*5 - entityData.angularVelocity
 
         actions.add(ControlAction.TurnAction(rotate))
