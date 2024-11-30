@@ -8,16 +8,16 @@ import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import java.awt.event.MouseMotionListener
+import java.awt.geom.Line2D
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import kotlin.math.round
 
-class DesignerUI(val spacing: Int) : JPanel(), MouseListener, KeyListener {
+class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
-    var currentShape = mutableListOf<Vector2>()
-    val lastMousePoint: Vector2 = Vector2()
-    val shapes = mutableListOf<Shape>()
+    private var currentShape = mutableListOf<Vector2>()
+    private val shapes = mutableListOf<Shape>()
 
     override fun paint(g: Graphics) {
         super.paint(g)
@@ -83,7 +83,24 @@ class DesignerUI(val spacing: Int) : JPanel(), MouseListener, KeyListener {
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
             val pos = getRoundedMousePos(e)
-            currentShape.add(pos)
+
+            //Check that the line isn't intersecting with any existing polygons
+            var isSafe = true;
+            if(currentShape.size > 0){
+                val newLine = Line2D.Double(currentShape.last().x, currentShape.last().y, pos.x, pos.y)
+                for (shape in shapes) {
+                    for (i in 1..<shape.points.size){
+                        val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
+                        if(newLine.intersectsLine(testLine)){
+                            System.err.println("Intersects with existing line!")
+                            isSafe = false;
+                        }
+                    }
+                }
+            }
+            if(isSafe){
+                currentShape.add(pos)
+            }
         }
     }
 
