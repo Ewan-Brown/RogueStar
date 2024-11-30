@@ -9,6 +9,9 @@ import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import java.awt.event.MouseMotionListener
 import java.awt.geom.Line2D
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -17,7 +20,7 @@ import kotlin.math.round
 class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
     private var currentShape = mutableListOf<Vector2>()
-    private val shapes = mutableListOf<Shape>()
+    val shapes = mutableListOf<Shape>()
 
     override fun paint(g: Graphics) {
         super.paint(g)
@@ -104,6 +107,19 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         }
     }
 
+    private fun exportToFile(){
+        val fileContents = StringBuilder()
+        fileContents.appendLine(shapes.size)
+        for (shape in shapes) {
+            fileContents.appendLine(shape.type)
+            fileContents.appendLine(shape.points.size)
+            for (vector2 in shape.points) {
+                fileContents.appendLine("${vector2.x/spacing.toDouble()},${vector2.x/spacing.toDouble()}")
+            }
+        }
+        Files.writeString(Paths.get("target.txt"), fileContents.toString())
+    }
+
     override fun mouseEntered(e: MouseEvent) {}
     override fun mouseExited(e: MouseEvent) {}
     override fun mousePressed(e: MouseEvent) {}
@@ -111,6 +127,11 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     override fun keyTyped(e: KeyEvent) {}
     override fun keyPressed(e: KeyEvent) {
         println("DesignerUI.keyPressed")
+        if(e.keyCode == KeyEvent.VK_ENTER){
+            exportToFile()
+            println("exported!")
+        }
+
         val type: Type? = when(e.keyCode){
             KeyEvent.VK_SPACE -> Type.BODY
             KeyEvent.VK_SHIFT -> Type.THRUSTER
@@ -135,7 +156,7 @@ enum class Type{
     BODY
 }
 
-data class Shape(val points : List<Vector2>, val type: Type = Type.BODY)
+class Shape(val points : List<Vector2>, val type: Type = Type.BODY)
 
 fun main() {
     val ui = DesignerUI(30)
