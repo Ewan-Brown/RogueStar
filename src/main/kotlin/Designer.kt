@@ -1,10 +1,12 @@
 import javafx.application.Application
+import javafx.event.EventHandler
 import javafx.scene.Scene
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.ContextMenu
 import javafx.scene.control.MenuItem
 import javafx.scene.input.MouseButton
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.stage.Stage
 import org.dyn4j.geometry.Vector2
@@ -16,9 +18,13 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import org.w3c.dom.Document
 
+
 class PolygonDrawerApp : Application() {
 
     private val polygons = mutableListOf<List<Vector2>>()
+    private val cellSize = 20;
+
+    fun MouseEvent.toVector(): Vector2 = Vector2(this.x.toDouble(), this.y.toDouble())
 
     override fun start(stage: Stage) {
         val pane = Pane()
@@ -29,10 +35,11 @@ class PolygonDrawerApp : Application() {
         var currentPolygon = mutableListOf<Vector2>()
 
         canvas.setOnMouseClicked { event ->
-            val pos = Vector2(event.x, event.y)
+            val pos = event.toVector()
+            val indexPos = (pos / 20.0).floor() * 20.0
             if (event.button == MouseButton.PRIMARY) {
-                currentPolygon.add(pos)
-                redraw(gc)
+                currentPolygon.add(indexPos)
+//                redraw(gc) unneeded?
                 drawPolygon(gc, currentPolygon)
             } else if (event.button == MouseButton.SECONDARY) {
                 if (currentPolygon.size >= 3) {
@@ -45,6 +52,9 @@ class PolygonDrawerApp : Application() {
                 currentPolygon = mutableListOf()
             }
         }
+        canvas.setOnMouseMoved { event ->
+            val pos = Vector2(event.x, event.y)
+        }
 
         pane.children.add(canvas)
         stage.scene = Scene(pane)
@@ -54,10 +64,10 @@ class PolygonDrawerApp : Application() {
 
     private fun drawGrid(gc: GraphicsContext) {
         gc.clearRect(0.0, 0.0, 800.0, 600.0)
-        for (x in 0..800 step 20) {
+        for (x in 0..800 step cellSize) {
             gc.strokeLine(x.toDouble(), 0.0, x.toDouble(), 600.0)
         }
-        for (y in 0..600 step 20) {
+        for (y in 0..600 step cellSize) {
             gc.strokeLine(0.0, y.toDouble(), 800.0, y.toDouble())
         }
     }
