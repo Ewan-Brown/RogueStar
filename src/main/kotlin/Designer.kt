@@ -1,138 +1,137 @@
-import javafx.application.Application
-import javafx.event.EventHandler
-import javafx.scene.Scene
-import javafx.scene.canvas.Canvas
-import javafx.scene.canvas.GraphicsContext
-import javafx.scene.control.ContextMenu
-import javafx.scene.control.MenuItem
-import javafx.scene.input.MouseButton
-import javafx.scene.input.MouseEvent
-import javafx.scene.layout.Pane
-import javafx.stage.Stage
 import org.dyn4j.geometry.Vector2
-import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import org.w3c.dom.Document
+import java.awt.Color
+import java.awt.Graphics
+import java.awt.MouseInfo
+import java.awt.Polygon
+import java.awt.event.KeyEvent
+import java.awt.event.KeyListener
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
+import java.awt.event.MouseMotionListener
+import javax.swing.JFrame
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
+import kotlin.math.round
 
+class DesignerUI(val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
-class PolygonDrawerApp : Application() {
+    var currentShape = mutableListOf<Vector2>()
+    val lastMousePoint: Vector2 = Vector2()
+    val shapes = mutableListOf<Shape>()
 
-    private val polygons = mutableListOf<List<Vector2>>()
-    private val cellSize = 20;
+    override fun paint(g: Graphics) {
+        super.paint(g)
 
-    fun MouseEvent.toVector(): Vector2 = Vector2(this.x.toDouble(), this.y.toDouble())
+        g.color = Color.BLACK
+        g.fillRect(0, 0, width, height)
 
-    override fun start(stage: Stage) {
-        val pane = Pane()
-        val canvas = Canvas(800.0, 600.0)
-        val gc = canvas.graphicsContext2D
-        drawGrid(gc)
+        //Draw background grid
+        paintGrid(g)
 
-        var currentPolygon = mutableListOf<Vector2>()
+        //Draw existing shapes
+        for (shape in shapes) {
+            paintShape(g, shape)
+        }
 
-        canvas.setOnMouseClicked { event ->
-            val pos = event.toVector()
-            val indexPos = (pos / 20.0).floor() * 20.0
-            if (event.button == MouseButton.PRIMARY) {
-                currentPolygon.add(indexPos)
-//                redraw(gc) unneeded?
-                drawPolygon(gc, currentPolygon)
-            } else if (event.button == MouseButton.SECONDARY) {
-                if (currentPolygon.size >= 3) {
-                    polygons.add(currentPolygon)
-                    //TODO Open properties tab
-//                    showPropertyMenu(pos) { properties ->
-//                        polygons[polygons.lastIndex] = currentPolygon
-//                    }
-                }
-                currentPolygon = mutableListOf()
+        //Draw outline of current shape in progress
+        g.color = Color.blue
+        if(currentShape.size > 1){
+            for(i in 1..< currentShape.size){
+                g.drawLine(currentShape[i-1].x.toInt(), currentShape[i-1].y.toInt(), currentShape[i].x.toInt(), currentShape[i].y.toInt())
             }
         }
-        canvas.setOnMouseMoved { event ->
-            val pos = Vector2(event.x, event.y)
-        }
 
-        pane.children.add(canvas)
-        stage.scene = Scene(pane)
-        stage.title = "Polygon Drawer"
-        stage.show()
-    }
-
-    private fun drawGrid(gc: GraphicsContext) {
-        gc.clearRect(0.0, 0.0, 800.0, 600.0)
-        for (x in 0..800 step cellSize) {
-            gc.strokeLine(x.toDouble(), 0.0, x.toDouble(), 600.0)
-        }
-        for (y in 0..600 step cellSize) {
-            gc.strokeLine(0.0, y.toDouble(), 800.0, y.toDouble())
+        //Draw current line in progress
+        g.color = Color.cyan
+        if(currentShape.size > 0){
+            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), getMousePos().x.toInt(), getMousePos().y.toInt())
         }
     }
 
-    private fun drawPolygon(gc: GraphicsContext, points: List<Vector2>) {
-        if (points.size > 1) {
-            for (i in 1 until points.size) {
-                val (x1, y1) = points[i - 1]
-                val (x2, y2) = points[i]
-                gc.strokeLine(x1, y1, x2, y2)
-            }
+    private fun paintGrid(g: Graphics){
+        g.color = Color.GRAY
+        for(x in 0..width step spacing){
+            g.drawLine(x, 0, x, height)
+        }
+        for(y in 0..height step spacing){
+            g.drawLine(0, y, width, y)
         }
     }
 
-    private fun redraw(gc: GraphicsContext) {
-        drawGrid(gc)
-        for (points in polygons) {
-            drawPolygon(gc, points)
+    private fun paintShape(g: Graphics, shape : Shape){
+        g.color = when(shape.type){
+            Type.BODY -> Color.GRAY
+            Type.COCKPIT -> Color.GREEN
+            Type.THRUSTER -> Color.RED
+        }
+        val poly = Polygon(shape.points.map { it -> it.x.toInt() }.toIntArray(), shape.points.map { it -> it.y.toInt() }.toIntArray(), shape.points.size)
+        g.drawPolygon(poly)
+    }
+
+    private fun getMousePos() : Vector2{
+        val absoluteMousePos = MouseInfo.getPointerInfo().location.toVector()
+        val componentPos = locationOnScreen.toVector()
+        return absoluteMousePos - componentPos
+    }
+
+    private fun getRoundedMousePos(m: MouseEvent) : Vector2{
+        val x = round(m.x.toDouble() / spacing) * spacing
+        val y = round(m.y.toDouble() / spacing) * spacing
+        return Vector2(x, y)
+    }
+
+    override fun mouseClicked(e: MouseEvent) {
+        if(e.button == MouseEvent.BUTTON1){
+            val pos = getRoundedMousePos(e)
+            currentShape.add(pos)
         }
     }
 
-    private fun showPropertyMenu(x: Double, y: Double, onPropertiesSet: (Map<String, String>) -> Unit) {
-        val menu = ContextMenu()
-        val setProperties = MenuItem("Set Properties")
-        setProperties.setOnAction {
-            val properties = mapOf("color" to "red", "type" to "obstacle") // Replace with real dialog input
-            onPropertiesSet(properties)
+    override fun mouseEntered(e: MouseEvent) {}
+    override fun mouseExited(e: MouseEvent) {}
+    override fun mousePressed(e: MouseEvent) {}
+    override fun mouseReleased(e: MouseEvent) {}
+    override fun keyTyped(e: KeyEvent) {}
+    override fun keyPressed(e: KeyEvent) {
+        println("DesignerUI.keyPressed")
+        val type: Type? = when(e.keyCode){
+            KeyEvent.VK_SPACE -> Type.BODY
+            KeyEvent.VK_SHIFT -> Type.THRUSTER
+            KeyEvent.VK_CONTROL -> Type.COCKPIT
+            else -> {null}
         }
-        menu.items.add(setProperties)
-//        menu.show(stage, x, y)
+        if(currentShape.size < 3){
+            System.err.println("You need 3 points for a shape and you have ${currentShape.size}")
+        }else if(type != null){
+            shapes.add(Shape(currentShape, type))
+            currentShape = mutableListOf()
+        }
     }
-
-    private fun exportToXml(file: File) {
-        val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-        val doc: Document = docBuilder.newDocument()
-        val root = doc.createElement("Polygons")
-        doc.appendChild(root)
-
-        for (polygon in polygons) {
-            val polygonElement = doc.createElement("Polygon")
-            val pointsElement = doc.createElement("Points")
-            polygon.forEach { (x, y) ->
-                val pointElement = doc.createElement("Point")
-                pointElement.setAttribute("x", x.toString())
-                pointElement.setAttribute("y", y.toString())
-                pointsElement.appendChild(pointElement)
-            }
-            polygonElement.appendChild(pointsElement)
-
-//            properties.forEach { (key, value) ->
-//                val propertyElement = doc.createElement("Property")
-//                propertyElement.setAttribute("name", key)
-//                propertyElement.textContent = value
-//                polygonElement.appendChild(propertyElement)
-//            }
-
-            root.appendChild(polygonElement)
-        }
-
-        val transformer = TransformerFactory.newInstance().newTransformer()
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-        transformer.transform(DOMSource(doc), StreamResult(file))
+    override fun keyReleased(e: KeyEvent) {
+        println("DesignerUI.keyReleased")
     }
 }
 
+enum class Type{
+    THRUSTER,
+    COCKPIT,
+    BODY
+}
+
+data class Shape(val points : List<Vector2>, val type: Type = Type.BODY)
+
 fun main() {
-    Application.launch(PolygonDrawerApp::class.java)
+    val ui = DesignerUI(30)
+    ui.addMouseListener(ui)
+    val frame = JFrame()
+    frame.addKeyListener(ui)
+    frame.add(ui)
+    frame.setSize(600,600)
+    frame.isVisible = true
+    frame.isFocusable = true
+
+    while(true){
+        Thread.sleep(16)
+        frame.repaint()
+    }
 }
