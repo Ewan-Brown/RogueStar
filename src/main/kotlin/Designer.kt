@@ -89,7 +89,26 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         return getRoundedMousePos(m.x.toDouble(), m.y.toDouble())
     }
 
-    override fun mouseClicked(e: MouseEvent) {
+    override fun mouseClicked(e: MouseEvent) {}
+
+
+
+    private fun exportToFile(){
+        val fileContents = StringBuilder()
+        fileContents.appendLine(shapes.size)
+        for (shape in shapes) {
+            fileContents.appendLine(shape.type)
+            fileContents.appendLine(shape.points.size)
+            for (vector2 in shape.points) {
+                fileContents.appendLine("${vector2.x/spacing.toDouble()},${vector2.x/spacing.toDouble()}")
+            }
+        }
+        Files.writeString(Paths.get("target.txt"), fileContents.toString())
+    }
+
+    override fun mouseEntered(e: MouseEvent) {}
+    override fun mouseExited(e: MouseEvent) {}
+    override fun mousePressed(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
             val pos = getRoundedMousePos(e)
 
@@ -121,25 +140,6 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             }
         }
     }
-
-
-
-    private fun exportToFile(){
-        val fileContents = StringBuilder()
-        fileContents.appendLine(shapes.size)
-        for (shape in shapes) {
-            fileContents.appendLine(shape.type)
-            fileContents.appendLine(shape.points.size)
-            for (vector2 in shape.points) {
-                fileContents.appendLine("${vector2.x/spacing.toDouble()},${vector2.x/spacing.toDouble()}")
-            }
-        }
-        Files.writeString(Paths.get("target.txt"), fileContents.toString())
-    }
-
-    override fun mouseEntered(e: MouseEvent) {}
-    override fun mouseExited(e: MouseEvent) {}
-    override fun mousePressed(e: MouseEvent) {}
     override fun mouseReleased(e: MouseEvent) {}
     override fun keyTyped(e: KeyEvent) {}
     override fun keyPressed(e: KeyEvent) {
