@@ -7,14 +7,11 @@ import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
-import java.awt.event.MouseMotionListener
 import java.awt.geom.Line2D
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import javax.swing.JFrame
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 import kotlin.math.round
 
 class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
@@ -63,7 +60,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 
     private fun paintShape(g: Graphics, shape : Shape){
         g.color = when(shape.type){
-            Type.BODY -> Color.GRAY
+            Type.BODY -> Color.LIGHT_GRAY
             Type.COCKPIT -> Color.GREEN
             Type.THRUSTER -> Color.RED
         }
@@ -90,7 +87,6 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             //Check that the line isn't intersecting with any existing polygons
             var isSafe = true;
             if(currentShape.size > 0){
-                val newLine = Line2D.Double(currentShape.last().x, currentShape.last().y, pos.x, pos.y)
                 val newLineLocalVector = (pos - currentShape.last()).normalized
                 val lineX = newLineLocalVector.x
                 val lineY = newLineLocalVector.y
@@ -98,7 +94,13 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
                 for (shape in shapes) {
                     for (i in 1..<shape.points.size){
                         val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
-                        if(newLineShortened.intersectsLine(testLine)){
+                        val testLineVector = (shape.points[i] - shape.points[i-1]).normalized
+                        val slope1 = newLineLocalVector.getSlope()
+                        val slope2 = testLineVector.getSlope()
+                        val intersect1 = (newLineShortened.y1 - newLineShortened.x1 * slope1)
+                        val intersect2 = (testLine.y1 - testLine.x1 * slope1)
+                        val areColinear = slope1 == slope2 && intersect1 == intersect2
+                        if(newLineShortened.intersectsLine(testLine) && areColinear){
                             System.err.println("Intersects with existing line!")
                             isSafe = false;
                         }
@@ -110,6 +112,8 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             }
         }
     }
+
+
 
     private fun exportToFile(){
         val fileContents = StringBuilder()
