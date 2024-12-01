@@ -91,10 +91,14 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             var isSafe = true;
             if(currentShape.size > 0){
                 val newLine = Line2D.Double(currentShape.last().x, currentShape.last().y, pos.x, pos.y)
+                val newLineLocalVector = (pos - currentShape.last()).normalized
+                val lineX = newLineLocalVector.x
+                val lineY = newLineLocalVector.y
+                val newLineShortened = Line2D.Double(currentShape.last().x + lineX, currentShape.last().y + lineY, pos.x - lineX, pos.y - lineY)
                 for (shape in shapes) {
                     for (i in 1..<shape.points.size){
                         val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
-                        if(newLine.intersectsLine(testLine)){
+                        if(newLineShortened.intersectsLine(testLine)){
                             System.err.println("Intersects with existing line!")
                             isSafe = false;
                         }
