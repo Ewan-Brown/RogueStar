@@ -44,7 +44,8 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         //Draw current line in progress
         g.color = Color.cyan
         if(currentShape.size > 0){
-            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), getMousePos().x.toInt(), getMousePos().y.toInt())
+            val currentMousePosRounded = getRoundedMousePos(getMousePos())
+            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), currentMousePosRounded.x.toInt(), currentMousePosRounded.y.toInt())
         }
     }
 
@@ -64,8 +65,8 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             Type.COCKPIT -> Color.GREEN
             Type.THRUSTER -> Color.RED
         }
-        val poly = Polygon(shape.points.map { it -> it.x.toInt() }.toIntArray(), shape.points.map { it -> it.y.toInt() }.toIntArray(), shape.points.size)
-        g.drawPolygon(poly)
+        val poly = Polygon(shape.points.map { it.x.toInt() }.toIntArray(), shape.points.map { it.y.toInt() }.toIntArray(), shape.points.size)
+        g.fillPolygon(poly)
     }
 
     private fun getMousePos() : Vector2{
@@ -74,10 +75,18 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         return absoluteMousePos - componentPos
     }
 
+    private fun getRoundedMousePos(vec: Vector2) : Vector2{
+        return getRoundedMousePos(vec.x, vec.y)
+    }
+
+    private fun getRoundedMousePos(x: Double, y: Double) : Vector2{
+        val x2 = round(x / spacing) * spacing
+        val y2 = round(y / spacing) * spacing
+        return Vector2(x2, y2)
+    }
+
     private fun getRoundedMousePos(m: MouseEvent) : Vector2{
-        val x = round(m.x.toDouble() / spacing) * spacing
-        val y = round(m.y.toDouble() / spacing) * spacing
-        return Vector2(x, y)
+        return getRoundedMousePos(m.x.toDouble(), m.y.toDouble())
     }
 
     override fun mouseClicked(e: MouseEvent) {
@@ -100,7 +109,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
                         val intersect1 = (newLineShortened.y1 - newLineShortened.x1 * slope1)
                         val intersect2 = (testLine.y1 - testLine.x1 * slope1)
                         val areColinear = slope1 == slope2 && intersect1 == intersect2
-                        if(newLineShortened.intersectsLine(testLine) && areColinear){
+                        if(newLineShortened.intersectsLine(testLine) && !areColinear){
                             System.err.println("Intersects with existing line!")
                             isSafe = false;
                         }
