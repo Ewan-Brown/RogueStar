@@ -17,9 +17,12 @@ import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
+import java.awt.event.MouseMotionListener
 import java.awt.geom.Line2D
 import java.io.*
+import javax.swing.JFrame
 import javax.swing.JPanel
+import javax.swing.SwingUtilities
 import kotlin.math.round
 
 
@@ -58,7 +61,8 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         //Draw current line in progress
         g.color = Color.cyan
         if(currentShape.size > 0){
-            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), getMousePos().x.toInt(), getMousePos().y.toInt())
+            val currentMousePosRounded = getRoundedMousePos(getMousePos())
+            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), currentMousePosRounded.x.toInt(), currentMousePosRounded.y.toInt())
         }
     }
 
@@ -74,12 +78,12 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 
     private fun paintShape(g: Graphics, shape : Shape){
         g.color = when(shape.type){
-            Type.BODY -> Color.GRAY
+            Type.BODY -> Color.LIGHT_GRAY
             Type.COCKPIT -> Color.GREEN
             Type.THRUSTER -> Color.RED
         }
-        val poly = Polygon(shape.points.map { it -> it.x.toInt() }.toIntArray(), shape.points.map { it -> it.y.toInt() }.toIntArray(), shape.points.size)
-        g.drawPolygon(poly)
+        val poly = Polygon(shape.points.map { it.x.toInt() }.toIntArray(), shape.points.map { it.y.toInt() }.toIntArray(), shape.points.size)
+        g.fillPolygon(poly)
     }
 
     private fun getMousePos() : Vector2{
@@ -88,10 +92,18 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         return absoluteMousePos - componentPos
     }
 
+    private fun getRoundedMousePos(vec: Vector2) : Vector2{
+        return getRoundedMousePos(vec.x, vec.y)
+    }
+
+    private fun getRoundedMousePos(x: Double, y: Double) : Vector2{
+        val x2 = round(x / spacing) * spacing
+        val y2 = round(y / spacing) * spacing
+        return Vector2(x2, y2)
+    }
+
     private fun getRoundedMousePos(m: MouseEvent) : Vector2{
-        val x = round(m.x.toDouble() / spacing) * spacing
-        val y = round(m.y.toDouble() / spacing) * spacing
-        return Vector2(x, y)
+        return getRoundedMousePos(m.x.toDouble(), m.y.toDouble())
     }
 
     override fun mousePressed(e: MouseEvent) {
@@ -101,11 +113,20 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             //Check that the line isn't intersecting with any existing polygons
             var isSafe = true;
             if(currentShape.size > 0){
-                val newLine = Line2D.Double(currentShape.last().x, currentShape.last().y, pos.x, pos.y)
+                val newLineLocalVector = (pos - currentShape.last()).normalized
+                val lineX = newLineLocalVector.x
+                val lineY = newLineLocalVector.y
+                val newLineShortened = Line2D.Double(currentShape.last().x + lineX, currentShape.last().y + lineY, pos.x - lineX, pos.y - lineY)
                 for (shape in shapes) {
                     for (i in 1..<shape.points.size){
                         val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
-                        if(newLine.intersectsLine(testLine)){
+                        val testLineVector = (shape.points[i] - shape.points[i-1]).normalized
+                        val slope1 = newLineLocalVector.getSlope()
+                        val slope2 = testLineVector.getSlope()
+                        val intersect1 = (newLineShortened.y1 - newLineShortened.x1 * slope1)
+                        val intersect2 = (testLine.y1 - testLine.x1 * slope1)
+                        val areColinear = slope1 == slope2 && intersect1 == intersect2
+                        if(newLineShortened.intersectsLine(testLine) && !areColinear){
                             System.err.println("Intersects with existing line!")
                             isSafe = false;
                         }
@@ -119,16 +140,14 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 
     private fun exportToFile(){
-//        val fileContents = StringBuilder()
-//        fileContents.appendLine(shapes.size)
-//        for (shape in shapes) {
-//            fileContents.appendLine(shape.type)
-//            fileContents.appendLine(shape.points.size)
-//            for (vector2 in shape.points) {
-//                fileContents.appendLine("${vector2.x/spacing.toDouble()},${vector2.x/spacing.toDouble()}")
-//            }
-//        }
-//        Files.writeString(Paths.get("target.txt"), fileContents.toString())
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addSerializer(Vector2::class.java, VectorSerializer())
+        module.addDeserializer(Vector2::class.java, VectorDeserializer())
+        mapper.registerModules(module)
+        mapper.writeValue(File("target.json"), shapes)
+
+        val obj = mapper.readValue(File("target.json"), Array<Shape>::class.java)
     }
 
     override fun mouseEntered(e: MouseEvent) {}
@@ -193,27 +212,17 @@ class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
 
 fun main() {
 
-    val mapper = ObjectMapper()
-    val module = SimpleModule()
-    module.addSerializer(Vector2::class.java, VectorSerializer())
-    module.addDeserializer(Vector2::class.java, VectorDeserializer())
-    mapper.registerModules(module)
-    mapper.writeValue(File("target.json"), Shape(listOf(Vector2(), Vector2(1.0, 2.0), Vector2(3.0, -4.0)), Type.BODY))
+    val ui = DesignerUI(30)
+    ui.addMouseListener(ui)
+    val frame = JFrame()
+    frame.addKeyListener(ui)
+    frame.add(ui)
+    frame.setSize(600,600)
+    frame.isVisible = true
+    frame.isFocusable = true
 
-    val obj = mapper.readValue<Shape>(File("target.json"), Shape::class.java)
-    println(obj.type)
-    println(obj.points)
-//    val ui = DesignerUI(30)
-//    ui.addMouseListener(ui)
-//    val frame = JFrame()
-//    frame.addKeyListener(ui)
-//    frame.add(ui)
-//    frame.setSize(600,600)
-//    frame.isVisible = true
-//    frame.isFocusable = true
-//
-//    while(true){
-//        Thread.sleep(16)
-//        frame.repaint()
-//    }
+    while(true){
+        Thread.sleep(16)
+        frame.repaint()
+    }
 }
