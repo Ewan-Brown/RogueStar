@@ -1,8 +1,20 @@
 import Graphics.Model
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.opengl.GL
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
+import java.awt.Color
+import java.io.File
 import java.util.*
 
 class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
@@ -19,7 +31,49 @@ class Team(val name : String){
         private var UUID_COUNTER : Int = 0
         val TEAMLESS = Team("Teamless")
     }
-    val UUID = UUID_COUNTER++
+}
+
+fun loadModels() : Map<Int, Model> {
+    val mapper = ObjectMapper()
+    val module = SimpleModule()
+    module.addSerializer(Vector2::class.java, VectorSerializer())
+    module.addDeserializer(Vector2::class.java, VectorDeserializer())
+    mapper.registerModules(module)
+    val shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
+    return shapes.associate { shape ->
+        val points = shape.points.map { listOf(it.x.toFloat(), it.y.toFloat()) }.flatten().toFloatArray()
+        shape.ID to Model(points, GL.GL_TRIANGLE_FAN)
+    }
+}
+
+class ComponentDeserializer() : StdDeserializer<SimpleComponent>(SimpleComponent::class.java){
+
+    override fun deserialize(parser: JsonParser, p1: DeserializationContext): SimpleComponent {
+        val node: JsonNode = parser.codec.readTree(parser)
+        val shape = node.get("shape").asInt()
+        val red = node.get("red").asInt()
+        val green = node.get("green").asInt()
+        val blue = node.get("blue").asInt()
+        val scale = node.get("scale").asDouble()
+        val x = node.get("position").get("x").asDouble()
+        val y = node.get("position").get("y").asDouble()
+        val rotation = node.get("rotation").asInt()
+        val type = node.get("type").asText()!!
+
+        val color = Color(red, green, blue)
+        val position = Vector2(x, y)
+        return SimpleComponent(shape, color, scale, position, rotation, Type.valueOf(type))
+    }
+}
+
+fun loadShip() {
+    val mapper = ObjectMapper()
+    val module = SimpleModule()
+    module.addDeserializer(Vector2::class.java, VectorDeserializer())
+    module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
+    mapper.registerModules(module)
+    val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
+    println(components.size)
 }
 
 fun main() {
@@ -28,7 +82,8 @@ fun main() {
     val effectsLayer = EffectsLayer()
     val controllerLayer = ControllerLayer()
 
-    val models = listOf(Model.TRIANGLE, Model.SQUARE1, Model.BACKPLATE)
+    val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + loadModels().values.toMutableList()
+    loadShip()
     val gui = Graphics(models)
     val bitSet = BitSet(256)
 
@@ -47,16 +102,17 @@ fun main() {
         }
     }
 
-    val greenTeam = Team("Green")
+    val uuid = null
+//    val greenTeam = Team("Green")
 //    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
-    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
+//    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
 
-    controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
+//    controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
 
-    val idList = MutableList(10) {
-        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
-    }
-    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
+//    val idList = MutableList(10) {
+//        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
+//    }
+//    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -84,7 +140,11 @@ fun main() {
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
         effectsLayer.update(EffectsInput(effectsRequests))
 
-        val playerPos = physicsLayer.getEntityData(uuid!!)?.position!!
+        val playerPos = if(uuid == null){
+            Vector2()
+        }else{
+            physicsLayer.getEntityData(uuid!!)?.position!!
+        }
         populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
 
     }

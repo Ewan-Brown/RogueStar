@@ -1,9 +1,8 @@
 import org.dyn4j.geometry.Vector2
 import Graphics.Model
-import org.dyn4j.geometry.Rotation
 
 sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val initialAngle: Double){
-    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
+    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>)
