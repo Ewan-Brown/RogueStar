@@ -32,7 +32,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     val components = mutableListOf<SimpleComponent>()
 
     private var selectedShape: Shape = shapes[0]
-    var selectedColor: Color? = null
+    var selectedColor: Color = Color.WHITE
     var selectedQuarterRotations: Int = 0
     var selectedType: Type = Type.BODY
 
@@ -47,7 +47,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
         //Draw existing shapes
         for (component in components){
-            g.color = Color.BLUE
+            g.color = component.color
             paintPolygon(g, transformPolygon(component.shape, component.position, component.rotation, component.scale), true)
         }
 
@@ -111,7 +111,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            components.add(SimpleComponent(selectedShape, 1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
+            components.add(SimpleComponent(selectedShape, selectedColor,1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
         }
     }
 
@@ -134,6 +134,25 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             println("switching shape")
         }
 
+        when(e.keyCode){
+            KeyEvent.VK_Z -> {
+                selectedColor = Color.BLUE
+                selectedType = Type.BODY
+            }
+            KeyEvent.VK_X -> {
+                selectedColor = Color.CYAN
+                selectedType = Type.COCKPIT
+            }
+            KeyEvent.VK_C -> {
+                selectedColor = Color.YELLOW
+                selectedType = Type.THRUSTER
+            }
+            KeyEvent.VK_V -> {
+                selectedColor = Color.RED
+                selectedType = Type.GUN
+            }
+        }
+
         if(e.keyCode == KeyEvent.VK_R){
             selectedQuarterRotations += 1
             println("Rotating")
@@ -146,10 +165,11 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 enum class Type{
     THRUSTER,
     COCKPIT,
+    GUN,
     BODY
 }
 
-data class SimpleComponent(val shape: Shape, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
+data class SimpleComponent(val shape: Shape, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
 
 fun main() {
     val ui = ShipDesignerUI(30)
