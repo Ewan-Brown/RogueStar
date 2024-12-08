@@ -243,7 +243,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
                                val newShip = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
-//                               newShip.translate(1.6,0.0)
                                newShip.translate(this.localCenter.product(-1.0))
                                newShip.rotate(this.transform.rotationAngle)
                                newShip.translate(this.worldCenter)
