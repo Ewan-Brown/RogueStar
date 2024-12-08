@@ -77,11 +77,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 
     private fun paintShape(g: Graphics, shape : Shape){
-        g.color = when(shape.type){
-            Type.BODY -> Color.LIGHT_GRAY
-            Type.COCKPIT -> Color.GREEN
-            Type.THRUSTER -> Color.RED
-        }
+        g.color = Color.GREEN
         val poly = Polygon(shape.points.map { it.x.toInt() }.toIntArray(), shape.points.map { it.y.toInt() }.toIntArray(), shape.points.size)
         g.fillPolygon(poly)
     }
@@ -140,13 +136,20 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 
     private fun exportToFile(){
+
+        //Localize all shapes (make it so their top left corners are all at 0,0
+
+        val localizedShapes: List<Shape> = shapes.map {
+            val upperLeft = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
+            return@map Shape(it.points - upperLeft)
+        }
+
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        mapper.writeValue(File("target.json"), shapes)
-
+        mapper.writeValue(File("target.json"), localizedShapes)
         val obj = mapper.readValue(File("target.json"), Array<Shape>::class.java)
     }
 
@@ -162,16 +165,10 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             println("exported!")
         }
 
-        val type: Type? = when(e.keyCode){
-            KeyEvent.VK_SPACE -> Type.BODY
-            KeyEvent.VK_SHIFT -> Type.THRUSTER
-            KeyEvent.VK_CONTROL -> Type.COCKPIT
-            else -> {null}
-        }
         if(currentShape.size < 3){
             System.err.println("You need 3 points for a shape and you have ${currentShape.size}")
-        }else if(type != null){
-            shapes.add(Shape(currentShape, type))
+        }else {
+            shapes.add(Shape(currentShape))
             currentShape = mutableListOf()
         }
     }
@@ -180,13 +177,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 }
 
-enum class Type{
-    THRUSTER,
-    COCKPIT,
-    BODY
-}
-
-class Shape(@JsonProperty("points") var points : List<Vector2>, @JsonProperty("type") var type: Type = Type.BODY) {
+class Shape(@JsonProperty("points") var points : List<Vector2>) {
 }
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
