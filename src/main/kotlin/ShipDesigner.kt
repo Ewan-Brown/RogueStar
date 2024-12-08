@@ -1,5 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
+import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
@@ -30,10 +31,10 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     val components = mutableListOf<SimpleComponent>()
 
-    private var selectedShape: Shape? = shapes[0]
+    private var selectedShape: Shape = shapes[0]
     var selectedColor: Color? = null
     var selectedQuarterRotations: Int = 0
-    var selectedType: Type? = null
+    var selectedType: Type = Type.BODY
 
     override fun paint(g: Graphics) {
         super.paint(g)
@@ -46,16 +47,19 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
         //Draw existing shapes
         for (component in components){
-//            point
+            g.color = Color.BLUE
+            paintPolygon(g, transformPolygon(component.shape, component.position, component.rotation, component.scale), true)
         }
-        println(selectedQuarterRotations)
-        //Draw outline of current shape in progress
-        selectedShape?.let { shape ->
-            g.color = selectedColor ?: Color.CYAN
-            val position = getRoundedMousePos()
-            val transformedPoints = transformPolygon(shape, position, selectedQuarterRotations, 1.0)
-            paintPolygon(g, transformedPoints)
-        }
+
+        //Draw outline of current component in progress
+        g.color = selectedColor ?: Color.CYAN
+        paintPolygon(g, getTransformedShapeAtMouse(), false)
+    }
+
+    private fun getTransformedShapeAtMouse(): List<Vector2>{
+        val position = getRoundedMousePos()
+        val transformedPoints = transformPolygon(selectedShape, position, selectedQuarterRotations, 1.0)
+        return transformedPoints
     }
 
     private val quarterPI = PI/2.0
@@ -77,8 +81,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         }
     }
 
-    private fun paintPolygon(g: Graphics, points: List<Vector2>){
+    private fun paintPolygon(g: Graphics, points: List<Vector2>, fill: Boolean){
         val poly = vectorListToPolygon(points)
+        if(fill){
+            g.fillPolygon(poly)
+            g.color = Color.BLACK
+        }
         g.drawPolygon(poly)
     }
 
@@ -103,7 +111,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            val pos = getRoundedMousePos(e)
+            components.add(SimpleComponent(selectedShape, 1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
         }
     }
 
@@ -117,7 +125,6 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     override fun mouseReleased(e: MouseEvent) {}
     override fun keyTyped(e: KeyEvent) {}
     override fun keyPressed(e: KeyEvent) {
-        println("DesignerUI.keyPressed")
         if(e.keyCode == KeyEvent.VK_ENTER){
             exportToFile()
         }
@@ -142,7 +149,7 @@ enum class Type{
     BODY
 }
 
-data class SimpleComponent(val shape: Shape, var scale: Double, var position: Vector2, var rotation: Double, var type: Type = Type.BODY)
+data class SimpleComponent(val shape: Shape, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
 
 fun main() {
     val ui = ShipDesignerUI(30)
