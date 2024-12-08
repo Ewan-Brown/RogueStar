@@ -1,5 +1,12 @@
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.Vector2
 import java.awt.Color
@@ -16,6 +23,9 @@ import javax.swing.JPanel
 import kotlin.math.PI
 import kotlin.math.round
 
+/**
+ * UI creation + export for a ship.
+ */
 private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
     val shapes: List<Shape>
@@ -26,7 +36,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        shapes = mapper.readValue(File("target.json"), Array<Shape>::class.java).toList()
+        shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
     }
 
     val components = mutableListOf<SimpleComponent>()
@@ -115,7 +125,42 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         }
     }
 
+    /**
+     * Custom codec for Components. We need export TWO files - a list of models with IDs attached, and the actual components themselves.
+     */
+
+    class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
+        override fun deserialize(parser: JsonParser, p1: DeserializationContext?): Vector2 {
+            val node: JsonNode = parser.codec.readTree(parser)
+            val x: Double = node.get("x").asDouble()
+            val y: Double = node.get("y").asDouble()
+            return Vector2(x, y)
+        }
+    }
+
+    class ComponentSerializer : StdSerializer<SimpleComponent>(SimpleComponent::class.java){
+        override fun serialize(component: SimpleComponent, jgen: JsonGenerator, provider: SerializerProvider?) {
+            jgen.writeStartObject()
+            jgen.writeNumberField("shape ID", component.shape.ID)
+            jgen.writeNumberField("red", component.color.red)
+            jgen.writeNumberField("green", component.color.green)
+            jgen.writeNumberField("blue", component.color.blue)
+            jgen.writeNumberField("scale", component.scale)
+            jgen.writeObjectField("position", component.position)
+            jgen.writeNumberField("rotation", component.rotation)
+            jgen.writeStringField("type", component.type.toString())
+            jgen.writeEndObject()
+        }
+    }
+
     private fun exportToFile(){
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addSerializer(SimpleComponent::class.java, ComponentSerializer())
+        module.addSerializer(Vector2::class.java, VectorSerializer())
+        module.addDeserializer(Vector2::class.java, VectorDeserializer())
+        mapper.registerModules(module)
+        mapper.writeValue(File("ship.json"), components)
         println("exported!")
     }
 

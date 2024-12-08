@@ -141,16 +141,14 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 
         val localizedShapes: List<Shape> = shapes.map {
             val upperLeft = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
-            return@map Shape(it.points - upperLeft)
+            return@map Shape(it.points - upperLeft, it.ID)
         }
 
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addSerializer(Vector2::class.java, VectorSerializer())
-        module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        mapper.writeValue(File("target.json"), localizedShapes)
-        val obj = mapper.readValue(File("target.json"), Array<Shape>::class.java)
+        mapper.writeValue(File("shapes.json"), localizedShapes)
     }
 
     override fun mouseEntered(e: MouseEvent) {}
@@ -163,13 +161,13 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         if(e.keyCode == KeyEvent.VK_ENTER){
             exportToFile()
             println("exported!")
-        }
-
-        if(currentShape.size < 3){
-            System.err.println("You need 3 points for a shape and you have ${currentShape.size}")
-        }else {
-            shapes.add(Shape(currentShape))
-            currentShape = mutableListOf()
+        }else{
+            if(currentShape.size < 3){
+                System.err.println("You need 3 points for a shape and you have ${currentShape.size}")
+            }else {
+                shapes.add(Shape(currentShape, shapes.size))
+                currentShape = mutableListOf()
+            }
         }
     }
     override fun keyReleased(e: KeyEvent) {
@@ -177,8 +175,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 }
 
-class Shape(@JsonProperty("points") var points : List<Vector2>) {
-}
+class Shape(@JsonProperty("points") var points : List<Vector2>, @JsonProperty("id") val ID : Int) {}
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off
@@ -189,15 +186,6 @@ class VectorSerializer : StdSerializer<Vector2>(Vector2::class.java){
         jgen.writeNumberField("x", vector.x)
         jgen.writeNumberField("y", vector.y)
         jgen.writeEndObject()
-    }
-}
-
-class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
-    override fun deserialize(parser: JsonParser, p1: DeserializationContext?): Vector2 {
-        val node: JsonNode = parser.codec.readTree(parser)
-        val x: Double = node.get("x").asDouble()
-        val y: Double = node.get("y").asDouble()
-        return Vector2(x, y)
     }
 }
 
