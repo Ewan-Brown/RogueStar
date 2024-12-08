@@ -1,7 +1,9 @@
 import org.dyn4j.geometry.Vector2
 import java.awt.Point
 import java.awt.Polygon
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.round
 
 operator fun Vector2.component1() = this.x
 operator fun Vector2.component2() = this.y
@@ -22,6 +24,8 @@ fun vectorListToPolygon(vec: List<Vector2>) : Polygon {
 
 fun Vector2.getSlope(): Double = this.y/this.x
 fun Vector2.floor(): Vector2 = Vector2(floor(this.x), floor(this.y))
+fun Vector2.round(): Vector2 = Vector2(round(this.x), round(this.y))
+fun Vector2.ceil(): Vector2 = Vector2(ceil(this.x), ceil(this.y))
 fun Vector2.flip(): Vector2 = this.product(-1.0)
 fun Point.toVector(): Vector2 = Vector2(this.getX(), this.getY())
 
