@@ -58,7 +58,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         //Draw existing shapes
         for (component in components){
             g.color = component.color
-            paintPolygon(g, transformPolygon(component.shape, component.position, component.rotation, component.scale), true)
+            paintPolygon(g, transformPolygon(shapes.filter { it.ID == component.shape }[0], component.position, component.rotation, component.scale), true)
         }
 
         //Draw outline of current component in progress
@@ -121,37 +121,13 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            components.add(SimpleComponent(selectedShape, selectedColor,1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
+            components.add(SimpleComponent(selectedShape.ID, selectedColor,1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
         }
     }
 
     /**
      * Custom codec for Components. We need export TWO files - a list of models with IDs attached, and the actual components themselves.
      */
-
-    class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
-        override fun deserialize(parser: JsonParser, p1: DeserializationContext?): Vector2 {
-            val node: JsonNode = parser.codec.readTree(parser)
-            val x: Double = node.get("x").asDouble()
-            val y: Double = node.get("y").asDouble()
-            return Vector2(x, y)
-        }
-    }
-
-    class ComponentSerializer : StdSerializer<SimpleComponent>(SimpleComponent::class.java){
-        override fun serialize(component: SimpleComponent, jgen: JsonGenerator, provider: SerializerProvider?) {
-            jgen.writeStartObject()
-            jgen.writeNumberField("shape ID", component.shape.ID)
-            jgen.writeNumberField("red", component.color.red)
-            jgen.writeNumberField("green", component.color.green)
-            jgen.writeNumberField("blue", component.color.blue)
-            jgen.writeNumberField("scale", component.scale)
-            jgen.writeObjectField("position", component.position)
-            jgen.writeNumberField("rotation", component.rotation)
-            jgen.writeStringField("type", component.type.toString())
-            jgen.writeEndObject()
-        }
-    }
 
     private fun exportToFile(){
         val mapper = ObjectMapper()
@@ -214,7 +190,7 @@ enum class Type{
     BODY
 }
 
-data class SimpleComponent(val shape: Shape, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
+data class SimpleComponent(val shape: Int, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
 
 fun main() {
     val ui = ShipDesignerUI(30)
@@ -229,5 +205,30 @@ fun main() {
     while(true){
         Thread.sleep(16)
         frame.repaint()
+    }
+}
+
+
+class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
+    override fun deserialize(parser: JsonParser, p1: DeserializationContext?): Vector2 {
+        val node: JsonNode = parser.codec.readTree(parser)
+        val x: Double = node.get("x").asDouble()
+        val y: Double = node.get("y").asDouble()
+        return Vector2(x, y)
+    }
+}
+
+class ComponentSerializer : StdSerializer<SimpleComponent>(SimpleComponent::class.java){
+    override fun serialize(component: SimpleComponent, jgen: JsonGenerator, provider: SerializerProvider?) {
+        jgen.writeStartObject()
+        jgen.writeNumberField("shape", component.shape)
+        jgen.writeNumberField("red", component.color.red)
+        jgen.writeNumberField("green", component.color.green)
+        jgen.writeNumberField("blue", component.color.blue)
+        jgen.writeNumberField("scale", component.scale)
+        jgen.writeObjectField("position", component.position)
+        jgen.writeNumberField("rotation", component.rotation)
+        jgen.writeStringField("type", component.type.toString())
+        jgen.writeEndObject()
     }
 }

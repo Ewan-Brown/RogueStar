@@ -4,7 +4,6 @@ import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import kotlin.math.exp
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
@@ -60,14 +59,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         }
 
         companion object {
-            var TRIANGLE: Model = Model(
-                floatArrayOf(
-                    -1.0f, +1.0f, +0.1f,
-                    -1.0f, -1.0f, +0.1f,
-                    +1.0f, +0.0f, +0.1f
-                ), GL.GL_TRIANGLES
-            )
-            var SQUARE1: Model = Model(
+            var SQUARE: Model = Model(
                 floatArrayOf(
                     -0.5f, -0.5f, +0.1f,
                     +0.5f, -0.5f, +0.1f,
