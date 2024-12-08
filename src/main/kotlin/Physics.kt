@@ -234,7 +234,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    effectList.addAll(eff)
                                    entityList.addAll(ent)
                                }
-//                               println("\trebuilding branch")
                                //Generate a new connection map for this new entity
                                val newConnections = mutableMapOf<Component, List<Component>>()
                                val tempComponentMap = branch.associateWith { it -> Component(it.definition, teamFilter) }
