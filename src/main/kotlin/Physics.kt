@@ -80,9 +80,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     /**
      * Process a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
      *
-     * TODO Maybe this should throw an error when it fails - when could we possibly expect entity spawning to fail?
      */
-    fun requestEntity(request: EntityRequest): Int? {
+    fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
             RequestType.SHIP -> {
                 val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
