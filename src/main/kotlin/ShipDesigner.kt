@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
@@ -16,7 +15,6 @@ import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
-import java.awt.geom.Line2D
 import java.io.File
 import javax.swing.JFrame
 import javax.swing.JPanel
@@ -58,7 +56,10 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         //Draw existing shapes
         for (component in components){
             g.color = component.color
-            paintPolygon(g, transformPolygon(shapes.filter { it.ID == component.shape }[0], component.position, component.rotation, component.scale), true)
+            val transformedShape = transformShape(shapes.first { it.ID == component.shape }, component.position, component.rotation, component.scale)
+            paintPolygon(g, transformedShape.points, true)
+            g.color = Color.RED
+            paintSockets(g, transformedShape.sockets)
         }
 
         //Draw outline of current component in progress
@@ -68,17 +69,21 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     private fun getTransformedShapeAtMouse(): List<Vector2>{
         val position = getRoundedMousePos()
-        val transformedPoints = transformPolygon(selectedShape, position, selectedQuarterRotations, 1.0)
-        return transformedPoints
+        val transformedShape = transformShape(selectedShape, position, selectedQuarterRotations, 1.0)
+        return transformedShape.points
     }
 
     private val quarterPI = PI/2.0
 
-    private fun transformPolygon(shape: Shape, position: Vector2, rotations: Int, scale: Double): List<Vector2>{
+    private fun transformShape(shape: Shape, position: Vector2, rotations: Int, scale: Double): Shape{
+        val points = shape.points.map { point -> transformPoint(point, rotations, scale, position) }
+        val sockets = shape.sockets.map { point -> transformPoint(point, rotations, scale, position) }
+        return Shape(points, shape.ID, sockets)
+    }
+
+    private fun transformPoint(point: Vector2, rotations: Int, scale: Double, position: Vector2): Vector2{
         val rotation = rotations * quarterPI
-        return shape.points.map { point ->
-            return@map (point.copy().rotate(rotation).round() * scale) + position
-        }
+        return point.copy().rotate(rotation).round() * scale + position
     }
 
     private fun paintGrid(g: Graphics){
@@ -88,6 +93,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         }
         for(y in 0..height step spacing){
             g.drawLine(0, y, width, y)
+        }
+    }
+
+    private fun paintSockets(g: Graphics, points: List<Vector2>){
+        for(point in points){
+            g.drawRect((point.x - 2).toInt(), (point.y - 2).toInt(), 5, 5)
         }
     }
 
@@ -130,6 +141,26 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
      */
 
     private fun exportToFile(){
+
+        val map: Map<Int, MutableList<Int>> = components.associate{components.indexOf(it) to mutableListOf()}
+        for (component : SimpleComponent in components) {
+            for(otherComponent in components){
+                if(component != otherComponent){
+                    val sockets = transformShape(shapes[component.shape], component.position, component.rotation, component.scale).sockets
+                    val otherSockets = transformShape(shapes[otherComponent.shape], otherComponent.position, otherComponent.rotation, otherComponent.scale).sockets
+
+                    var isConnected = sockets.any {
+                        socket1 -> otherSockets.any{
+                            socket2 -> socket1.equals(socket2)
+                        }
+                    }
+                    if(isConnected){
+                        map[components.indexOf(component)]!!.add(components.indexOf(otherComponent))
+                    }
+                }
+            }
+        }
+        println(map)
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addSerializer(SimpleComponent::class.java, ComponentSerializer())

@@ -1,11 +1,7 @@
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import org.dyn4j.geometry.Vector2
@@ -17,12 +13,11 @@ import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
-import java.awt.event.MouseMotionListener
 import java.awt.geom.Line2D
 import java.io.*
+import java.net.Socket
 import javax.swing.JFrame
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 import kotlin.math.round
 
 
@@ -33,7 +28,7 @@ import kotlin.math.round
  */
 class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
-    private var currentShape = mutableListOf<Vector2>()
+    private var currentPoints = mutableListOf<Vector2>()
     val shapes = mutableListOf<Shape>()
 
     override fun paint(g: Graphics) {
@@ -48,21 +43,26 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         //Draw existing shapes
         for (shape in shapes) {
             paintShape(g, shape)
-        }
-
-        //Draw outline of current shape in progress
-        g.color = Color.blue
-        if(currentShape.size > 1){
-            for(i in 1..< currentShape.size){
-                g.drawLine(currentShape[i-1].x.toInt(), currentShape[i-1].y.toInt(), currentShape[i].x.toInt(), currentShape[i].y.toInt())
+            g.color = Color.RED
+            for(s in shape.sockets){
+                g.drawRect(s.x.toInt() - 2, s.y.toInt() - 2, 5, 5)
             }
         }
+        //Draw outline of current shape in progress
+        if(currentPoints.size > 1){
+            g.color = Color.blue
+            for(i in 1..< currentPoints.size){
+                g.drawLine(currentPoints[i-1].x.toInt(), currentPoints[i-1].y.toInt(), currentPoints[i].x.toInt(), currentPoints[i].y.toInt())
+            }
+            g.color = Color.RED
 
-        //Draw current line in progress
+        }
+
+        //Draw next line in progress
         g.color = Color.cyan
-        if(currentShape.size > 0){
+        if(currentPoints.size > 0){
             val currentMousePosRounded = getRoundedMousePos(getMousePos())
-            g.drawLine(currentShape.last().x.toInt(), currentShape.last().y.toInt(), currentMousePosRounded.x.toInt(), currentMousePosRounded.y.toInt())
+            g.drawLine(currentPoints.last().x.toInt(), currentPoints.last().y.toInt(), currentMousePosRounded.x.toInt(), currentMousePosRounded.y.toInt())
         }
     }
 
@@ -105,14 +105,13 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     override fun mousePressed(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
             val pos = getRoundedMousePos(e)
-
             //Check that the line isn't intersecting with any existing polygons
             var isSafe = true;
-            if(currentShape.size > 0){
-                val newLineLocalVector = (pos - currentShape.last()).normalized
+            if(currentPoints.size > 0){
+                val newLineLocalVector = (pos - currentPoints.last()).normalized
                 val lineX = newLineLocalVector.x
                 val lineY = newLineLocalVector.y
-                val newLineShortened = Line2D.Double(currentShape.last().x + lineX, currentShape.last().y + lineY, pos.x - lineX, pos.y - lineY)
+                val newLineShortened = Line2D.Double(currentPoints.last().x + lineX, currentPoints.last().y + lineY, pos.x - lineX, pos.y - lineY)
                 for (shape in shapes) {
                     for (i in 1..<shape.points.size){
                         val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
@@ -130,18 +129,29 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
                 }
             }
             if(isSafe){
-                currentShape.add(pos)
+                if(currentPoints.isNotEmpty() && pos.equals(currentPoints[0])){
+                    if(currentPoints.size > 1){
+                        val sockets = mutableListOf<Vector2>()
+                        for(i in 0..< currentPoints.size -1){
+                            sockets.add((currentPoints[i] + currentPoints[i+1]) / 2.0)
+                        }
+                        sockets.add((currentPoints.last() + currentPoints.first()) / 2.0)
+                        shapes.add(Shape(currentPoints, shapes.size, sockets))
+                        currentPoints = mutableListOf()
+                    }
+                }else{
+                    currentPoints.add(pos)
+                }
             }
         }
     }
 
     private fun exportToFile(){
-
+        println("exporting ${shapes.size} shapes")
         //Localize all shapes (make it so their top left corners are all at 0,0
-
         val localizedShapes: List<Shape> = shapes.map {
             val upperLeft = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
-            return@map Shape(it.points - upperLeft, it.ID)
+            return@map Shape(it.points - upperLeft, it.ID, it.sockets - upperLeft)
         }
 
         val mapper = ObjectMapper()
@@ -157,25 +167,15 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     override fun mouseReleased(e: MouseEvent) {}
     override fun keyTyped(e: KeyEvent) {}
     override fun keyPressed(e: KeyEvent) {
-        println("DesignerUI.keyPressed")
         if(e.keyCode == KeyEvent.VK_ENTER){
             exportToFile()
-            println("exported!")
-        }else{
-            if(currentShape.size < 3){
-                System.err.println("You need 3 points for a shape and you have ${currentShape.size}")
-            }else {
-                shapes.add(Shape(currentShape, shapes.size))
-                currentShape = mutableListOf()
-            }
         }
     }
     override fun keyReleased(e: KeyEvent) {
-        println("DesignerUI.keyReleased")
     }
 }
 
-class Shape(@JsonProperty("points") var points : List<Vector2>, @JsonProperty("id") val ID : Int) {}
+class Shape(@JsonProperty("points") var points: List<Vector2>, @JsonProperty("id") val ID : Int, @JsonProperty("sockets") var sockets : List<Vector2>)
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off
