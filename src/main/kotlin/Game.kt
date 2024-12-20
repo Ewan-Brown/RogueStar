@@ -1,6 +1,7 @@
 import Graphics.Model
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import com.fasterxml.jackson.databind.type.TypeFactory
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.opengl.GL
@@ -46,36 +48,6 @@ fun loadModels() : Map<Int, Model> {
     }
 }
 
-class ComponentDeserializer() : StdDeserializer<SimpleComponent>(SimpleComponent::class.java){
-
-    override fun deserialize(parser: JsonParser, p1: DeserializationContext): SimpleComponent {
-        val node: JsonNode = parser.codec.readTree(parser)
-        val shape = node.get("shape").asInt()
-        val red = node.get("red").asInt()
-        val green = node.get("green").asInt()
-        val blue = node.get("blue").asInt()
-        val scale = node.get("scale").asDouble()
-        val x = node.get("position").get("x").asDouble()
-        val y = node.get("position").get("y").asDouble()
-        val rotation = node.get("rotation").asInt()
-        val type = node.get("type").asText()!!
-
-        val color = Color(red, green, blue)
-        val position = Vector2(x, y)
-        return SimpleComponent(shape, color, scale, position, rotation, Type.valueOf(type))
-    }
-}
-
-fun loadShip() {
-    val mapper = ObjectMapper()
-    val module = SimpleModule()
-    module.addDeserializer(Vector2::class.java, VectorDeserializer())
-    module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
-    mapper.registerModules(module)
-    val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
-    println(components.size)
-}
-
 fun main() {
 
     val physicsLayer = PhysicsLayer()
@@ -83,7 +55,9 @@ fun main() {
     val controllerLayer = ControllerLayer()
 
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + loadModels().values.toMutableList()
-    loadShip()
+
+    physicsLayer.loadShips()
+
     val gui = Graphics(models)
     val bitSet = BitSet(256)
 

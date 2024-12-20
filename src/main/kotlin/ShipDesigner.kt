@@ -142,7 +142,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     private fun exportToFile(){
 
-        val map: Map<Int, MutableList<Int>> = components.associate{components.indexOf(it) to mutableListOf()}
+        val connectionMap: Map<Int, MutableList<Int>> = components.associate{components.indexOf(it) to mutableListOf()}
         for (component : SimpleComponent in components) {
             for(otherComponent in components){
                 if(component != otherComponent){
@@ -155,12 +155,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
                         }
                     }
                     if(isConnected){
-                        map[components.indexOf(component)]!!.add(components.indexOf(otherComponent))
+                        connectionMap[components.indexOf(component)]!!.add(components.indexOf(otherComponent))
                     }
                 }
             }
         }
-        println(map)
+        println(connectionMap)
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addSerializer(SimpleComponent::class.java, ComponentSerializer())
@@ -168,6 +168,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
         mapper.writeValue(File("ship.json"), components)
+        mapper.writeValue(File("connections.json"), connectionMap)
         println("exported!")
     }
 

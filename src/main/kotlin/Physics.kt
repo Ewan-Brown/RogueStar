@@ -1,5 +1,12 @@
 import Graphics.Model
 import PhysicsLayer.PhysicsEntity.*
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.type.TypeFactory
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
@@ -7,6 +14,8 @@ import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
+import java.awt.Color
+import java.io.File
 import java.util.Stack
 import java.util.function.Predicate
 
@@ -16,6 +25,38 @@ data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
+
+    public fun loadShips(models: List<Model>){
+            val mapper = ObjectMapper()
+            val module = SimpleModule()
+            module.addDeserializer(Vector2::class.java, VectorDeserializer())
+            module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
+            mapper.registerModules(module)
+            val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
+            val typeRef = TypeFactory.defaultInstance().constructMapType(Map::class.java, Int::class.java, Array<Int>::class.java)
+            val connectionMap: Map<Int, List<Int>> = mapper.readValue(File("connections.json"), typeRef)
+    }
+
+
+    class ComponentDeserializer() : StdDeserializer<SimpleComponent>(SimpleComponent::class.java){
+
+        override fun deserialize(parser: JsonParser, p1: DeserializationContext): SimpleComponent {
+            val node: JsonNode = parser.codec.readTree(parser)
+            val shape = node.get("shape").asInt()
+            val red = node.get("red").asInt()
+            val green = node.get("green").asInt()
+            val blue = node.get("blue").asInt()
+            val scale = node.get("scale").asDouble()
+            val x = node.get("position").get("x").asDouble()
+            val y = node.get("position").get("y").asDouble()
+            val rotation = node.get("rotation").asInt()
+            val type = node.get("type").asText()!!
+
+            val color = Color(red, green, blue)
+            val position = Vector2(x, y)
+            return SimpleComponent(shape, color, scale, position, rotation, Type.valueOf(type))
+        }
+    }
 
     private enum class CollisionCategory(val bits: Long) {
         CATEGORY_SHIP(0b0001),
@@ -136,7 +177,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
-        //TODO rename this to something ship-agnostic
         val cockpit: Component = internalComponents[0],
         val teamFilter: TeamFilter,
         private val connectionMap: Map<Component, List<Component>>
