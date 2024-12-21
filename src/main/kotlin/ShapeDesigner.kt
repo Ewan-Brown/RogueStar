@@ -148,10 +148,10 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 
     private fun exportToFile(){
         println("exporting ${shapes.size} shapes")
-        //Localize all shapes (make it so their top left corners are all at 0,0
+        //Localize all shapes (make it so their center is at (0, 0))
         val localizedShapes: List<Shape> = shapes.map {
-            val upperLeft = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
-            return@map Shape(it.points - upperLeft, it.ID, it.sockets - upperLeft)
+            val centroid = it.points.getCentroid()
+            return@map Shape(it.points - centroid, it.ID, it.sockets - centroid)
         }
 
         val mapper = ObjectMapper()

@@ -33,7 +33,7 @@ fun loadModels() : Map<Int, Model> {
     mapper.registerModules(module)
     val shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
     return shapes.associate { shape ->
-        val points = shape.points.map { listOf(it.x.toFloat(), it.y.toFloat(), 0.0f) }.flatten().toFloatArray()
+        val points = shape.points.map { listOf(it.x.toFloat() / 30.0f, it.y.toFloat() / 30.0f, 0.0f) }.flatten().toFloatArray()
         shape.ID to Model(points, GL.GL_TRIANGLE_FAN)
     }
 }
