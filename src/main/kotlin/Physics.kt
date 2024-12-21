@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.TypeFactory
+import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
@@ -18,6 +19,7 @@ import java.awt.Color
 import java.io.File
 import java.util.Stack
 import java.util.function.Predicate
+import kotlin.math.PI
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
@@ -27,14 +29,28 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     public fun loadShips(models: List<Model>){
-            val mapper = ObjectMapper()
-            val module = SimpleModule()
-            module.addDeserializer(Vector2::class.java, VectorDeserializer())
-            module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
-            mapper.registerModules(module)
-            val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
-            val typeRef = TypeFactory.defaultInstance().constructMapType(Map::class.java, Int::class.java, Array<Int>::class.java)
-            val connectionMap: Map<Int, List<Int>> = mapper.readValue(File("connections.json"), typeRef)
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addDeserializer(Vector2::class.java, VectorDeserializer())
+        module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
+        mapper.registerModules(module)
+        val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
+        val typeRef = TypeFactory.defaultInstance().constructMapType(Map::class.java, Int::class.java, Array<Int>::class.java)
+        val connectionMap: Map<Int, List<Int>> = mapper.readValue(File("connections.json"), typeRef)
+
+        val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
+            val model = models[it.shape]
+            val transform = Transformation(it.position, it.scale, it.rotation * PI/2.0)
+            val graphicalData = GraphicalData(1.0f, 0.0f, 0.0f, 0.0f)
+            val def = ComponentDefinition(model, transform, graphicalData)
+            Component(def, TeamFilter(category = CollisionCategory.CATEGORY_SHIP.bits, mask = CollisionCategory.CATEGORY_SHIP.bits))
+        }
+
+
+        val thrusters = componentMapping.filter {it.key.type == Type.THRUSTER}.map {it.value}
+        val cockpit = componentMapping.filter {it.key.type == Type.COCKPIT}.map {it.value}
+        val trueConnectionMap :  Map<Component, List<Component>> = // Map a map.. to a map...
+        ShipDetails()
     }
 
 
