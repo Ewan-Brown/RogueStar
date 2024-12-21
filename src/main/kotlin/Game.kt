@@ -54,9 +54,10 @@ fun main() {
     val effectsLayer = EffectsLayer()
     val controllerLayer = ControllerLayer()
 
-    val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + loadModels().values.toMutableList()
+    val entityModels = loadModels().values.toMutableList();
+    val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
 
-    physicsLayer.loadShips()
+    physicsLayer.loadShips(entityModels)
 
     val gui = Graphics(models)
     val bitSet = BitSet(256)
