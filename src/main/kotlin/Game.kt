@@ -1,21 +1,11 @@
 import Graphics.Model
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializerProvider
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.databind.type.TypeFactory
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.opengl.GL
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
-import java.awt.Color
 import java.io.File
 import java.util.*
 
@@ -43,7 +33,7 @@ fun loadModels() : Map<Int, Model> {
     mapper.registerModules(module)
     val shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
     return shapes.associate { shape ->
-        val points = shape.points.map { listOf(it.x.toFloat(), it.y.toFloat()) }.flatten().toFloatArray()
+        val points = shape.points.map { listOf(it.x.toFloat(), it.y.toFloat(), 0.0f) }.flatten().toFloatArray()
         shape.ID to Model(points, GL.GL_TRIANGLE_FAN)
     }
 }
@@ -57,7 +47,7 @@ fun main() {
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
 
-    physicsLayer.loadShips(entityModels)
+    val playerID = physicsLayer.loadShips(entityModels)
 
     val gui = Graphics(models)
     val bitSet = BitSet(256)
@@ -77,12 +67,11 @@ fun main() {
         }
     }
 
-    val uuid = null
-//    val greenTeam = Team("Green")
+    //    val greenTeam = Team("Green")
 //    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
 //    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
 
-//    controllerLayer.addControllerEntry(PlayerController(bitSet), uuid)
+    controllerLayer.addControllerEntry(PlayerController(bitSet), playerID)
 
 //    val idList = MutableList(10) {
 //        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
@@ -115,11 +104,7 @@ fun main() {
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
         effectsLayer.update(EffectsInput(effectsRequests))
 
-        val playerPos = if(uuid == null){
-            Vector2()
-        }else{
-            physicsLayer.getEntityData(uuid!!)?.position!!
-        }
+        val playerPos = physicsLayer.getEntityData(playerID)?.position!!
         populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
 
     }
