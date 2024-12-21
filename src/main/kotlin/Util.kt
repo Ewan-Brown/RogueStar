@@ -11,7 +11,7 @@ operator fun Vector2.component2() = this.y
 operator fun Vector2.plus(vec: Vector2): Vector2 = this.sum(vec)
 operator fun Vector2.minus(vec: Vector2): Vector2 = this.difference(vec)
 operator fun Vector2.times(factor: Double): Vector2 = this.multiply(factor)
-operator fun Vector2.div(factor: Double): Vector2 = this.quotient(factor)
+operator fun Vector2.div(factor: Double): Vector2 = this.divide(factor)
 
 operator fun List<Vector2>.plus(vec: Vector2): List<Vector2> {return this.map { it.add(vec) }}
 operator fun List<Vector2>.minus(vec: Vector2): List<Vector2> {return this.map { it.minus(vec) }}
@@ -28,5 +28,31 @@ fun Vector2.round(): Vector2 = Vector2(round(this.x), round(this.y))
 fun Vector2.ceil(): Vector2 = Vector2(ceil(this.x), ceil(this.y))
 fun Vector2.flip(): Vector2 = this.product(-1.0)
 fun Point.toVector(): Vector2 = Vector2(this.getX(), this.getY())
+fun List<Vector2>.getCentroid() : Vector2{
+    var A = 0.0;
+    for(i in indices){
+        val p = this[i]
+        val nextP = this[(i + 1) % this.size]
+        A += (p.x * nextP.y) - (nextP.x * p.y)
+    }
+    A /= 2.0
+
+    println(A)
+
+    var Cx = 0.0
+    var Cy = 0.0
+    for(i in indices) {
+        val p = this[i]
+        val nextP = this[(i + 1) % this.size]
+
+        val intermed = p.x*nextP.y - nextP.x * p.y
+
+        Cx += (p.x + nextP.x)*(intermed)
+        Cy += (p.y + nextP.y)*(intermed)
+    }
+    Cx /= 6 * A
+    Cy /= 6 * A
+    return Vector2(Cx, Cy)
+}
 
 fun Boolean.toInt() = if (this) 1 else 0

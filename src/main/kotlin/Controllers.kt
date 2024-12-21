@@ -193,6 +193,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
 
         actions.add(ControlAction.TurnAction(rotate))
         actions.add(ControlAction.ThrustAction(thrust))
+
         return actions
     }
 }

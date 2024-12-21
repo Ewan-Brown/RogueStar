@@ -43,8 +43,13 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
             val model = models[it.shape]
-            val transform = Transformation(it.position, it.scale, it.rotation * PI/2.0)
-            val graphicalData = GraphicalData(1.0f, 0.0f, 0.0f, 0.0f)
+            val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI/2.0)
+            val graphicalData = when(it.type){
+                Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
+                Type.COCKPIT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+            }
             val def = ComponentDefinition(model, transform, graphicalData)
             Component(def, TeamFilter(category = CollisionCategory.CATEGORY_SHIP.bits, mask = CollisionCategory.CATEGORY_SHIP.bits))
         }
