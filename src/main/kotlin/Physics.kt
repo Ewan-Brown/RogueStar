@@ -17,8 +17,11 @@ import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.awt.Color
 import java.io.File
-import java.util.Stack
+import java.util.*
 import java.util.function.Predicate
+import java.util.stream.Stream
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 import kotlin.math.PI
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
@@ -28,7 +31,7 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
-    public fun loadShips(models: List<Model>){
+    public fun loadShips(models: List<Model>) : Int{
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
@@ -36,7 +39,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         mapper.registerModules(module)
         val components = mapper.readValue(File("ship.json"), Array<SimpleComponent>::class.java).toList()
         val typeRef = TypeFactory.defaultInstance().constructMapType(Map::class.java, Int::class.java, Array<Int>::class.java)
-        val connectionMap: Map<Int, List<Int>> = mapper.readValue(File("connections.json"), typeRef)
+        val connectionMap: Map<Int, Array<Int>> = mapper.readValue(File("connections.json"), typeRef)
 
         val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
             val model = models[it.shape]
@@ -46,11 +49,18 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             Component(def, TeamFilter(category = CollisionCategory.CATEGORY_SHIP.bits, mask = CollisionCategory.CATEGORY_SHIP.bits))
         }
 
+        fun getMatchingComponent(id: Int) = componentMapping[components[id]]
+        fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!!}
 
         val thrusters = componentMapping.filter {it.key.type == Type.THRUSTER}.map {it.value}
-        val cockpit = componentMapping.filter {it.key.type == Type.COCKPIT}.map {it.value}
-        val trueConnectionMap :  Map<Component, List<Component>> = // Map a map.. to a map...
-        ShipDetails()
+        val cockpit = componentMapping.filter {it.key.type == Type.COCKPIT}.map {it.value}.first()
+        val trueConnectionMap = connectionMap.entries.associate { entry: Map.Entry<Int, Array<Int>> ->
+            getMatchingComponent(entry.key)!! to Arrays.stream(entry.value).map { getMatchingComponent(it)!! }.toList()
+        }
+//        val trueConnectionMap :  Map<Component, List<Component>> = connectionMap.entries.associate { entry -> getMatchingComponent(entry.key)!! to listOf(componentMapping.values.first())}
+
+        val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, cockpit)
+        return addEntity(ShipEntity(Team.TEAMLESS, s)).uuid
     }
 
 
