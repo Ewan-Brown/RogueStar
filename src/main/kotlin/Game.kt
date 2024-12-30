@@ -8,6 +8,7 @@ import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import java.io.File
 import java.util.*
+import kotlin.io.path.Path
 
 class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
@@ -47,7 +48,7 @@ fun main() {
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
 
-    val playerID = physicsLayer.loadShips(entityModels)
+    physicsLayer.loadShips(entityModels, Path(""))
 
     val gui = Graphics(models)
     val bitSet = BitSet(256)
@@ -67,16 +68,8 @@ fun main() {
         }
     }
 
-    //    val greenTeam = Team("Green")
-//    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
-//    val uuid = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(), r=0.0f, g=1.0f, b=1.0f, team=Team("Player")))!!
-
+    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = Team.TEAMLESS))
     controllerLayer.addControllerEntry(PlayerController(bitSet), playerID)
-
-//    val idList = MutableList(10) {
-//        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.SHIP, Vector2(Math.random()*Math.PI*2).multiply(20.0), r=1.0f, g=1.0f, b=1.0f, team=greenTeam))!!
-//    }
-//    controllerLayer.addControllerEntry(ControllerLayer.BubbleMultiController(uuid, 20.0), idList)
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -104,8 +97,8 @@ fun main() {
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
         effectsLayer.update(EffectsInput(effectsRequests))
 
-        val playerPos = physicsLayer.getEntityData(playerID)?.position!!
-        populateData(Graphics.CameraDetails(playerPos.copy(), 1.0, 0.0))
+//        val playerPos = physicsLayer.getEntityData(playerID)?.position!!
+        populateData(Graphics.CameraDetails(Vector2(), 1.0, 0.0))
 
     }
 }
