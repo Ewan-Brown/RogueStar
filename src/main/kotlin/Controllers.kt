@@ -54,7 +54,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
     abstract class SingleController<E : PhysicsBodyData> : BaseController<E>(){
         final override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
-            if(input.size != 1){
+            if(input.size > 1){
                 throw IllegalArgumentException("A $javaClass should only ever be attached to one entity at a time ")
             }
             val uuid = input.first().uuid

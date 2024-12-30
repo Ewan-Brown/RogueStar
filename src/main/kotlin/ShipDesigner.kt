@@ -17,6 +17,7 @@ import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import java.io.File
 import javax.swing.JFrame
+import javax.swing.JOptionPane
 import javax.swing.JPanel
 import kotlin.math.PI
 import kotlin.math.round
@@ -167,8 +168,8 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        mapper.writeValue(File("ship.json"), components)
-        mapper.writeValue(File("connections.json"), connectionMap)
+        val shipName = JOptionPane.showInputDialog("give your ship a name!")
+        mapper.writeValue(File("ship_$shipName.json"), PhysicsLayer.Ship(components, connectionMap))
         println("exported!")
     }
 
