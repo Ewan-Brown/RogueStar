@@ -620,10 +620,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
-            contactCollisions.forEach {
-                it.pair.first.fixture.onCollide(it)
-                it.pair.second.fixture.onCollide(it)
-            }
+//            contactCollisions.forEach {
+//                it.pair.first.fixture.onCollide(it)
+//                it.pair.second.fixture.onCollide(it)
+//            }
 
         }
 
@@ -645,7 +645,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
     class TeamFilter(
         val team: Team = Team.TEAMLESS,
-        val teamPredicate: Predicate<Team> = Predicate { true },
+        val teamPredicate: Predicate<Team> = Predicate { it != team },
         val category: Long,
         val mask: Long
     ) : Filter {

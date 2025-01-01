@@ -68,8 +68,13 @@ fun main() {
         }
     }
 
-    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = Team.TEAMLESS))
+    val testTeam = Team("test");
+    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
+    physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     controllerLayer.addControllerEntry(PlayerController(bitSet), playerID)
+    for (i in 0..1){
+        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
+    }
 
     val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
 
@@ -86,7 +91,12 @@ fun main() {
         gui.updateDrawables(modelDataMap, details)
     }
 
-    populateData(Graphics.CameraDetails(Vector2(), 1.0, 0.0))
+    val playerData = physicsLayer.getEntityData(playerID)
+    val playerPos = playerData?.position ?: Vector2()
+    if(playerData == null){
+        System.err.println("playerdata is null, camera will default to $playerPos")
+    }
+    populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
     gui.setup(keyListener)
 
     var lastControlActions = mapOf<Int, List<ControlAction>>()
