@@ -18,7 +18,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     var cameraPos: Vector2 = Vector2()
     var cameraVelocity: Vector2 = Vector2()
-    var cameraScale: Float = 1.0f
+    var cameraScale: Float = 0.5f
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
@@ -201,7 +201,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             //For each instance of that motel
             for (instancedDatum in data.instanceData) {
                 for(attribute in INSTANCED_ATTRIBUTE.entries){
-                    val floats = attribute.gen(instancedDatum)
+                    val floats = attribute.dataExtractor(instancedDatum)
                     val floatBuffer = attributeMap[attribute]
                     for ((index, float) in floats.withIndex()) {
                         floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
@@ -330,7 +330,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
         POSITION(0, 3, Buffer.VERTEX)
     }
-    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val gen: (Pair<Transformation, GraphicalData>) -> List<Float>, val VBOBuffer: Int){
+    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (Pair<Transformation, GraphicalData>) -> List<Float>, val VBOBuffer: Int){
         POSITION(1, 3, {listOf(it.first.position.x.toFloat(), it.first.position.y.toFloat(), it.second.z)}, Buffer.INSTANCED_POSITIONS),
         ROTATION(2, 1, {listOf(it.first.rotation.toRadians().toFloat())}, Buffer.INSTANCED_ROTATIONS),
         SCALE(3, 1, {listOf(it.first.scale.toFloat())}, Buffer.INSTANCED_SCALES),
