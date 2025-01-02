@@ -29,6 +29,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.io.path.name
 import kotlin.math.PI
+import kotlin.math.pow
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
@@ -596,7 +597,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         }
                     }
                     is ControlAction.TurnAction -> {
-                        applyTorque(action.torque)
+                        println("torque : ${action.torque.toInt()}, mass : ${getMass().mass}")
+                        applyTorque(action.torque * this.getMass().mass.pow(3.0))
                     }
                     is ControlAction.TestAction -> {
                         testFunc()
