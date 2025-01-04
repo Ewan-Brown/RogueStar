@@ -36,6 +36,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
         shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
+        println("Shapes found : ${shapes.size}")
     }
 
     val components = mutableListOf<SimpleComponent>()
@@ -69,7 +70,10 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     }
 
     private fun getTransformedShapeAtMouse(): List<Vector2>{
-        val position = getRoundedMousePos()
+        val vec = getMousePos() + selectedShape.placementOffset
+        val x = round(vec.x / spacing) * spacing
+        val y = round(vec.y / spacing) * spacing
+        val position = Vector2(x, y) - selectedShape.placementOffset
         val transformedShape = transformShape(selectedShape, position, selectedQuarterRotations, 1.0)
         return transformedShape.points
     }
@@ -79,7 +83,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     private fun transformShape(shape: Shape, position: Vector2, rotations: Int, scale: Double): Shape{
         val points = shape.points.map { point -> transformPoint(point, rotations, scale, position) }
         val sockets = shape.sockets.map { point -> transformPoint(point, rotations, scale, position) }
-        return Shape(points, shape.ID, sockets)
+        return Shape(points, shape.ID, sockets, shape.placementOffset)
     }
 
     private fun transformPoint(point: Vector2, rotations: Int, scale: Double, position: Vector2): Vector2{
@@ -133,7 +137,11 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            components.add(SimpleComponent(selectedShape.ID, selectedColor,1.0, getRoundedMousePos(), selectedQuarterRotations, selectedType))
+            val vec = getMousePos() + selectedShape.placementOffset
+            val x = round(vec.x / spacing) * spacing
+            val y = round(vec.y / spacing) * spacing
+            val position = Vector2(x, y) - selectedShape.placementOffset
+            components.add(SimpleComponent(selectedShape.ID, selectedColor,1.0, position, selectedQuarterRotations, selectedType))
         }
     }
 
