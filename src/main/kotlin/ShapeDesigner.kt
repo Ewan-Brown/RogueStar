@@ -136,7 +136,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
                             sockets.add((currentPoints[i] + currentPoints[i+1]) / 2.0)
                         }
                         sockets.add((currentPoints.last() + currentPoints.first()) / 2.0)
-                        shapes.add(Shape(currentPoints, shapes.size, sockets))
+                        shapes.add(Shape(currentPoints, shapes.size, sockets, Vector2())) //Offset isn't bothered to be calculated until export
                         currentPoints = mutableListOf()
                     }
                 }else{
@@ -148,10 +148,17 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 
     private fun exportToFile(){
         println("exporting ${shapes.size} shapes")
-        //Localize all shapes (make it so their center is at (0, 0))
+        //Localize all shapes (make it so their center is congruent with grid )
+        // This means finding the 'grid-center', essentially find the bounding box of this shape (aligned with grid coords, so the bounding box should have only integer values for corners)
+        // Then taking the center of that bounding box and centering this shape around it. This might work
         val localizedShapes: List<Shape> = shapes.map {
-            val centroid = it.points.getCentroid()
-            return@map Shape(it.points - centroid, it.ID, it.sockets - centroid)
+            val min = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
+            val max = Vector2(it.points.maxOf { it.x }, it.points.maxOf { it.y })
+            val midpoint = (min + max) / 2.0;
+            val offset = Vector2(midpoint.x % spacing, midpoint.y % spacing)
+            println("midpoint = ${midpoint}")
+            println("offset = ${offset}")
+            return@map Shape(it.points - midpoint, it.ID, it.sockets - midpoint, offset)
         }
 
         val mapper = ObjectMapper()
@@ -175,7 +182,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 }
 
-class Shape(@JsonProperty("points") var points: List<Vector2>, @JsonProperty("id") val ID : Int, @JsonProperty("sockets") var sockets : List<Vector2>)
+class Shape(@JsonProperty("points") var points: List<Vector2>, @JsonProperty("id") val ID : Int, @JsonProperty("sockets") var sockets : List<Vector2>, @JsonProperty("placementOffset") var placementOffset : Vector2)
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off

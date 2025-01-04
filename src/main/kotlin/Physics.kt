@@ -383,8 +383,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         .multiply(definition.localTransform.scale.toDouble())
                 }
                 val polygon = Polygon(*vertices)
-                polygon.translate(definition.localTransform.position.copy())
                 polygon.rotate(definition.localTransform.rotation.toRadians())
+                polygon.translate(definition.localTransform.position.copy())
                 val fixture = CustomFixture(polygon)
                 fixture.filter = filter
                 return fixture
@@ -498,61 +498,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
-    companion object{
-//        private fun createTestShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails {
-//            val body = mutableListOf<Component>()
-//            val thrusters = mutableListOf<ThrusterComponent>()
-//            val cockpit = Component(
-//                    ComponentDefinition(
-//                        Model.TRIANGLE,
-//                        Transformation(Vector2(), scale),
-//                        GraphicalData(red, green, blue, 0.0f)),
-//                    TeamFilter(team, {it.UUID != team.UUID},
-//                        category = CollisionCategory.CATEGORY_SHIP.bits,
-//                        mask = CollisionCategory.CATEGORY_SHIP.bits))
-//            val center1 = ThrusterComponent(
-//                ComponentDefinition(
-//                    Model.SQUARE1,
-//                    Transformation(Vector2(-1.5, 0.0), scale),
-//                    GraphicalData(red, green/2.0f, blue, 0.0f)),
-//                TeamFilter(team, {it.UUID != team.UUID},
-//                    category = CollisionCategory.CATEGORY_SHIP.bits,
-//                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-//                Rotation()
-//            )
-//            val center2 = ThrusterComponent(
-//                ComponentDefinition(
-//                    Model.SQUARE1,
-//                    Transformation(Vector2(-2.5, 0.0), scale),
-//                    GraphicalData(red, green/2.0f, blue, 0.0f)),
-//                TeamFilter(team, {it.UUID != team.UUID},
-//                    category = CollisionCategory.CATEGORY_SHIP.bits,
-//                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-//                Rotation()
-//            )
-//            val thruster = ThrusterComponent(
-//                ComponentDefinition(
-//                    Model.SQUARE1,
-//                    Transformation(Vector2(-3.5, 0.0), scale),
-//                    GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)),
-//                TeamFilter(team, {it.UUID != team.UUID},
-//                    category = CollisionCategory.CATEGORY_SHIP.bits,
-//                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-//                Rotation()
-//            )
-//            thrusters.add(thruster)
-//            body.add(cockpit)
-//            body.add(center1)
-//            body.add(center2)
-//            body.add(thruster)
-//            val connectionMap = mapOf(cockpit to listOf(center1),
-//                center1 to listOf(cockpit, center2),
-//                center2 to listOf(center1, thruster),
-//                thruster to listOf(center2))
-//            return ShipDetails(body, thrusters, connectionMap, cockpit)
-//        }
-    }
-
     private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
@@ -567,7 +512,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         override fun testFunc(){
             super.testFunc()
             if(!flag) {
-//                println("ShipEntity.testFunc - removing the middle bit")
                 componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
                     it.value?.kill()
                 }
