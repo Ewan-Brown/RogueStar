@@ -38,7 +38,7 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
-    // Hacky to comply with Jackson serialization. Needen an empty constructor or a custom codec...
+    // Hacky to comply with Jackson serialization. Needed an empty constructor or a custom codec...
     public class Ship(){
         var components: List<SimpleComponent> = listOf()
         var connections: Map<Int, List<Int>> = mapOf()
@@ -67,6 +67,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
                     val model = models[it.shape]
                     val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
+                    println("transform" + transform.position)
                     val graphicalData = when (it.type) {
                         Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
                         Type.COCKPIT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
@@ -187,7 +188,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             RequestType.RANDOM_SHIP ->{
 //                val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
 //                ShipEntity(request.team, details)
-                addEntity(shipFactories.random().invoke(), request.scale, request.position)
+                addEntity(shipFactories.random().invoke(), request.angle, request.position)
             }
         }
 //        addEntity(entity, request.angle, request.position)
@@ -560,11 +561,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     ) {
 
         val thrusterComponents = shipDetails.thrusters
-        init {
-//            if(thrusterComponents.isEmpty()){
-//                throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
-//            }
-        }
         override fun isMarkedForRemoval(): Boolean = false
 
         var flag = false
@@ -597,7 +593,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         }
                     }
                     is ControlAction.TurnAction -> {
-                        println("torque : ${action.torque.toInt()}, mass : ${getMass().mass}")
                         applyTorque(action.torque * this.getMass().mass.pow(3.0))
                     }
                     is ControlAction.TestAction -> {

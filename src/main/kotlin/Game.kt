@@ -106,8 +106,8 @@ fun main() {
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
         effectsLayer.update(EffectsInput(effectsRequests))
 
-//        val playerPos = physicsLayer.getEntityData(playerID)?.position!!
-        populateData(Graphics.CameraDetails(Vector2(), 1.0, 0.0))
+        val playerData = physicsLayer.getEntityData(playerID)
+        populateData(Graphics.CameraDetails(playerData?.position ?: Vector2(), 1.0, 0.0))
 
     }
 }

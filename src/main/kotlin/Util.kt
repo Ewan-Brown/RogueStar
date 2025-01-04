@@ -37,7 +37,7 @@ fun List<Vector2>.getCentroid() : Vector2{
     }
     A /= 2.0
 
-    println(A)
+//    println(A)
 
     var Cx = 0.0
     var Cy = 0.0
