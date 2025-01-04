@@ -1,16 +1,11 @@
 import Graphics.Model
 import PhysicsLayer.PhysicsEntity.*
-import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.databind.type.TypeFactory
-import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
@@ -19,17 +14,13 @@ import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.awt.Color
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
 import java.util.function.Predicate
-import java.util.stream.Stream
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.io.path.name
 import kotlin.math.PI
-import kotlin.math.pow
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
@@ -500,7 +491,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
-            team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
+            team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         ), shipDetails.connectionMap
     ) {
@@ -537,7 +528,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         }
                     }
                     is ControlAction.TurnAction -> {
-                        applyTorque(action.torque * this.getMass().mass.pow(3.0))
+                        applyTorque(action.torque * this.getMass().mass)
                     }
                     is ControlAction.TestAction -> {
                         testFunc()
@@ -561,11 +552,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
-//            contactCollisions.forEach {
-//                it.pair.first.fixture.onCollide(it)
-//                it.pair.second.fixture.onCollide(it)
-//            }
-
+            contactCollisions.forEach {
+                it.pair.first.fixture.onCollide(it)
+                it.pair.second.fixture.onCollide(it)
+            }
         }
 
         override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, CustomFixture>>?): WorldCollisionData<CustomFixture, PhysicsEntity> {
@@ -586,7 +576,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
     class TeamFilter(
         val team: Team = Team.TEAMLESS,
-        val teamPredicate: Predicate<Team> = Predicate { it != team },
+        val doesCollide: Predicate<Team> = Predicate { it != team  || it == Team.TEAMLESS || team == Team.TEAMLESS},
         val category: Long,
         val mask: Long
     ) : Filter {
@@ -595,7 +585,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             return if (filter is TeamFilter) {
                 //Check that the category/mask matches both directions
                 //AND if team logic matches
-                (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(
+                (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && doesCollide.test(filter.team) && filter.doesCollide.test(
                     team
                 )
             } else {
