@@ -1,5 +1,11 @@
 import Graphics.Model
 import PhysicsLayer.PhysicsEntity.*
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.module.SimpleModule
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
 import org.dyn4j.collision.Filter
@@ -7,8 +13,14 @@ import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
-import java.util.Stack
+import java.awt.Color
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
 import java.util.function.Predicate
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.math.PI
 
 private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
@@ -16,6 +28,87 @@ data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
+
+    // Hacky to comply with Jackson serialization. Needed an empty constructor or a custom codec...
+    public class Ship(){
+        var components: List<SimpleComponent> = listOf()
+        var connections: Map<Int, List<Int>> = mapOf()
+        constructor(comp: List<SimpleComponent>, conn: Map<Int, List<Int>>) : this(){
+            components = comp
+            connections = conn
+        }
+    }
+
+    private val shipFactories = mutableListOf<() -> ShipEntity>()
+
+    public fun loadShips(models: List<Model>, shipDirectory: Path){
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addDeserializer(Vector2::class.java, VectorDeserializer())
+        module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
+        mapper.registerModules(module)
+        println("shipDirectory : " + shipDirectory.toAbsolutePath().toString())
+        val shipFiles = Files.walk(shipDirectory).filter{it.fileName.toString().startsWith("ship_") and it.fileName.toString().endsWith(".json")}.toList()
+        println("ship files found : ${shipFiles.size}")
+        for(shipFile in shipFiles){
+            val ship = mapper.readValue(shipFile.toFile(), Ship::class.java)
+            val components = ship.components
+            val connections = ship.connections
+            val shipFactory: () -> ShipEntity = {
+                val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
+                    val model = models[it.shape]
+                    val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
+                    println("transform" + transform.position)
+                    val graphicalData = when (it.type) {
+                        Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
+                        Type.COCKPIT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                        Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                        Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+                    }
+                    val def = ComponentDefinition(model, transform, graphicalData)
+                    Component(
+                        def,
+                        TeamFilter(
+                            category = CollisionCategory.CATEGORY_SHIP.bits,
+                            mask = CollisionCategory.CATEGORY_SHIP.bits
+                        )
+                    )
+                }
+
+                fun getMatchingComponent(id: Int) = componentMapping[components[id]]
+                fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
+
+                val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
+                val cockpit = componentMapping.filter { it.key.type == Type.COCKPIT }.map { it.value }.first()
+                val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
+                    getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
+                }
+                val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, cockpit)
+                ShipEntity(Team.TEAMLESS, s)
+            }
+            shipFactories.add(shipFactory)
+        }
+    }
+
+    class ComponentDeserializer() : StdDeserializer<SimpleComponent>(SimpleComponent::class.java){
+
+        override fun deserialize(parser: JsonParser, p1: DeserializationContext): SimpleComponent {
+            val node: JsonNode = parser.codec.readTree(parser)
+            val shape = node.get("shape").asInt()
+            val red = node.get("red").asInt()
+            val green = node.get("green").asInt()
+            val blue = node.get("blue").asInt()
+            val scale = node.get("scale").asDouble()
+            val x = node.get("position").get("x").asDouble()
+            val y = node.get("position").get("y").asDouble()
+            val rotation = node.get("rotation").asInt()
+            val type = node.get("type").asText()!!
+
+            val color = Color(red, green, blue)
+            val position = Vector2(x, y)
+            return SimpleComponent(shape, color, scale, position, rotation, Type.valueOf(type))
+        }
+    }
 
     private enum class CollisionCategory(val bits: Long) {
         CATEGORY_SHIP(0b0001),
@@ -80,21 +173,18 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     /**
      * Process a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
      *
-     * TODO Maybe this should throw an error when it fails - when could we possibly expect entity spawning to fail?
      */
-    fun requestEntity(request: EntityRequest): Int? {
+    fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
-            RequestType.SHIP -> {
-                val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
-                ShipEntity(request.team, details)
-            }
-
-            RequestType.PROJECTILE -> {
-                TODO()
+            RequestType.RANDOM_SHIP ->{
+//                val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
+//                ShipEntity(request.team, details)
+                addEntity(shipFactories.random().invoke(), request.angle, request.position)
             }
         }
-        addEntity(entity, request.angle, request.position)
+//        addEntity(entity, request.angle, request.position)
         return entity.uuid
+//        return 0
     }
 
     /**
@@ -104,8 +194,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
 
 
+
     public enum class RequestType {
-        SHIP, PROJECTILE
+        RANDOM_SHIP
     }
 
     class EntityRequest(
@@ -136,7 +227,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
-        //TODO rename this to something ship-agnostic
         val cockpit: Component = internalComponents[0],
         val teamFilter: TeamFilter,
         private val connectionMap: Map<Component, List<Component>>
@@ -234,7 +324,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    effectList.addAll(eff)
                                    entityList.addAll(ent)
                                }
-//                               println("\trebuilding branch")
                                //Generate a new connection map for this new entity
                                val newConnections = mutableMapOf<Component, List<Component>>()
                                val tempComponentMap = branch.associateWith { it -> Component(it.definition, teamFilter) }
@@ -243,7 +332,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
                                val newShip = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
-//                               newShip.translate(1.6,0.0)
                                newShip.translate(this.localCenter.product(-1.0))
                                newShip.rotate(this.transform.rotationAngle)
                                newShip.translate(this.worldCenter)
@@ -286,8 +374,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         .multiply(definition.localTransform.scale.toDouble())
                 }
                 val polygon = Polygon(*vertices)
-                polygon.translate(definition.localTransform.position.copy())
                 polygon.rotate(definition.localTransform.rotation.toRadians())
+                polygon.translate(definition.localTransform.position.copy())
                 val fixture = CustomFixture(polygon)
                 fixture.filter = filter
                 return fixture
@@ -401,81 +489,20 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
-    companion object{
-        private fun createTestShip(scale: Double, red: Float, green: Float, blue: Float, team: Team) : ShipDetails {
-            val body = mutableListOf<Component>()
-            val thrusters = mutableListOf<ThrusterComponent>()
-            val cockpit = Component(
-                    ComponentDefinition(
-                        Model.TRIANGLE,
-                        Transformation(Vector2(), scale),
-                        GraphicalData(red, green, blue, 0.0f)),
-                    TeamFilter(team, {it.UUID != team.UUID},
-                        category = CollisionCategory.CATEGORY_SHIP.bits,
-                        mask = CollisionCategory.CATEGORY_SHIP.bits))
-            val center1 = ThrusterComponent(
-                ComponentDefinition(
-                    Model.SQUARE1,
-                    Transformation(Vector2(-1.5, 0.0), scale),
-                    GraphicalData(red, green/2.0f, blue, 0.0f)),
-                TeamFilter(team, {it.UUID != team.UUID},
-                    category = CollisionCategory.CATEGORY_SHIP.bits,
-                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-                Rotation()
-            )
-            val center2 = ThrusterComponent(
-                ComponentDefinition(
-                    Model.SQUARE1,
-                    Transformation(Vector2(-2.5, 0.0), scale),
-                    GraphicalData(red, green/2.0f, blue, 0.0f)),
-                TeamFilter(team, {it.UUID != team.UUID},
-                    category = CollisionCategory.CATEGORY_SHIP.bits,
-                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-                Rotation()
-            )
-            val thruster = ThrusterComponent(
-                ComponentDefinition(
-                    Model.SQUARE1,
-                    Transformation(Vector2(-3.5, 0.0), scale),
-                    GraphicalData(red, green/2.0f, blue/2.0f, 0.0f)),
-                TeamFilter(team, {it.UUID != team.UUID},
-                    category = CollisionCategory.CATEGORY_SHIP.bits,
-                    mask = CollisionCategory.CATEGORY_SHIP.bits),
-                Rotation()
-            )
-            thrusters.add(thruster)
-            body.add(cockpit)
-            body.add(center1)
-            body.add(center2)
-            body.add(thruster)
-            val connectionMap = mapOf(cockpit to listOf(center1),
-                center1 to listOf(cockpit, center2),
-                center2 to listOf(center1, thruster),
-                thruster to listOf(center2))
-            return ShipDetails(body, thrusters, connectionMap, cockpit)
-        }
-    }
-
-    private open class ShipEntity(team: Team, val shipDetails: ShipDetails) : PhysicsEntity(
+    private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
-            team = team, teamPredicate = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
+            team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         ), shipDetails.connectionMap
     ) {
 
         val thrusterComponents = shipDetails.thrusters
-        init {
-//            if(thrusterComponents.isEmpty()){
-//                throw Exception("Attempted to create a ship with no thruster components! Not acceptable right now.")
-//            }
-        }
         override fun isMarkedForRemoval(): Boolean = false
 
         var flag = false
         override fun testFunc(){
             super.testFunc()
             if(!flag) {
-//                println("ShipEntity.testFunc - removing the middle bit")
                 componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
                     it.value?.kill()
                 }
@@ -501,7 +528,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         }
                     }
                     is ControlAction.TurnAction -> {
-                        applyTorque(action.torque)
+                        applyTorque(action.torque * this.getMass().mass)
                     }
                     is ControlAction.TestAction -> {
                         testFunc()
@@ -529,7 +556,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 it.pair.first.fixture.onCollide(it)
                 it.pair.second.fixture.onCollide(it)
             }
-
         }
 
         override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, CustomFixture>>?): WorldCollisionData<CustomFixture, PhysicsEntity> {
@@ -550,7 +576,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
     class TeamFilter(
         val team: Team = Team.TEAMLESS,
-        val teamPredicate: Predicate<Team> = Predicate { true },
+        val doesCollide: Predicate<Team> = Predicate { it != team  || it == Team.TEAMLESS || team == Team.TEAMLESS},
         val category: Long,
         val mask: Long
     ) : Filter {
@@ -559,7 +585,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             return if (filter is TeamFilter) {
                 //Check that the category/mask matches both directions
                 //AND if team logic matches
-                (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && teamPredicate.test(filter.team) && filter.teamPredicate.test(
+                (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && doesCollide.test(filter.team) && filter.doesCollide.test(
                     team
                 )
             } else {
