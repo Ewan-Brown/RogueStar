@@ -39,7 +39,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         println("Shapes found : ${shapes.size}")
     }
 
-    val components = mutableListOf<SimpleComponent>()
+    val components = mutableListOf<ComponentBlueprint>()
 
     private var selectedShape: Shape = shapes[0]
     var selectedColor: Color = Color.WHITE
@@ -141,7 +141,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             val x = round(vec.x / spacing) * spacing
             val y = round(vec.y / spacing) * spacing
             val position = Vector2(x, y) - selectedShape.placementOffset
-            components.add(SimpleComponent(selectedShape.ID, selectedColor,1.0, position, selectedQuarterRotations, selectedType))
+            components.add(ComponentBlueprint(selectedShape.ID, selectedColor,1.0, position, selectedQuarterRotations, selectedType))
         }
     }
 
@@ -152,7 +152,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     private fun exportToFile(){
 
         val connectionMap: Map<Int, MutableList<Int>> = components.associate{components.indexOf(it) to mutableListOf()}
-        for (component : SimpleComponent in components) {
+        for (component : ComponentBlueprint in components) {
             for(otherComponent in components){
                 if(component != otherComponent){
                     val sockets = transformShape(shapes[component.shape], component.position, component.rotation, component.scale).sockets
@@ -172,12 +172,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         println(connectionMap)
         val mapper = ObjectMapper()
         val module = SimpleModule()
-        module.addSerializer(SimpleComponent::class.java, ComponentSerializer())
+        module.addSerializer(ComponentBlueprint::class.java, ComponentSerializer())
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
         val shipName = JOptionPane.showInputDialog("give your ship a name!")
-        mapper.writeValue(File("ship_$shipName.json"), PhysicsLayer.Ship(components, connectionMap))
+        mapper.writeValue(File("ship_$shipName.json"), PhysicsLayer.ShipBlueprint(components, connectionMap))
         println("exported!")
     }
 
@@ -231,7 +231,7 @@ enum class Type{
     BODY
 }
 
-data class SimpleComponent(val shape: Int, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
+data class ComponentBlueprint(val shape: Int, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
 
 fun main() {
     val ui = ShipDesignerUI(30)
@@ -259,8 +259,8 @@ class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
     }
 }
 
-class ComponentSerializer : StdSerializer<SimpleComponent>(SimpleComponent::class.java){
-    override fun serialize(component: SimpleComponent, jgen: JsonGenerator, provider: SerializerProvider?) {
+class ComponentSerializer : StdSerializer<ComponentBlueprint>(ComponentBlueprint::class.java){
+    override fun serialize(component: ComponentBlueprint, jgen: JsonGenerator, provider: SerializerProvider?) {
         jgen.writeStartObject()
         jgen.writeNumberField("shape", component.shape)
         jgen.writeNumberField("red", component.color.red)
