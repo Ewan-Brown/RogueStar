@@ -3,10 +3,12 @@ Get working on making the splitting function
 TODO
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
 - Clean up the references to color values (introduce a Color class?)
-- Make broken parts fall off as effects particles
+- Add some fun effects
 - Figure out a way to regenerate parts in a realistic order (inner -> outer as opposed to FIFO queue)
-- Make the background effect stretch with camera speed
+- Clean up camera stuff, allow manual movement
+- Setup code to go from mouse click to world space
 - Make it fail gracefully when you hit the exit button!
+-
 
 - POC Client<->Server ???
 

@@ -1,9 +1,8 @@
 import org.dyn4j.geometry.Vector2
 import Graphics.Model
-import org.dyn4j.geometry.Rotation
 
 sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val initialAngle: Double){
-    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE1, initialPosition, initialAngle);
+    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>)
@@ -41,32 +40,6 @@ private abstract class EffectsEntity{
     abstract fun update(): Unit
     abstract fun isMarkedForRemoval(): Boolean
 }
-
-private class BasicEffectEntity(val model: Model, var x : Double, var y : Double, var rotation : Double,
-                             val graphicalData: GraphicalData, var dx : Double = 0.0, var dy : Double = 0.0, var drotation : Double = 0.0, var scale: Double = 1.0) : EffectsEntity() {
-
-    private var isDead = false
-
-    override fun getComponents(): List<RenderableComponent>{
-
-        val entityPos = Vector2(x, y)
-        return listOf(RenderableComponent(
-            model,
-            Transformation(entityPos, scale, rotation),
-            graphicalData
-        ))
-
-    }
-    override fun update() {
-        x += dx
-        y += dy
-        rotation += drotation
-    }
-    override fun isMarkedForRemoval(): Boolean{
-        return isDead
-    }
-}
-
 
 private class ExhaustEntity(val model: Model, val position: Vector2, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
     : EffectsEntity() {
