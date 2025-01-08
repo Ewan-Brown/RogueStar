@@ -29,11 +29,13 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
-    // Hacky to comply with Jackson serialization. Needed an empty constructor or a custom codec...
-    public class Ship(){
-        var components: List<SimpleComponent> = listOf()
+    /**
+     * Output of ShipDesigner, serialized to file and consumed by loadShips().
+     */
+    public class ShipBlueprint(){
+        var components: List<ComponentBlueprint> = listOf()
         var connections: Map<Int, List<Int>> = mapOf()
-        constructor(comp: List<SimpleComponent>, conn: Map<Int, List<Int>>) : this(){
+        constructor(comp: List<ComponentBlueprint>, conn: Map<Int, List<Int>>) : this(){
             components = comp
             connections = conn
         }
@@ -45,17 +47,17 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
-        module.addDeserializer(SimpleComponent::class.java, ComponentDeserializer())
+        module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
         mapper.registerModules(module)
         println("shipDirectory : " + shipDirectory.toAbsolutePath().toString())
         val shipFiles = Files.walk(shipDirectory).filter{it.fileName.toString().startsWith("ship_") and it.fileName.toString().endsWith(".json")}.toList()
         println("ship files found : ${shipFiles.size}")
         for(shipFile in shipFiles){
-            val ship = mapper.readValue(shipFile.toFile(), Ship::class.java)
-            val components = ship.components
-            val connections = ship.connections
+            val shipBlueprint = mapper.readValue(shipFile.toFile(), ShipBlueprint::class.java)
+            val components = shipBlueprint.components
+            val connections = shipBlueprint.connections
             val shipFactory: () -> ShipEntity = {
-                val componentMapping: Map<SimpleComponent, Component> = components.associateWith {
+                val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
                     val model = models[it.shape]
                     val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
                     println("transform" + transform.position)
@@ -90,9 +92,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    class ComponentDeserializer() : StdDeserializer<SimpleComponent>(SimpleComponent::class.java){
+    class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
 
-        override fun deserialize(parser: JsonParser, p1: DeserializationContext): SimpleComponent {
+        override fun deserialize(parser: JsonParser, p1: DeserializationContext): ComponentBlueprint {
             val node: JsonNode = parser.codec.readTree(parser)
             val shape = node.get("shape").asInt()
             val red = node.get("red").asInt()
@@ -106,7 +108,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
             val color = Color(red, green, blue)
             val position = Vector2(x, y)
-            return SimpleComponent(shape, color, scale, position, rotation, Type.valueOf(type))
+            return ComponentBlueprint(shape, color, scale, position, rotation, Type.valueOf(type))
         }
     }
 
