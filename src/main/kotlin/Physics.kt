@@ -44,13 +44,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>) {
 //        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
 //        object MISSILE : CoreEntityBlueprint<PhysicsEntity>("missile", PhysicsEntity::class.java);
-        object DEFAULT_SHIP : CoreEntityBlueprint<PhysicsEntity>("ship_default", PhysicsEntity::class.java);
+        data object DEFAULT_SHIP : CoreEntityBlueprint<PhysicsEntity>("ship_default", PhysicsEntity::class.java);
     }
 
     private val entityFactories = mutableListOf<() -> PhysicsEntity>()
-//    private val coreFactories = mapOf<CoreEntityBlueprint, () -> PhysicsEntity>()
-
-    private class ShipFactory(private val factories : Map<Class<PhysicsEntity>, () -> PhysicsEntity>){
+    private class ShipFactory(private val factories : Map<Class<out PhysicsEntity>, () -> PhysicsEntity>){
 
         init{
             //Validate
@@ -61,10 +59,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             }
         }
 
-        fun <T : PhysicsEntity> buildShip(blueprint: CoreEntityBlueprint<T>) : Unit{
-            factories.get(blueprint).invoke()
-
-//            return
+        //The entry-value generic constraint on this map ensures that this cast is safe
+        @Suppress("UNCHECKED_CAST")
+        fun <T : PhysicsEntity> buildShip(blueprint: CoreEntityBlueprint<T>) : T{
+            return factories[blueprint.clazz]?.invoke() as T
         }
     }
 
@@ -75,11 +73,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
         mapper.registerModules(module)
         println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
-        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json")}.toList()
+        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and it.fileName.toString().startsWith("ship_")}.toList()
         println("total entity files found : ${entityFiles.size}")
         //Identify that all core entities are present
 
-        coreEntityMap = CoreEntityBlueprint.entries.associate { it to null }
+//        coreEntityMap = CoreEntityBlueprint.entries.associate { it to null }
+        val a = CoreEntityBlueprint::class.nestedClasses.forEach{println(it.simpleName)}
 
         for(entityFile in entityFiles){
             val entityBlueprint = mapper.readValue(entityFile.toFile(), EntityBlueprint::class.java)
