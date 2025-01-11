@@ -48,7 +48,7 @@ fun main() {
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
 
-    physicsLayer.loadShips(entityModels, Path(""))
+    physicsLayer.loadEntities(entityModels, Path(""))
 
     val gui = Graphics(models)
     val bitSet = BitSet(256)
@@ -69,7 +69,7 @@ fun main() {
     }
 
     val testTeam = Team("test");
-    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
+    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_ENTITY, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     controllerLayer.addControllerEntry(PlayerController(bitSet), playerID)
 //    for (i in 0..10){
 //        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))

@@ -177,7 +177,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
         val shipName = JOptionPane.showInputDialog("give your ship a name!")
-        mapper.writeValue(File("ship_$shipName.json"), PhysicsLayer.ShipBlueprint(components, connectionMap))
+        mapper.writeValue(File("ship_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
         println("exported!")
     }
 

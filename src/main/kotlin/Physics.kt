@@ -30,9 +30,9 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     /**
-     * Output of ShipDesigner, serialized to file and consumed by loadShips().
+     * Output of EntityDesigner, serialized to file and consumed by loadEntities().
      */
-    public class ShipBlueprint(){
+    public class EntityBlueprint(){
         var components: List<ComponentBlueprint> = listOf()
         var connections: Map<Int, List<Int>> = mapOf()
         constructor(comp: List<ComponentBlueprint>, conn: Map<Int, List<Int>>) : this(){
@@ -41,22 +41,51 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private val shipFactories = mutableListOf<() -> ShipEntity>()
+    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>) {
+//        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
+//        object MISSILE : CoreEntityBlueprint<PhysicsEntity>("missile", PhysicsEntity::class.java);
+        object DEFAULT_SHIP : CoreEntityBlueprint<PhysicsEntity>("ship_default", PhysicsEntity::class.java);
+    }
 
-    public fun loadShips(models: List<Model>, shipDirectory: Path){
+    private val entityFactories = mutableListOf<() -> PhysicsEntity>()
+//    private val coreFactories = mapOf<CoreEntityBlueprint, () -> PhysicsEntity>()
+
+    private class ShipFactory(private val factories : Map<Class<PhysicsEntity>, () -> PhysicsEntity>){
+
+        init{
+            //Validate
+            factories.forEach{
+                if(it.key.javaClass != it.value.invoke().javaClass){
+                    throw IllegalArgumentException("attempted to create a type -> factory pairing where the key type didn't match the factory's output type")
+                }
+            }
+        }
+
+        fun <T : PhysicsEntity> buildShip(blueprint: CoreEntityBlueprint<T>) : Unit{
+            factories.get(blueprint).invoke()
+
+//            return
+        }
+    }
+
+    public fun loadEntities(models: List<Model>, entityDirectory: Path){
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
         mapper.registerModules(module)
-        println("shipDirectory : " + shipDirectory.toAbsolutePath().toString())
-        val shipFiles = Files.walk(shipDirectory).filter{it.fileName.toString().startsWith("ship_") and it.fileName.toString().endsWith(".json")}.toList()
-        println("ship files found : ${shipFiles.size}")
-        for(shipFile in shipFiles){
-            val shipBlueprint = mapper.readValue(shipFile.toFile(), ShipBlueprint::class.java)
-            val components = shipBlueprint.components
-            val connections = shipBlueprint.connections
-            val shipFactory: () -> ShipEntity = {
+        println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
+        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json")}.toList()
+        println("total entity files found : ${entityFiles.size}")
+        //Identify that all core entities are present
+
+        coreEntityMap = CoreEntityBlueprint.entries.associate { it to null }
+
+        for(entityFile in entityFiles){
+            val entityBlueprint = mapper.readValue(entityFile.toFile(), EntityBlueprint::class.java)
+            val components = entityBlueprint.components
+            val connections = entityBlueprint.connections
+            val entityFactory: () -> PhysicsEntity = {
                 val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
                     val model = models[it.shape]
                     val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
@@ -88,7 +117,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, cockpit)
                 ShipEntity(Team.TEAMLESS, s)
             }
-            shipFactories.add(shipFactory)
+            entityFactories.add(entityFactory)
         }
     }
 
@@ -178,10 +207,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
     fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
-            RequestType.RANDOM_SHIP ->{
-//                val details = createTestShip(request.scale, request.r, request.g, request.b, request.team);
-//                ShipEntity(request.team, details)
-                addEntity(shipFactories.random().invoke(), request.angle, request.position)
+            RequestType.RANDOM_ENTITY ->{
+                addEntity(entityFactories.random().invoke(), request.angle, request.position)
             }
         }
 //        addEntity(entity, request.angle, request.position)
@@ -198,7 +225,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
 
     public enum class RequestType {
-        RANDOM_SHIP
+        RANDOM_ENTITY
     }
 
     class EntityRequest(
@@ -333,11 +360,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
-                               val newShip = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
-                               newShip.translate(this.localCenter.product(-1.0))
-                               newShip.rotate(this.transform.rotationAngle)
-                               newShip.translate(this.worldCenter)
-                               entityList.add(newShip)
+                               val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
+                               newEntity.translate(this.localCenter.product(-1.0))
+                               newEntity.rotate(this.transform.rotationAngle)
+                               newEntity.translate(this.worldCenter)
+                               entityList.add(newEntity)
                            }
                        }
                    }
