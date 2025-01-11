@@ -18,7 +18,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     var cameraPos: Vector2 = Vector2()
     var cameraVelocity: Vector2 = Vector2()
-    var cameraScale: Float = 0.5f
+    var cameraScale: Float = 1.0f
 
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
