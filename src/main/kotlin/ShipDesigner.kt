@@ -203,7 +203,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             }
             KeyEvent.VK_X -> {
                 selectedColor = Color.CYAN
-                selectedType = Type.COCKPIT
+                selectedType = Type.ROOT
             }
             KeyEvent.VK_C -> {
                 selectedColor = Color.YELLOW
@@ -226,7 +226,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
 enum class Type{
     THRUSTER,
-    COCKPIT,
+    ROOT,
     GUN,
     BODY
 }

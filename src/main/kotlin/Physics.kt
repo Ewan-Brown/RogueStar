@@ -18,7 +18,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
 import java.util.function.Predicate
-import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.math.PI
 
@@ -42,9 +41,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     }
 
     private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>) {
-//        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
+        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
 //        object MISSILE : CoreEntityBlueprint<PhysicsEntity>("missile", PhysicsEntity::class.java);
-        data object DEFAULT_SHIP : CoreEntityBlueprint<PhysicsEntity>("ship_default", PhysicsEntity::class.java);
+        data object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", PhysicsEntity::class.java);
     }
 
     private val entityFactories = mutableListOf<() -> PhysicsEntity>()
@@ -91,7 +90,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     println("transform" + transform.position)
                     val graphicalData = when (it.type) {
                         Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
-                        Type.COCKPIT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                        Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
                         Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
                         Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
                     }
@@ -109,11 +108,11 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
 
                 val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
-                val cockpit = componentMapping.filter { it.key.type == Type.COCKPIT }.map { it.value }.first()
+                val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
                 val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
                     getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
                 }
-                val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, cockpit)
+                val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
                 ShipEntity(Team.TEAMLESS, s)
             }
             entityFactories.add(entityFactory)
@@ -255,7 +254,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
-        val cockpit: Component = internalComponents[0],
+        val root: Component = internalComponents[0],
         val teamFilter: TeamFilter,
         private val connectionMap: Map<Component, List<Component>>
     ) : AbstractPhysicsBody<CustomFixture>() {
@@ -341,7 +340,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 //                       println("completed exploring all branches")
 //                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
                        for (branch in branches) {
-                           if (branch.contains(cockpit)) {
+                           if (branch.contains(root)) {
                                //This branch will remain a part of this entity - all other branches will be fragmented off!
                            } else {
 //                               println("inspecting branch with ${branch.size} nodes")
