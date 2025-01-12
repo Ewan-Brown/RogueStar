@@ -1,4 +1,5 @@
 import Graphics.Model
+import PhysicsLayer.PhysicsEntity
 import PhysicsLayer.PhysicsEntity.*
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -14,6 +15,7 @@ import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
 import java.awt.Color
+import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
@@ -40,52 +42,24 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>) {
-        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
-//        object MISSILE : CoreEntityBlueprint<PhysicsEntity>("missile", PhysicsEntity::class.java);
-        data object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java);
-    }
+    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP)
 
-    private val entityFactories = mutableListOf<() -> PhysicsEntity>()
-    private class ShipFactory(private val factories : Map<Class<out PhysicsEntity>, () -> PhysicsEntity>){
+    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+//        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
+        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf<EntityBlueprint>());
 
-        init{
-            //Validate
-            factories.forEach{
-                if(it.key.javaClass != it.value.invoke().javaClass){
-                    throw IllegalArgumentException("attempted to create a type -> factory pairing where the key type didn't match the factory's output type")
-                }
-            }
+        fun generate(models: List<Model>) : T{
+            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources possible?
         }
 
-        //The entry-value generic constraint on this map ensures that this cast is safe
-        @Suppress("UNCHECKED_CAST")
-        fun <T : PhysicsEntity> buildShip(blueprint: CoreEntityBlueprint<T>) : T{
-            return factories[blueprint.clazz]?.invoke() as T
-        }
-    }
-
-    public fun loadEntities(models: List<Model>, entityDirectory: Path){
-        val mapper = ObjectMapper()
-        val module = SimpleModule()
-        module.addDeserializer(Vector2::class.java, VectorDeserializer())
-        module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
-        mapper.registerModules(module)
-        println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
-        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and it.fileName.toString().startsWith("ship_")}.toList()
-        println("total entity files found : ${entityFiles.size}")
-        //Identify that all core entities are present
-        val a = CoreEntityBlueprint::class.nestedClasses.forEach{println(it.simpleName)}
-
-        for(entityFile in entityFiles){
-            val entityBlueprint = mapper.readValue(entityFile.toFile(), EntityBlueprint::class.java)
-            val components = entityBlueprint.components
-            val connections = entityBlueprint.connections
-            val entityFactory: () -> PhysicsEntity = {
+        companion object{
+            val simpleLoader : (List<Model>,EntityBlueprint) -> ShipEntity = {
+                    models: List<Model>, entityBlueprint: EntityBlueprint ->
+                val components = entityBlueprint.components
+                val connections = entityBlueprint.connections
                 val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
                     val model = models[it.shape]
                     val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
-                    println("transform" + transform.position)
                     val graphicalData = when (it.type) {
                         Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
                         Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
@@ -112,9 +86,46 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 }
                 val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
                 ShipEntity(Team.TEAMLESS, s)
+
             }
-            entityFactories.add(entityFactory)
         }
+    }
+
+    //Just a list of the ship factories available, useful for testing.
+    private val shipFactories = mutableListOf<() -> PhysicsEntity>()
+
+    public fun loadEntities(models: List<Model>, entityDirectory: Path){
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addDeserializer(Vector2::class.java, VectorDeserializer())
+        module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
+        mapper.registerModules(module)
+
+        println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
+        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and
+                it.fileName.toString().startsWith("entity_")}.toList()
+        println("total entity files found : ${entityFiles.size}")
+
+        //Identify that all core entities are present, and create factories for each of them, then validate the data fits the factory.
+        for (blueprint in listOfBlueprints) {
+            //Find matching resource file
+            val matchingFiles = entityFiles.filter { it.fileName.toString().removePrefix("entity_").startsWith(blueprint.internalName)}
+                .toList()
+            if(matchingFiles.isEmpty()) throw FileNotFoundException("Couldn't find a file that matched ${blueprint.internalName}")
+
+            //TODO support having multiple to choose from for same resource
+            println("Found ${matchingFiles.size} files matching ${blueprint.internalName}, will use the first one : ${matchingFiles.first().fileName.toString()}")
+
+            val blueprintData = mapper.readValue(matchingFiles.first().toFile(), EntityBlueprint::class.java)
+            blueprint.blueprintData.add(blueprintData)
+
+            //Test generation of this entity
+            blueprint.generate(models)
+            blueprint.generate(models)
+            blueprint.generate(models)
+        }
+
+        shipFactories.add { CoreEntityBlueprint.DEFAULT_SHIP.generate(models) }
     }
 
     class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
@@ -203,13 +214,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
      */
     fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
-            RequestType.RANDOM_ENTITY ->{
-                addEntity(entityFactories.random().invoke(), request.angle, request.position)
+            RequestType.RANDOM_SHIP ->{
+                addEntity(shipFactories.random().invoke(), request.angle, request.position)
             }
+            RequestType.BULLET -> TODO()
         }
-//        addEntity(entity, request.angle, request.position)
         return entity.uuid
-//        return 0
     }
 
     /**
@@ -221,7 +231,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
 
     public enum class RequestType {
-        RANDOM_ENTITY
+        RANDOM_SHIP,
+        BULLET,
     }
 
     class EntityRequest(
@@ -540,6 +551,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         override fun processControlActions(actions: List<ControlAction>): updateOutput {
             val effectsList = mutableListOf<EffectsRequest>()
+            println("actions : ${actions.size}")
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
