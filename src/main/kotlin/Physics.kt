@@ -43,7 +43,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>) {
         object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
 //        object MISSILE : CoreEntityBlueprint<PhysicsEntity>("missile", PhysicsEntity::class.java);
-        data object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", PhysicsEntity::class.java);
+        data object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java);
     }
 
     private val entityFactories = mutableListOf<() -> PhysicsEntity>()
@@ -75,8 +75,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and it.fileName.toString().startsWith("ship_")}.toList()
         println("total entity files found : ${entityFiles.size}")
         //Identify that all core entities are present
-
-//        coreEntityMap = CoreEntityBlueprint.entries.associate { it to null }
         val a = CoreEntityBlueprint::class.nestedClasses.forEach{println(it.simpleName)}
 
         for(entityFile in entityFiles){
@@ -135,7 +133,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
             val color = Color(red, green, blue)
             val position = Vector2(x, y)
-            return ComponentBlueprint(shape, color, scale, position, rotation, Type.valueOf(type))
+            return ComponentBlueprint(shape, scale, position, rotation, Type.valueOf(type))
         }
     }
 

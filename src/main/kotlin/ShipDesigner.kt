@@ -53,11 +53,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         g.fillRect(0, 0, width, height)
 
         //Draw background grid
+
         paintGrid(g)
 
         //Draw existing shapes
         for (component in components){
-            g.color = component.color
+            g.color = component.type.c
             val transformedShape = transformShape(shapes.first { it.ID == component.shape }, component.position, component.rotation, component.scale)
             paintPolygon(g, transformedShape.points, true)
             g.color = Color.RED
@@ -141,7 +142,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             val x = round(vec.x / spacing) * spacing
             val y = round(vec.y / spacing) * spacing
             val position = Vector2(x, y) - selectedShape.placementOffset
-            components.add(ComponentBlueprint(selectedShape.ID, selectedColor,1.0, position, selectedQuarterRotations, selectedType))
+            components.add(ComponentBlueprint(selectedShape.ID,1.0, position, selectedQuarterRotations, selectedType))
         }
     }
 
@@ -224,14 +225,14 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     }
 }
 
-enum class Type{
-    THRUSTER,
-    ROOT,
-    GUN,
-    BODY
+enum class Type(val c : Color){
+    THRUSTER(Color.ORANGE),
+    ROOT(Color.CYAN),
+    GUN(Color.YELLOW),
+    BODY(Color.BLUE);
 }
 
-data class ComponentBlueprint(val shape: Int, var color: Color, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
+data class ComponentBlueprint(val shape: Int, var scale: Double, var position: Vector2, var rotation: Int, var type: Type = Type.BODY)
 
 fun main() {
     val ui = ShipDesignerUI(30)
@@ -263,9 +264,6 @@ class ComponentSerializer : StdSerializer<ComponentBlueprint>(ComponentBlueprint
     override fun serialize(component: ComponentBlueprint, jgen: JsonGenerator, provider: SerializerProvider?) {
         jgen.writeStartObject()
         jgen.writeNumberField("shape", component.shape)
-        jgen.writeNumberField("red", component.color.red)
-        jgen.writeNumberField("green", component.color.green)
-        jgen.writeNumberField("blue", component.color.blue)
         jgen.writeNumberField("scale", component.scale)
         jgen.writeObjectField("position", component.position)
         jgen.writeNumberField("rotation", component.rotation)
