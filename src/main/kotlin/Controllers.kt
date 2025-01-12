@@ -191,6 +191,7 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
         val thrust = direction.product(100.0)
         val rotate = r*5 - entityData.angularVelocity
 
+
         actions.add(ControlAction.TurnAction(rotate))
         actions.add(ControlAction.ThrustAction(thrust))
         return actions
