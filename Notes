@@ -1,4 +1,4 @@
-Get working on making the splitting function
+Working on writing reusable code for loading ships
 
 TODO
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
