@@ -551,7 +551,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         override fun processControlActions(actions: List<ControlAction>): updateOutput {
             val effectsList = mutableListOf<EffectsRequest>()
-            println("actions : ${actions.size}")
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
