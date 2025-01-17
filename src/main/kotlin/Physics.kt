@@ -190,7 +190,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
-            val (eff, ent) = body.update(controlActions.getOrElse(i) { emptyList() })
+            val (eff, ent) = body.update(controlActions.getOrElse(body.uuid) { emptyList() })
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
                 i--
