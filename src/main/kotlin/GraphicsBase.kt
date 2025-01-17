@@ -1,4 +1,5 @@
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.MouseListener
 import com.jogamp.newt.event.WindowAdapter
 import com.jogamp.newt.event.WindowEvent
 import com.jogamp.newt.opengl.GLWindow
@@ -9,7 +10,7 @@ import com.jogamp.opengl.util.glsl.ShaderProgram
 import kotlin.system.exitProcess
 
 abstract class GraphicsBase : GLEventListener {
-    fun setup(keyListener: KeyListener?) {
+    fun setup(keyListener: KeyListener, mouseListener: MouseListener) {
         val glProfile = GLProfile.get(GLProfile.GL3)
         val glCapabilities = GLCapabilities(glProfile)
 
@@ -23,6 +24,7 @@ abstract class GraphicsBase : GLEventListener {
 
         window.addGLEventListener(this)
         window.addKeyListener(keyListener)
+        window.addMouseListener(mouseListener)
 
         //        window.setAut
         val animator = Animator(window)

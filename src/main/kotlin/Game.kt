@@ -3,6 +3,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.MouseEvent
+import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.GL
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
@@ -53,16 +55,17 @@ fun main() {
     val gui = Graphics(models)
     val bitSet = BitSet(256)
 
+    //We should decouple this from clear server stuff a little better.
     val keyListener : KeyListener = object : KeyListener {
 
         override fun keyPressed(e: KeyEvent?) {
-            if(!e!!.isAutoRepeat){
+            if (!e!!.isAutoRepeat) {
                 bitSet.set(e.keyCode.toInt(), true)
             }
         }
 
         override fun keyReleased(e: KeyEvent?) {
-            if(!e!!.isAutoRepeat){
+            if (!e!!.isAutoRepeat) {
                 bitSet.set(e.keyCode.toInt(), false)
             }
         }

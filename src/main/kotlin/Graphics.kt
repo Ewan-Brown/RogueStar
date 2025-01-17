@@ -1,11 +1,22 @@
+import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.MouseEvent
+import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
+import org.dyn4j.geometry.Matrix33
 import org.dyn4j.geometry.Vector2
+import org.dyn4j.geometry.Vector3
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
+import java.util.Vector
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
+
+    fun setup(keyListener: KeyListener) {
+        super.setup(keyListener, mouseListener)
+    }
+
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
@@ -241,6 +252,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     }
 
+    fun calculateViewMat() : FloatArray {
+        val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
+        val translate = FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
+        println(cameraPos)
+        val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
+        return FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
+    }
+
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
@@ -250,11 +269,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
 
-            val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
-            val translate =
-                FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
-            val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
-            val viewMat = FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
+            val viewMat = calculateViewMat()
             for (i in 0..15) {
                 matBuffer.put(i, viewMat[i])
             }
@@ -300,6 +315,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         time += 1f
     }
 
+    private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
+        val viewMat4x4Flattened = calculateViewMat()
+        val viewMat3x3Flattened = viewMat4x4Flattened.slice(0..2) + viewMat4x4Flattened.slice(4..6) + viewMat4x4Flattened.slice(8..10)
+        val viewMat3x3 = Matrix33(viewMat3x3Flattened.map{it.toDouble()}.toList().toDoubleArray())
+        val vec3 = viewMat3x3.inverse.multiply(Vector3(screenPos.x, screenPos.y, 0.0))
+        return Vector2(vec3.x, vec3.y)
+    }
+
     override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
         val gl = drawable.gl.gL3
 
@@ -337,4 +360,24 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         COLOR(4, 3, {listOf(it.second.red, it.second.green, it.second.blue)}, Buffer.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.second.health)}, Buffer.INSTANCED_HEALTHS)
     }
+
+
+    val mouseListener: MouseListener = object : MouseListener {
+        override fun mouseClicked(e: MouseEvent?) {}
+        override fun mouseEntered(e: MouseEvent?) {}
+        override fun mouseExited(e: MouseEvent?) {}
+        override fun mouseReleased(e: MouseEvent?) {}
+        override fun mouseMoved(e: MouseEvent?) {}
+        override fun mouseDragged(e: MouseEvent?) {}
+        override fun mouseWheelMoved(e: MouseEvent?) {}
+        override fun mousePressed(e: MouseEvent) {
+            println("Mouse pressed at : ${e.x}, ${e.y}")
+            val mousePos = Vector2(e.x.toDouble(), e.y.toDouble())
+//            println("Calibrated mouse pos is : $mousePos")
+            val gamePos = transformScreenPosToGamePos(mousePos)
+            println("Game position : $gamePos")
+        }
+
+    }
+
 }
