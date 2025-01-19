@@ -34,10 +34,6 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
             val thrust : Vector2 = calcThrustToGetTo(targetPos)
             val torque : Double = calcTorqueToTurnTo(targetOrientation, data.angle, data.angularVelocity)
 
-//        physicsLayer.applyForce(data.uuid, thrust)
-//        physicsLayer.applyTorque(data.uuid, torque)
-//        emitThrustParticles(data, thrust)
-
             return Pair(thrust, torque)
         }
     }
@@ -74,7 +70,6 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
         }
 
         override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
-//            val centerGenerator: () -> Vector2 = data.
             val controlMap = mutableMapOf<Int, List<ControlAction>>()
             var bubbleVelocity: Vector2 = Vector2()
             if(bubbleAnchorMap.isEmpty()){

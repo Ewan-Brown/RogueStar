@@ -10,6 +10,11 @@ import com.jogamp.opengl.util.glsl.ShaderProgram
 import kotlin.system.exitProcess
 
 abstract class GraphicsBase : GLEventListener {
+
+
+    val width: Int = 600
+    val height: Int = 600
+
     fun setup(keyListener: KeyListener, mouseListener: MouseListener) {
         val glProfile = GLProfile.get(GLProfile.GL3)
         val glCapabilities = GLCapabilities(glProfile)
@@ -17,7 +22,7 @@ abstract class GraphicsBase : GLEventListener {
         val window = GLWindow.create(glCapabilities)
 
         window.title = "Rogue Star"
-        window.setSize(600,600)
+        window.setSize(width,height)
 
 
         window.isVisible = true
