@@ -252,10 +252,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     }
 
-    fun calculateViewMat() : FloatArray {
+    private fun calculateViewMat() : FloatArray {
         val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
         val translate = FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
-        println(cameraPos)
         val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
         return FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
     }
@@ -316,11 +315,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
-        val viewMat4x4Flattened = calculateViewMat()
-        val viewMat3x3Flattened = viewMat4x4Flattened.slice(0..2) + viewMat4x4Flattened.slice(4..6) + viewMat4x4Flattened.slice(8..10)
-        val viewMat3x3 = Matrix33(viewMat3x3Flattened.map{it.toDouble()}.toList().toDoubleArray())
-        val vec3 = viewMat3x3.inverse.multiply(Vector3(screenPos.x, screenPos.y, 0.0))
-        return Vector2(vec3.x, vec3.y)
+        val adjustedScreenPos = Vector2((screenPos.x / width.toDouble()) * 2 - 1, -(screenPos.y / height.toDouble()) * 2 + 1)
+        println("adjustedScreenPos = $adjustedScreenPos")
+        val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
+        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.x.toFloat(), adjustedScreenPos.y.toFloat(), 0.0f, 1.0f), FloatArray(16))
+        return Vector2(vec4[0].toDouble(), vec4[1].toDouble())
     }
 
     override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
@@ -371,7 +370,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         override fun mouseDragged(e: MouseEvent?) {}
         override fun mouseWheelMoved(e: MouseEvent?) {}
         override fun mousePressed(e: MouseEvent) {
-            println("Mouse pressed at : ${e.x}, ${e.y}")
+//            println("Mouse pressed at : ${e.x}, ${e.y}")
             val mousePos = Vector2(e.x.toDouble(), e.y.toDouble())
 //            println("Calibrated mouse pos is : $mousePos")
             val gamePos = transformScreenPosToGamePos(mousePos)
