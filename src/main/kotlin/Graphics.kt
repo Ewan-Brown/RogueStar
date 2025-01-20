@@ -316,7 +316,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
     private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
         val adjustedScreenPos = Vector2((screenPos.x / width.toDouble()) * 2 - 1, -(screenPos.y / height.toDouble()) * 2 + 1)
-        println("adjustedScreenPos = $adjustedScreenPos")
         val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
         val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.x.toFloat(), adjustedScreenPos.y.toFloat(), 0.0f, 1.0f), FloatArray(16))
         return Vector2(vec4[0].toDouble(), vec4[1].toDouble())
@@ -370,11 +369,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         override fun mouseDragged(e: MouseEvent?) {}
         override fun mouseWheelMoved(e: MouseEvent?) {}
         override fun mousePressed(e: MouseEvent) {
-//            println("Mouse pressed at : ${e.x}, ${e.y}")
             val mousePos = Vector2(e.x.toDouble(), e.y.toDouble())
-//            println("Calibrated mouse pos is : $mousePos")
             val gamePos = transformScreenPosToGamePos(mousePos)
-            println("Game position : $gamePos")
+            println("Mouse pressed at : $mousePos")
         }
 
     }
