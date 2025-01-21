@@ -54,7 +54,6 @@ abstract class GraphicsBase : GLEventListener {
         //TODO Make the 'program' class extendable it's being overused and overburdened!
         val name: Int
         val time: Int
-
         init {
             val vertShader = ShaderCode.create(
                 gl, GL2ES2.GL_VERTEX_SHADER, this.javaClass, root, null, vertex,
