@@ -149,7 +149,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
+//        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
         checkError(gl, "initBuffers")
     }
@@ -279,8 +279,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             gl.glBindVertexArray(VAOs[0])
 
             gl.glUseProgram(backgroundProgram!!.name)
-            gl.glUniform1f(backgroundProgram!!.time, time)
             gl.glUniformMatrix4fv(backgroundProgram!!.viewMat, 1, false, matBuffer)
+//            gl.glUniform1f(backgroundProgram!!.time, time)
+//            gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.x.toFloat(), cameraVelocity.y.toFloat())
+            gl.glUniform1f(backgroundProgram!!.time, 0.0f)
+            gl.glUniform2f(backgroundProgram!!.velocity, 0.0f, 0.0f)
 
             gl.glDrawArrays(
                 Model.BACKPLATE.drawMode,
@@ -291,6 +294,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
             gl.glUseProgram(0)
             gl.glUseProgram(entityProgram!!.name)
             gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.x.toFloat(), cameraVelocity.y.toFloat())
             gl.glUniform1f(entityProgram!!.time, time)
 
             for ((model, data) in modelData) {
@@ -342,7 +346,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     inner class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : WorldProgram(gl,root,vertex, fragment){}
 
     open inner class WorldProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){
-        val viewMat: Int = registerField(gl, "view")
+        val velocity: Int = registerField(gl, "velocity")
+        val viewMat: Int = registerField(gl, "viewZ")
     }
 
     inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}

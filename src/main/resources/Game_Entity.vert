@@ -10,7 +10,7 @@ layout (location = 5) in float instanced_health;
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
 
-uniform mat4 view;
+uniform mat4 viewZ;
 out vec3 interpolatedColor;
 out float health_out;
 
@@ -25,7 +25,7 @@ void main() {
     vec3 pos = instanced_pos;
     vec3 scaledPosition = position * instanced_scale;
 
-    gl_Position = view * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
+    gl_Position = viewZ * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
     interpolatedColor = instanced_color;
     health_out = instanced_health;
     xyVarying = scaledPosition.xy;

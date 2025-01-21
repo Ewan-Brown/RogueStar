@@ -1,8 +1,8 @@
 #version 330
 
 uniform float time;
-uniform mat4 view;
-//uniform vec2 speed;
+uniform mat4 viewZ;
+uniform vec2 speed;
 
 in vec2 xyVarying;
 layout (location = 0) out vec4 outputColor;
@@ -49,7 +49,7 @@ vec3 voronoi( in vec2 x )
 
 void main() {
     vec2 localPos = xyVarying;
-    vec4 globalPos = inverse(view) * vec4(localPos,0,1);
+    vec4 globalPos = inverse(viewZ) * vec4(localPos,0,1);
     vec2 scaledPos = globalPos.xy/100.0;
     vec3 color = voronoi( 8.0*scaledPos );
 
