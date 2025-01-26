@@ -47,7 +47,9 @@ abstract class GraphicsBase : GLEventListener {
         protected fun registerField(gl: GL3, fieldName: String) : Int {
             val fieldAddress = gl.glGetUniformLocation(name, fieldName)
             if (fieldAddress == -1) {
-                System.err.println("uniform '{$fieldName}' not found for program : " + javaClass)
+                println("did NOT find uniform '{$fieldName}' for program : $javaClass - check that it's being used in shader!")
+            }else{
+                println("did find '{$fieldName}' in program : $javaClass, $fieldAddress")
             }
             return fieldAddress
         }
@@ -92,4 +94,15 @@ abstract class GraphicsBase : GLEventListener {
             throw Error("OpenGL Error($errorString): $location")
         }
     }
+
+    // UTILITY. REMEMBER THAT SHADER COMPILATION REMOVES UNUSED VARIABLES, MEANING LINKER WONT FIND THEM
+//    val length = GLBuffers.newDirectIntBuffer(1)
+//    val size = GLBuffers.newDirectIntBuffer(1)
+//    val type = GLBuffers.newDirectIntBuffer(1)
+//    val name = GLBuffers.newDirectByteBuffer(6)
+//    gl.glGetActiveUniform(backgroundProgram!!.name, index, 6,  length, size, type, name)
+//    println("length = ${length.get()}")
+//    println("size = ${size.get()}")
+//    println("type = ${type.get()}")
+//    println("name = ${name.get().toInt().toChar()} .. repeat for expected # of chars")
 }
