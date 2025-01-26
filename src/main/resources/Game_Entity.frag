@@ -8,6 +8,9 @@ layout (location = 0) out vec4 outputColor;
 
 in float health_out;
 in vec2 xyVarying;
+uniform float time;
+uniform mat4 viewZ;
+uniform vec2 velocity;
 
 //Stolen 2D noise function
 float random(vec2 st)
