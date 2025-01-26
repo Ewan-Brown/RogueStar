@@ -10,7 +10,9 @@ layout (location = 5) in float instanced_health;
 //x,y,rotation,scale (z is baked into model)
 //r,g,b,a
 
+uniform float time;
 uniform mat4 viewZ;
+uniform vec2 velocity;
 out vec3 interpolatedColor;
 out float health_out;
 

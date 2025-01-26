@@ -1,8 +1,8 @@
 #version 330
 
-uniform float time;
 uniform mat4 viewZ;
-uniform vec2 speed;
+uniform vec2 velocity;
+uniform float time;
 
 in vec2 xyVarying;
 layout (location = 0) out vec4 outputColor;
