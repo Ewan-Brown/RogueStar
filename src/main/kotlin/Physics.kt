@@ -28,8 +28,10 @@ private data class ComponentDefinition(val model : Model, val localTransform: Tr
 data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
-class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
-
+class PhysicsLayer(modelz: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
+    init{
+        models = modelz
+    }
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
      */
@@ -42,52 +44,73 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP, CoreEntityBlueprint.BULLET)
-
-    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
-        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java, simpleLoader, mutableListOf());
-        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf());
-
-        fun generate(models: List<Model>) : T{
-            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources choices possible?
+    private val listOfBlueprints = listOf(DEFAULT_SHIP, BULLET)
+    private companion object{
+        private var models = listOf<Model>()
+        private object BULLET : CoreEntityBlueprint<BulletEntity>("bullet", BulletEntity::class.java, basicLoader, mutableListOf());
+        private object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, shipLoader, mutableListOf());
+        val basicLoader : (List<Model>, EntityBlueprint, Team) -> BulletEntity = {
+                models: List<Model>, entityBlueprint: EntityBlueprint, team: Team ->
+            val filter = TeamFilter(
+                category = CollisionCategory.CATEGORY_PROJECTILE.bits,
+                mask = CollisionCategory.CATEGORY_SHIP.bits
+            )
+            val bluePrintComp = entityBlueprint.components.first()
+            val model = models[bluePrintComp.shape]
+            val transform = Transformation(bluePrintComp.position / 30.0, bluePrintComp.scale, bluePrintComp.rotation * PI / 2.0)
+            val graphicalData = GraphicalData(1.0f, 0.0f, 0.0f, 0.0f, 0.0f)
+            val component: Component = Component(ComponentDefinition(model, transform, graphicalData), filter)
+            BulletEntity(team, component)
         }
+        val shipLoader : (List<Model>, EntityBlueprint, Team) -> ShipEntity = {
+                models: List<Model>, entityBlueprint: EntityBlueprint, team: Team ->
+            val components = entityBlueprint.components
+            val connections = entityBlueprint.connections
+            val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
+                val model = models[it.shape]
+                val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0) //TODO Where does this 30.0 come from
+                val graphicalData = when (it.type) {
+                    Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
+                    Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                    Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                    Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+                }
 
-        companion object{
-            val simpleLoader : (List<Model>,EntityBlueprint) -> ShipEntity = {
-                    models: List<Model>, entityBlueprint: EntityBlueprint ->
-                val components = entityBlueprint.components
-                val connections = entityBlueprint.connections
-                val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
-                    val model = models[it.shape]
-                    val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
-                    val graphicalData = when (it.type) {
-                        Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
-                        Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                        Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                        Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+                val filter = TeamFilter(
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits
+                )
+
+                val def = ComponentDefinition(model, transform, graphicalData)
+                when(it.type){
+                    Type.THRUSTER -> {
+                        ThrusterComponent(def, filter, Rotation(0.0))
                     }
-                    val def = ComponentDefinition(model, transform, graphicalData)
-                    Component(
-                        def,
-                        TeamFilter(
-                            category = CollisionCategory.CATEGORY_SHIP.bits,
-                            mask = CollisionCategory.CATEGORY_SHIP.bits
+                    else -> {
+                        Component(
+                            def, filter
                         )
-                    )
+                    }
                 }
-
-                fun getMatchingComponent(id: Int) = componentMapping[components[id]]
-                fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
-
-                val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
-                val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
-                val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
-                    getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
-                }
-                val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
-                ShipEntity(Team.TEAMLESS, s)
 
             }
+
+            fun getMatchingComponent(id: Int) = componentMapping[components[id]]
+            fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
+
+            val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
+            val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
+            val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
+                getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
+            }
+            val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
+            ShipEntity(team, s)
+
+        }
+    }
+    private open class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint, Team) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+        fun generate() : T{
+            return factory.invoke(models, blueprintData.first(), Team.TEAMLESS) //TODO Make loading from multiple resources choices possible?
         }
     }
 
@@ -133,16 +156,15 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         override fun deserialize(parser: JsonParser, p1: DeserializationContext): ComponentBlueprint {
             val node: JsonNode = parser.codec.readTree(parser)
             val shape = node.get("shape").asInt()
-            val red = node.get("red").asInt()
-            val green = node.get("green").asInt()
-            val blue = node.get("blue").asInt()
+//            val red = node.get("red").asInt()
+//            val green = node.get("green").asInt()
+//            val blue = node.get("blue").asInt()
             val scale = node.get("scale").asDouble()
             val x = node.get("position").get("x").asDouble()
             val y = node.get("position").get("y").asDouble()
             val rotation = node.get("rotation").asInt()
             val type = node.get("type").asText()!!
 
-            val color = Color(red, green, blue)
             val position = Vector2(x, y)
             return ComponentBlueprint(shape, scale, position, rotation, Type.valueOf(type))
         }
@@ -298,7 +320,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
          * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
          * */
-        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : updateOutput{
+        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : UpdateOutput{
             val entityList = mutableListOf<PhysicsEntity>()
             val effectList = mutableListOf<EffectsRequest>()
             if(!componentFixtureMap.contains(component)){
@@ -377,7 +399,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                    }
                }
             }
-            return updateOutput(effectList, entityList)
+            return UpdateOutput(effectList, entityList)
         }
 
         /**
@@ -416,7 +438,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 fixture.filter = filter
                 return fixture
             }
-            fun onDestruction() : updateOutput {return updateOutput(listOf(), listOf())
+            fun onDestruction() : UpdateOutput {return UpdateOutput(listOf(), listOf())
             }
         }
 
@@ -425,7 +447,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         abstract fun isMarkedForRemoval(): Boolean
 
         //Check if any parts needs to be removed, and then calculate new center of mass.
-        private fun updateFixtures() : updateOutput{
+        private fun updateFixtures() : UpdateOutput{
             var didLoseParts = false;
             val effectsList = mutableListOf<EffectsRequest>()
             val entityList = mutableListOf<PhysicsEntity>();
@@ -441,20 +463,21 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                 }
             }
             if(didLoseParts) setMass(MassType.NORMAL)
-            return updateOutput(effectsList, entityList)
+            return UpdateOutput(effectsList, entityList)
         }
 
-        data class updateOutput(val effects : List<EffectsRequest>, val entities: List<PhysicsEntity>){
-            constructor(u1 : updateOutput, u2 : updateOutput) : this(u1.effects + u2.effects, u1.entities + u2.entities)
+        //TODO Remove this
+        data class UpdateOutput(val effects : List<EffectsRequest>, val entities: List<PhysicsEntity>){
+            constructor(u1 : UpdateOutput, u2 : UpdateOutput) : this(u1.effects + u2.effects, u1.entities + u2.entities)
         }
 
-        fun update(actions: List<ControlAction>) : updateOutput{
+        fun update(actions: List<ControlAction>) : UpdateOutput{
             val out1 = updateFixtures();
             val out2 = processControlActions(actions);
-            return updateOutput(out1, out2)
+            return UpdateOutput(out1, out2)
         }
 
-        abstract fun processControlActions(actions: List<ControlAction>): updateOutput
+        abstract fun processControlActions(actions: List<ControlAction>): UpdateOutput
 
         fun getRenderableComponents(): List<RenderableComponent> {
             if (!isEnabled) {
@@ -525,6 +548,21 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
+    private open class BulletEntity(team: Team, val component: Component) : PhysicsEntity(listOf(component), component, TeamFilter(
+        team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_PROJECTILE.bits,
+        mask = CollisionCategory.CATEGORY_SHIP.bits
+    ), mapOf()) {
+        override fun isMarkedForRemoval(): Boolean {
+            return false;
+        }
+
+        override fun processControlActions(actions: List<ControlAction>): UpdateOutput {
+            // A bullet has no control actions...
+            return UpdateOutput(listOf(), listOf())
+        }
+
+    }
+
     private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
@@ -538,19 +576,21 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         var flag = false
         override fun testFunc(){
             super.testFunc()
-            if(!flag) {
-                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
-                    it.value?.kill()
-                }
-            }else{
-                componentFixtureMap.entries.stream().filter{it -> it.value == null}.forEach{reviveComponent(it.key)}
-                setMass(MassType.NORMAL)
-            }
-            flag = !flag
+
+//            if(!flag) {
+//                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
+//                    it.value?.kill()
+//                }
+//            }else{
+//                componentFixtureMap.entries.stream().filter{it -> it.value == null}.forEach{reviveComponent(it.key)}
+//                setMass(MassType.NORMAL)
+//            }
+//            flag = !flag
         }
 
-        override fun processControlActions(actions: List<ControlAction>): updateOutput {
+        override fun processControlActions(actions: List<ControlAction>): UpdateOutput {
             val effectsList = mutableListOf<EffectsRequest>()
+            val entityList = mutableListOf<PhysicsEntity>()
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
@@ -567,11 +607,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                         applyTorque(action.torque * this.getMass().mass)
                     }
                     is ControlAction.TestAction -> {
-                        testFunc()
+//                        testFunc()
+                        entityList.add()
                     }
                 }
             }
-            return updateOutput(effectsList, listOf())
+            return UpdateOutput(effectsList, listOf())
         }
     }
 
