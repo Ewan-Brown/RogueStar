@@ -42,14 +42,14 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP)
+    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP, CoreEntityBlueprint.BULLET)
 
     private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
-//        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java);
-        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf<EntityBlueprint>());
+        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java, simpleLoader, mutableListOf());
+        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf());
 
         fun generate(models: List<Model>) : T{
-            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources possible?
+            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources choices possible?
         }
 
         companion object{
