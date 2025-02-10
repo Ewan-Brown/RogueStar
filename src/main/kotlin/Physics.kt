@@ -133,16 +133,16 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         override fun deserialize(parser: JsonParser, p1: DeserializationContext): ComponentBlueprint {
             val node: JsonNode = parser.codec.readTree(parser)
             val shape = node.get("shape").asInt()
-            val red = node.get("red").asInt()
-            val green = node.get("green").asInt()
-            val blue = node.get("blue").asInt()
+//            val red = node.get("red").asInt()
+//            val green = node.get("green").asInt()
+//            val blue = node.get("blue").asInt()
             val scale = node.get("scale").asDouble()
             val x = node.get("position").get("x").asDouble()
             val y = node.get("position").get("y").asDouble()
             val rotation = node.get("rotation").asInt()
             val type = node.get("type").asText()!!
 
-            val color = Color(red, green, blue)
+//            val color = Color(red, green, blue)
             val position = Vector2(x, y)
             return ComponentBlueprint(shape, scale, position, rotation, Type.valueOf(type))
         }
@@ -187,6 +187,8 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             error("More controlActions were supplied than there are entities in the PhysicsWorld!")
         }
         val effectsRequests = mutableListOf<EffectsRequest>()
+
+        println("==========UPDATE==========")
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
@@ -292,6 +294,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          */
         open fun testFunc(){
 //            println("PhysicsEntity.testFunc")
+            componentFixtureMap.entries.forEach{it.value?.kill()}
         }
 
         /**
@@ -299,64 +302,69 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
          * */
         private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : updateOutput{
+            println("attempt destruction on component : $component, and is $trueDestruction")
             val entityList = mutableListOf<PhysicsEntity>()
             val effectList = mutableListOf<EffectsRequest>()
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
                if(componentFixtureMap[component] == null){
-                   throw IllegalStateException("tried to kill a component that is already dead under this entity")
+                   throw IllegalStateException("tried to kill a component that is already dead under this entity - $component")
                }else {
-//                   println("Removing")
+                   println("nullifying component $component")
                    removeFixture(componentFixtureMap[component])
                    componentFixtureMap[component] = null
                    //Split check!
                    if (trueDestruction) {
-//                       println("Split check...")
+                       println("Split check...")
                        val branchRoots = connectionMap[component]
+                       println("branchRoots : ${branchRoots!!.size}")
                        val nodesAlreadyCounted = mutableListOf<Component>()
                        val branches: List<List<Component>> = branchRoots!!.mapNotNull {
-//                           println("entering branch from root node")
+                           println("entering branch from root node - $it")
                            if (componentFixtureMap[it] == null){
-//                               println("this root node is dead, ignoring")
+                               println("this root node is dead, ignoring")
                                return@mapNotNull null
                            }
                            if (nodesAlreadyCounted.contains(it)) {
-//                               println("this root node has already been counted, ignoring")
+                               println("this root node has already been counted, ignoring")
                                return@mapNotNull null
                            } else {
-//                               println("exploring branch")
+                               nodesAlreadyCounted.add(it)
+                               println("exploring branch")
+                               nodesAlreadyCounted.add(it)
                                val accumulator = mutableListOf<Component>()
                                val toIgnore = component
                                val nodesToExplore = Stack<Component>()
                                nodesToExplore.push(it)
                                while (nodesToExplore.isNotEmpty()) {
-//                                   println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
+                                   println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
                                    val node = nodesToExplore.pop()
                                    //Ignore the node that represents the broken piece that caused this split
                                    if (node != toIgnore && !accumulator.contains(node) && componentFixtureMap[node] != null) {
-//                                       println("\tfound a new node to explore")
+                                       println("\tfound a new node to explore - $component")
                                        accumulator.add(node)
                                        nodesToExplore.addAll(connectionMap[node]!!)
                                    } else {
-//                                       println("\tignoring node")
+                                       println("\tignoring node - $component")
                                    }
                                }
-//                               println("\t completed this branch with ${accumulator.size} nodes found")
+                               println("\t completed this branch with ${accumulator.size} nodes found")
                                return@mapNotNull accumulator
                            }
                        }
-//                       println("completed exploring all branches")
-//                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
+                       println("branches: ${branches.size}")
+                       println("completed exploring all branches")
+                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
                        for (branch in branches) {
                            if (branch.contains(root)) {
                                //This branch will remain a part of this entity - all other branches will be fragmented off!
                            } else {
 //                               println("inspecting branch with ${branch.size} nodes")
                                //Remove fragmented branch from this entity
-//                               println("\tkilling branch")
+                               println("Killing branch")
                                for (branchComponent in branch) {
-                                   val (eff, ent) = processComponentDestruction(branchComponent, false)
+                                   val (eff, ent) = processComponentDestruction(branchComponent, false) //false == non-recursive
                                    effectList.addAll(eff)
                                    entityList.addAll(ent)
                                }
@@ -432,6 +440,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             for (entry in componentFixtureMap) {
                 entry.value?.let{
                     if (it.isMarkedForRemoval()){
+                        println("killing component: ${entry.key}")
                         entry.key.onDestruction()
                         val (eff, ent) = processComponentDestruction(entry.key)
                         effectsList.addAll(eff)
@@ -538,15 +547,15 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         var flag = false
         override fun testFunc(){
             super.testFunc()
-            if(!flag) {
-                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
-                    it.value?.kill()
-                }
-            }else{
-                componentFixtureMap.entries.stream().filter{it -> it.value == null}.forEach{reviveComponent(it.key)}
-                setMass(MassType.NORMAL)
-            }
-            flag = !flag
+//            if(!flag) {
+//                componentFixtureMap.entries.stream().skip(1).findFirst().ifPresent {
+//                    it.value?.kill()
+//                }
+//            }else{
+//                componentFixtureMap.entries.stream().filter{it -> it.value == null}.forEach{reviveComponent(it.key)}
+//                setMass(MassType.NORMAL)
+//            }
+//            flag = !flag
         }
 
         override fun processControlActions(actions: List<ControlAction>): updateOutput {
