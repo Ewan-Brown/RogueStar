@@ -188,7 +188,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
         val effectsRequests = mutableListOf<EffectsRequest>()
 
-        println("==========UPDATE==========")
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
@@ -302,7 +301,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
          * */
         private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : updateOutput{
-            println("attempt destruction on component : $component, and is $trueDestruction")
+//            println("attempt destruction on component : $component, and is $trueDestruction")
             val entityList = mutableListOf<PhysicsEntity>()
             val effectList = mutableListOf<EffectsRequest>()
             if(!componentFixtureMap.contains(component)){
@@ -311,60 +310,57 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                if(componentFixtureMap[component] == null){
                    throw IllegalStateException("tried to kill a component that is already dead under this entity - $component")
                }else {
-                   println("nullifying component $component")
+//                   println("nullifying component $component")
                    removeFixture(componentFixtureMap[component])
                    componentFixtureMap[component] = null
                    //Split check!
                    if (trueDestruction) {
-                       println("Split check...")
+//                       println("Split check...")
                        val branchRoots = connectionMap[component]
-                       println("branchRoots : ${branchRoots!!.size}")
-                       branchRoots.forEach{
-                           println("\troot - $it")
-                       }
+//                       println("branchRoots : ${branchRoots!!.size}")
                        val nodesAlreadyCounted = mutableListOf<Component>()
                        val branches: List<List<Component>> = branchRoots!!.mapNotNull {
-                           println("entering branch from root node - $it")
+//                           println("entering branch from root node - $it")
                            if (componentFixtureMap[it] == null){
-                               println("this root node is dead, ignoring")
+//                               println("this root node is dead, ignoring")
                                return@mapNotNull null
                            }
                            if (nodesAlreadyCounted.contains(it)) {
-                               println("this root node has already been counted, ignoring")
+//                               println("this root node has already been counted, ignoring")
                                return@mapNotNull null
                            } else {
-                               println("exploring branch")
+//                               println("exploring branch")
                                val accumulator = mutableListOf<Component>()
                                val toIgnore = component
                                val nodesToExplore = Stack<Component>()
                                nodesToExplore.push(it)
                                while (nodesToExplore.isNotEmpty()) {
-                                   println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
+//                                   println("\tthere are ${nodesToExplore.size} nodes left. Branch is ${accumulator.size} big")
                                    val node = nodesToExplore.pop()
                                    //Ignore the node that represents the broken piece that caused this split
                                    if (node != toIgnore && !accumulator.contains(node) && componentFixtureMap[node] != null) {
-                                       println("\tfound a new node to explore - $node")
+//                                       println("\tfound a new node to explore - $node")
                                        accumulator.add(node)
                                        nodesAlreadyCounted.add(node)
                                        nodesToExplore.addAll(connectionMap[node]!!)
                                    } else {
-                                       println("\tignoring node - $node")
+//                                       println("\tignoring node - $node")
                                    }
                                }
-                               println("\t completed this branch with ${accumulator.size} nodes found")
+//                               println("\t completed this branch with ${accumulator.size} nodes found")
                                return@mapNotNull accumulator
                            }
                        }
-                       println("branches: ${branches.size}")
-                       println("completed exploring all branches")
-                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
+//                       println("branches: ${branches.size}")
+//                       println("completed exploring all branches")
+//                       println("rebuilding fragmented branches - ${branches.size - 1} branches to rebuild")
                        for (branch in branches) {
                            if (branch.contains(root)) {
                                //This branch will remain a part of this entity - all other branches will be fragmented off!
                            } else {
 //                               println("inspecting branch with ${branch.size} nodes")
                                //Remove fragmented branch from this entity
-                               println("Killing branch")
+//                               println("Killing branch")
                                for (branchComponent in branch) {
                                    val (eff, ent) = processComponentDestruction(branchComponent, false) //false == non-recursive
                                    effectList.addAll(eff)
@@ -436,14 +432,14 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         //Check if any parts needs to be removed, and then calculate new center of mass.
         private fun updateFixtures() : updateOutput{
-            println("updateFixtures on entity: $this")
+//            println("updateFixtures on entity: $this")
             var didLoseParts = false;
             val effectsList = mutableListOf<EffectsRequest>()
             val entityList = mutableListOf<PhysicsEntity>();
             for (entry in componentFixtureMap) {
                 entry.value?.let{
                     if (it.isMarkedForRemoval()){
-                        println("killing component: ${entry.key}")
+//                        println("killing component: ${entry.key}")
                         entry.key.onDestruction()
                         val (eff, ent) = processComponentDestruction(entry.key)
                         effectsList.addAll(eff)
