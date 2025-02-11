@@ -101,22 +101,23 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         module.addDeserializer(ComponentBlueprint::class.java, ComponentDeserializer())
         mapper.registerModules(module)
 
-        println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
-        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and
-                it.fileName.toString().startsWith("entity_")}.toList()
-        println("total entity files found : ${entityFiles.size}")
+//        println("entityDirectory : " + entityDirectory.toAbsolutePath().toString())
+//        val entityFiles = Files.walk(entityDirectory).filter{it.fileName.toString().endsWith(".json") and
+//                it.fileName.toString().startsWith("entity_")}.toList()
+//        println("total entity files found : ${entityFiles.size}")
 
         //Identify that all core entities are present, and create factories for each of them, then validate the data fits the factory.
         for (blueprint in listOfBlueprints) {
             //Find matching resource file
-            val matchingFiles = entityFiles.filter { it.fileName.toString().removePrefix("entity_").startsWith(blueprint.internalName)}
-                .toList()
-            if(matchingFiles.isEmpty()) throw FileNotFoundException("Couldn't find a file that matched ${blueprint.internalName}")
+            val matchingFile = Team::class.java.getResourceAsStream("/entities/entity_"+blueprint.internalName+".json")
+//            val matchingFiles = entityFiles.filter { it.fileName.toString().removePrefix("entity_").startsWith(blueprint.internalName)}
+//                .toList()
+//            if(matchingFiles.isEmpty()) throw FileNotFoundException("Couldn't find a file that matched ${blueprint.internalName}")
 
             //TODO support having multiple to choose from for same resource
-            println("Found ${matchingFiles.size} files matching ${blueprint.internalName}, will use the first one : ${matchingFiles.first().fileName.toString()}")
+//            println("Found ${matchingFiles.size} files matching ${blueprint.internalName}, will use the first one : ${matchingFiles.first().fileName.toString()}")
 
-            val blueprintData = mapper.readValue(matchingFiles.first().toFile(), EntityBlueprint::class.java)
+            val blueprintData = mapper.readValue(matchingFile, EntityBlueprint::class.java)
             blueprint.blueprintData.add(blueprintData)
 
             //Test generation of this entity
