@@ -319,6 +319,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                        println("Split check...")
                        val branchRoots = connectionMap[component]
                        println("branchRoots : ${branchRoots!!.size}")
+                       branchRoots.forEach{
+                           println("\troot - $it")
+                       }
                        val nodesAlreadyCounted = mutableListOf<Component>()
                        val branches: List<List<Component>> = branchRoots!!.mapNotNull {
                            println("entering branch from root node - $it")
@@ -330,9 +333,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                println("this root node has already been counted, ignoring")
                                return@mapNotNull null
                            } else {
-                               nodesAlreadyCounted.add(it)
                                println("exploring branch")
-                               nodesAlreadyCounted.add(it)
                                val accumulator = mutableListOf<Component>()
                                val toIgnore = component
                                val nodesToExplore = Stack<Component>()
@@ -342,11 +343,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                    val node = nodesToExplore.pop()
                                    //Ignore the node that represents the broken piece that caused this split
                                    if (node != toIgnore && !accumulator.contains(node) && componentFixtureMap[node] != null) {
-                                       println("\tfound a new node to explore - $component")
+                                       println("\tfound a new node to explore - $node")
                                        accumulator.add(node)
+                                       nodesAlreadyCounted.add(node)
                                        nodesToExplore.addAll(connectionMap[node]!!)
                                    } else {
-                                       println("\tignoring node - $component")
+                                       println("\tignoring node - $node")
                                    }
                                }
                                println("\t completed this branch with ${accumulator.size} nodes found")
@@ -434,6 +436,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
         //Check if any parts needs to be removed, and then calculate new center of mass.
         private fun updateFixtures() : updateOutput{
+            println("updateFixtures on entity: $this")
             var didLoseParts = false;
             val effectsList = mutableListOf<EffectsRequest>()
             val entityList = mutableListOf<PhysicsEntity>();
