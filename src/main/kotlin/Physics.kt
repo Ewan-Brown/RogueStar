@@ -143,7 +143,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private val physicsWorld = PhysicsWorld()
     private var time = 0.0
-    val thisVariable = "test"
 
     init {
         physicsWorld.setGravity(0.0, 0.0)
