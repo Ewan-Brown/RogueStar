@@ -1,6 +1,5 @@
 import Graphics.Model
-import PhysicsLayer.PhysicsEntity
-import PhysicsLayer.PhysicsEntity.*
+import WorldLayer.PhysicsEntity.*
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
@@ -14,9 +13,6 @@ import org.dyn4j.dynamics.*
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
-import java.awt.Color
-import java.io.FileNotFoundException
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
 import java.util.function.Predicate
@@ -28,7 +24,11 @@ private data class ComponentDefinition(val model : Model, val localTransform: Tr
 data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
-class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
+interface WorldInterface{
+    public fun addEntity()
+}
+
+class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
 
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
@@ -42,19 +42,21 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP, CoreEntityBlueprint.BULLET)
+    private val listOfBlueprints = listOf(EntityFactory.DEFAULT_SHIP_FACTORY, EntityFactory.BULLET_FACTORY)
+    private val entityBuffer = mutableListOf<PhysicsEntity>()
+    private var effectsBuffer = mutableListOf<EffectsRequest>()
 
-    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
-        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java, simpleLoader, mutableListOf());
-        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf());
+    private sealed class EntityFactory<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint, WorldInterface) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+        object BULLET_FACTORY : EntityFactory<PhysicsEntity>("bullet", PhysicsEntity::class.java, simpleLoader, mutableListOf());
+        object DEFAULT_SHIP_FACTORY : EntityFactory<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf());
 
-        fun generate(models: List<Model>) : T{
-            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources choices possible?
+        fun generate(models: List<Model>, worldRef: WorldInterface) : T{
+            return factory.invoke(models, blueprintData.first(), worldRef) //TODO Make loading from multiple resources choices possible?
         }
 
         companion object{
-            val simpleLoader : (List<Model>,EntityBlueprint) -> ShipEntity = {
-                    models: List<Model>, entityBlueprint: EntityBlueprint ->
+            val simpleLoader : (List<Model>,EntityBlueprint, WorldInterface) -> ShipEntity = {
+                    models: List<Model>, entityBlueprint: EntityBlueprint, worldref: WorldInterface ->
                 val components = entityBlueprint.components
                 val connections = entityBlueprint.connections
                 val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
@@ -85,7 +87,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                     getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
                 }
                 val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
-                ShipEntity(Team.TEAMLESS, s)
+                ShipEntity(Team.TEAMLESS, s, worldref)
 
             }
         }
@@ -111,12 +113,12 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             blueprint.blueprintData.add(blueprintData)
 
             //Test generation of this entity
-            blueprint.generate(models)
-            blueprint.generate(models)
-            blueprint.generate(models)
+            blueprint.generate(models, this)
+            blueprint.generate(models, this)
+            blueprint.generate(models, this)
         }
 
-        shipFactories.add { CoreEntityBlueprint.DEFAULT_SHIP.generate(models) }
+        shipFactories.add { EntityFactory.DEFAULT_SHIP_FACTORY.generate(models, this) }
     }
 
     class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
@@ -172,22 +174,24 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         if(controlActions.size > i){
             error("More controlActions were supplied than there are entities in the PhysicsWorld!")
         }
-        val effectsRequests = mutableListOf<EffectsRequest>()
+//        val effectsRequests = mutableListOf<EffectsRequest>()
 
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
-            val (eff, ent) = body.update(controlActions.getOrElse(body.uuid) { emptyList() })
+            body.update(controlActions.getOrElse(body.uuid) { emptyList() })
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
                 i--
             }
-            effectsRequests.addAll(eff)
-            for(entityReq in ent){
+//            effectsRequests.addAll(eff)
+            for(entityReq in entityBuffer){
                 addEntity(entityReq)
             }
         }
-        return PhysicsOutput(effectsRequests)
+        val tempEffects = effectsBuffer;
+        effectsBuffer = mutableListOf()
+        return PhysicsOutput(tempEffects)
     }
 
     //TODO Can we delegate this or something
@@ -249,6 +253,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         internalComponents: List<Component>,
         val root: Component = internalComponents[0],
         val teamFilter: TeamFilter,
+        private val worldRef: WorldInterface,
         private val connectionMap: Map<Component, List<Component>>
     ) : AbstractPhysicsBody<CustomFixture>() {
 
@@ -275,7 +280,6 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
          * Function used purely for manually testing proof of concept or debugging.
          */
         open fun testFunc(){
-//            println("PhysicsEntity.testFunc")
             componentFixtureMap.entries.forEach{it.value?.kill()}
         }
 
@@ -338,7 +342,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
                                for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
-                               val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]))
+                               val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]), worldRef)
                                newEntity.translate(this.localCenter.product(-1.0))
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
@@ -419,10 +423,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             constructor(u1 : updateOutput, u2 : updateOutput) : this(u1.effects + u2.effects, u1.entities + u2.entities)
         }
 
-        fun update(actions: List<ControlAction>) : updateOutput{
-            val out1 = updateFixtures();
-            val out2 = processControlActions(actions);
-            return updateOutput(out1, out2)
+        fun update(actions: List<ControlAction>){
+            updateFixtures();
+            processControlActions(actions);
         }
 
         abstract fun processControlActions(actions: List<ControlAction>): updateOutput
@@ -496,17 +499,16 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
 
     private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
-    private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
+    private open class ShipEntity(team: Team, shipDetails: ShipDetails, worldRef: WorldInterface) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
-        ), shipDetails.connectionMap
+        ) , worldRef, shipDetails.connectionMap
     ) {
 
         val thrusterComponents = shipDetails.thrusters
         override fun isMarkedForRemoval(): Boolean = false
 
-        var flag = false
         override fun testFunc(){
             super.testFunc()
         }
@@ -606,6 +608,10 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         fun kill(){health = 0}
         fun getHealth(): Int = health
         fun isMarkedForRemoval(): Boolean = health <= 0
+    }
+
+    override fun addEntity() {
+        TODO("Not yet implemented")
     }
 }
 

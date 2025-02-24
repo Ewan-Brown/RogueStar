@@ -1,6 +1,4 @@
-import org.dyn4j.dynamics.PhysicsBody
 import org.junit.jupiter.api.Test
-import kotlin.test.assertTrue
 
 class TestTest {
 
@@ -12,7 +10,7 @@ class TestTest {
 
     @Test
     fun testSomethingElse(){
-        val pLayer = PhysicsLayer()
+        val pLayer = WorldLayer()
     }
 
 }

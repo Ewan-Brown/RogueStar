@@ -2,7 +2,7 @@ import org.dyn4j.geometry.Vector2
 import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
-import PhysicsLayer.PhysicsBodyData
+import WorldLayer.PhysicsBodyData
 
 data class ControllerInput(val map: Map<Int, PhysicsBodyData>)
 data class ControllerOutput(val map: Map<Int, List<ControlAction>>)
@@ -22,7 +22,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
             return (-angleDiff*8 - angularVelocity*4)
         }
 
-        private fun calculatePositionalControl(data: PhysicsLayer.PhysicsBodyData, targetPos: Vector2, targetOrientation: Vector2, targetVelocity: Vector2 = Vector2()) : Pair<Vector2, Double>{
+        private fun calculatePositionalControl(data: WorldLayer.PhysicsBodyData, targetPos: Vector2, targetOrientation: Vector2, targetVelocity: Vector2 = Vector2()) : Pair<Vector2, Double>{
             val velocityDiff: Vector2 = data.velocity.to(targetVelocity)
             val vecToTarget = data.position.to(targetPos)
 
