@@ -19,16 +19,18 @@ import java.util.function.Predicate
 import kotlin.collections.HashMap
 import kotlin.math.PI
 
-private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
+data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
 data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 interface WorldInterface{
-    public fun addEntity()
+    fun <E : WorldLayer.PhysicsEntity> addEntity(entity: E): E
+    fun <E : WorldLayer.PhysicsEntity> addEntity(entity: E, angle: Double, pos: Vector2): E
 }
 
 class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
+
 
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
@@ -229,7 +231,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
         val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team
     )
 
-    private fun <E : PhysicsEntity> addEntity(entity: E, angle: Double, pos: Vector2): E {
+    override fun <E : PhysicsEntity> addEntity(entity: E, angle: Double, pos: Vector2): E {
         entity.rotate(angle)
         entity.translate(pos)
         entity.setMass(MassType.NORMAL)
@@ -237,7 +239,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
         return entity
     }
 
-    private fun <E : PhysicsEntity> addEntity(entity: E): E {
+    override fun <E : PhysicsEntity> addEntity(entity: E): E {
         entity.setMass(MassType.NORMAL)
         physicsWorld.addBody(entity)
         return entity
@@ -249,7 +251,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
         }
     }
 
-    private abstract class PhysicsEntity protected constructor(
+    public abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
         val root: Component = internalComponents[0],
         val teamFilter: TeamFilter,
@@ -287,9 +289,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
          * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
          * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
          * */
-        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true) : updateOutput{
-            val entityList = mutableListOf<PhysicsEntity>()
-            val effectList = mutableListOf<EffectsRequest>()
+        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true){
             if(!componentFixtureMap.contains(component)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
@@ -331,9 +331,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
                            } else {
                                //Remove fragmented branch from this entity
                                for (branchComponent in branch) {
-                                   val (eff, ent) = processComponentDestruction(branchComponent, false) //false == non-recursive
-                                   effectList.addAll(eff)
-                                   entityList.addAll(ent)
+                                   processComponentDestruction(branchComponent, false) //false == non-recursive
                                }
                                //Generate a new connection map for this new entity
                                val newConnections = mutableMapOf<Component, List<Component>>()
@@ -346,13 +344,12 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
                                newEntity.translate(this.localCenter.product(-1.0))
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
-                               entityList.add(newEntity)
+                               worldRef.addEntity(newEntity)
                            }
                        }
                    }
                }
             }
-            return updateOutput(effectList, entityList)
         }
 
         /**
@@ -391,8 +388,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
                 fixture.filter = filter
                 return fixture
             }
-            fun onDestruction() : updateOutput {return updateOutput(listOf(), listOf())
-            }
+            fun onDestruction(): Unit {}
         }
 
         class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : Component(definition, filter)
@@ -400,23 +396,18 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
         abstract fun isMarkedForRemoval(): Boolean
 
         //Check if any parts needs to be removed, and then calculate new center of mass.
-        private fun updateFixtures() : updateOutput{
+        private fun updateFixtures(){
             var didLoseParts = false;
-            val effectsList = mutableListOf<EffectsRequest>()
-            val entityList = mutableListOf<PhysicsEntity>();
             for (entry in componentFixtureMap) {
                 entry.value?.let{
                     if (it.isMarkedForRemoval()){
                         entry.key.onDestruction()
-                        val (eff, ent) = processComponentDestruction(entry.key)
-                        effectsList.addAll(eff)
-                        entityList.addAll(ent)
+                        processComponentDestruction(entry.key)
                         didLoseParts = true
                     }
                 }
             }
             if(didLoseParts) setMass(MassType.NORMAL)
-            return updateOutput(effectsList, entityList)
         }
 
         data class updateOutput(val effects : List<EffectsRequest>, val entities: List<PhysicsEntity>){
@@ -596,7 +587,7 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
     /**
      * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
      */
-    private class CustomFixture(shape: Convex): BodyFixture(shape) {
+    class CustomFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
             health -= 1;
@@ -608,10 +599,6 @@ class WorldLayer : Layer<PhysicsInput, PhysicsOutput>, WorldInterface{
         fun kill(){health = 0}
         fun getHealth(): Int = health
         fun isMarkedForRemoval(): Boolean = health <= 0
-    }
-
-    override fun addEntity() {
-        TODO("Not yet implemented")
     }
 }
 
