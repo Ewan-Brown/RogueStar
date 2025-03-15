@@ -23,12 +23,12 @@ import java.util.function.Predicate
 import kotlin.collections.HashMap
 import kotlin.math.PI
 
-private data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
+data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
 
 data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
-class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
+class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
 
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
@@ -41,60 +41,55 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
             connections = conn
         }
     }
-
-    private val listOfBlueprints = listOf(CoreEntityBlueprint.DEFAULT_SHIP, CoreEntityBlueprint.BULLET)
-
-    private sealed class CoreEntityBlueprint<T : PhysicsEntity>(val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
-        object BULLET : CoreEntityBlueprint<PhysicsEntity>("bullet", PhysicsEntity::class.java, simpleLoader, mutableListOf());
-        object DEFAULT_SHIP : CoreEntityBlueprint<ShipEntity>("ship_default", ShipEntity::class.java, simpleLoader, mutableListOf());
-
-        fun generate(models: List<Model>) : T{
-            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources choices possible?
+    val simpleLoad = { models: List<Model>, entityBlueprint: EntityBlueprint ->
+        val components = entityBlueprint.components
+        val connections = entityBlueprint.connections
+        val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
+            val model = models[it.shape]
+            val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
+            val graphicalData = when (it.type) {
+                Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
+                Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
+                Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+            }
+            val def = ComponentDefinition(model, transform, graphicalData)
+            Component(
+                def,
+                TeamFilter(
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits
+                )
+            )
         }
 
-        companion object{
-            val simpleLoader : (List<Model>,EntityBlueprint) -> ShipEntity = {
-                    models: List<Model>, entityBlueprint: EntityBlueprint ->
-                val components = entityBlueprint.components
-                val connections = entityBlueprint.connections
-                val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
-                    val model = models[it.shape]
-                    val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
-                    val graphicalData = when (it.type) {
-                        Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
-                        Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                        Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                        Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
-                    }
-                    val def = ComponentDefinition(model, transform, graphicalData)
-                    Component(
-                        def,
-                        TeamFilter(
-                            category = CollisionCategory.CATEGORY_SHIP.bits,
-                            mask = CollisionCategory.CATEGORY_SHIP.bits
-                        )
-                    )
-                }
+        fun getMatchingComponent(id: Int) = componentMapping[components[id]]
+        fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
 
-                fun getMatchingComponent(id: Int) = componentMapping[components[id]]
-                fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
+        val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
+        val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
+        val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
+            getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
+        }
+        val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
+        ShipEntity(Team.TEAMLESS, s)
+    }
 
-                val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
-                val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
-                val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
-                    getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
-                }
-                val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
-                ShipEntity(Team.TEAMLESS, s)
+    //TODO Refactor this?
+    val BULLET = CoreEntityBlueprint(models, "bullet", PhysicsEntity::class.java, simpleLoad, mutableListOf());
+    val DEFAULT_SHIP = CoreEntityBlueprint(models, "ship_default", ShipEntity::class.java, simpleLoad, mutableListOf());
 
-            }
+    private val listOfBlueprints = listOf(DEFAULT_SHIP, BULLET)
+    public class CoreEntityBlueprint<T : PhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, val factory : (List<Model>, EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+        fun generate() : T{
+            return factory.invoke(models, blueprintData.first()) //TODO Make loading from multiple resources choices possible?
         }
     }
 
     //Just a list of the ship factories available, useful for testing.
     private val shipFactories = mutableListOf<() -> PhysicsEntity>()
 
-    public fun loadEntities(models: List<Model>, entityDirectory: Path){
+    public fun loadEntities(){
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
@@ -104,19 +99,19 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         //Identify that all core entities are present, and create factories for each of them, then validate the data fits the factory.
         for (blueprint in listOfBlueprints) {
             //Find matching resource file
-            val matchingFile = Team::class.java.getResourceAsStream("/entities/entity_"+blueprint.internalName+".json")
+            val matchingFile = this.javaClass.getResourceAsStream("/entities/entity_"+blueprint.internalName+".json")
             //TODO support having multiple to choose from for same resource
 
             val blueprintData = mapper.readValue(matchingFile, EntityBlueprint::class.java)
             blueprint.blueprintData.add(blueprintData)
 
             //Test generation of this entity
-            blueprint.generate(models)
-            blueprint.generate(models)
-            blueprint.generate(models)
+            blueprint.generate()
+            blueprint.generate()
+            blueprint.generate()
         }
 
-        shipFactories.add { CoreEntityBlueprint.DEFAULT_SHIP.generate(models) }
+        shipFactories.add {DEFAULT_SHIP.generate() }
     }
 
     class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
@@ -246,7 +241,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private abstract class PhysicsEntity protected constructor(
+    public abstract class PhysicsEntity protected constructor(
         internalComponents: List<Component>,
         val root: Component = internalComponents[0],
         val teamFilter: TeamFilter,
@@ -495,9 +490,9 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
         }
     }
 
-    private data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
+    public data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
 
-    private open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
+    open class ShipEntity(team: Team, shipDetails: ShipDetails) : PhysicsEntity(
         shipDetails.components, shipDetails.cockpit, TeamFilter(
             team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
@@ -595,7 +590,7 @@ class PhysicsLayer : Layer<PhysicsInput, PhysicsOutput> {
     /**
      * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
      */
-    private class CustomFixture(shape: Convex): BodyFixture(shape) {
+    public class CustomFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
         fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
             health -= 1;

@@ -35,7 +35,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        shapes = mapper.readValue(File("shapes.json"), Array<Shape>::class.java).toList()
+        shapes = mapper.readValue(File("src/main/resources/entities/shapes.json"), Array<Shape>::class.java).toList()
         println("Shapes found : ${shapes.size}")
     }
 
@@ -178,7 +178,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
         val shipName = JOptionPane.showInputDialog("give your ship a name!")
-        mapper.writeValue(File("entity_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
+        mapper.writeValue(File("src/main/resources/entities/entity_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
         println("exported!")
     }
 
@@ -199,22 +199,19 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
         when(e.keyCode){
             KeyEvent.VK_Z -> {
-                selectedColor = Color.BLUE
                 selectedType = Type.BODY
             }
             KeyEvent.VK_X -> {
-                selectedColor = Color.CYAN
                 selectedType = Type.ROOT
             }
             KeyEvent.VK_C -> {
-                selectedColor = Color.YELLOW
                 selectedType = Type.THRUSTER
             }
             KeyEvent.VK_V -> {
-                selectedColor = Color.RED
                 selectedType = Type.GUN
             }
         }
+        selectedColor = selectedType.c
 
         if(e.keyCode == KeyEvent.VK_R){
             selectedQuarterRotations += 1
@@ -226,7 +223,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 }
 
 enum class Type(val c : Color){
-    THRUSTER(Color.ORANGE),
+    THRUSTER(Color.RED),
     ROOT(Color.CYAN),
     GUN(Color.YELLOW),
     BODY(Color.BLUE);

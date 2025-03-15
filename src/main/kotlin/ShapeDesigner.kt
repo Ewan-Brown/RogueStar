@@ -165,7 +165,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         val module = SimpleModule()
         module.addSerializer(Vector2::class.java, VectorSerializer())
         mapper.registerModules(module)
-        mapper.writeValue(File("shapes.json"), localizedShapes)
+        mapper.writeValue(File("src/main/resources/entities/shapes.json"), localizedShapes)
     }
 
     override fun mouseEntered(e: MouseEvent) {}
