@@ -44,14 +44,16 @@ fun loadModels() : Map<Int, Model> {
 
 fun main() {
 
-    val physicsLayer = PhysicsLayer()
-    val effectsLayer = EffectsLayer()
-    val controllerLayer = ControllerLayer()
+
 
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
 
-    physicsLayer.loadEntities(entityModels, Path(""))
+    val physicsLayer = PhysicsLayer(models)
+    val effectsLayer = EffectsLayer()
+    val controllerLayer = ControllerLayer()
+
+    physicsLayer.loadEntities()
 
     val gui = Graphics(models)
     val bitSet = BitSet(256)
