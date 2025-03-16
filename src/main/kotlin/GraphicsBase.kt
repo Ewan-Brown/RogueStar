@@ -101,8 +101,4 @@ abstract class GraphicsBase : GLEventListener {
 //    val type = GLBuffers.newDirectIntBuffer(1)
 //    val name = GLBuffers.newDirectByteBuffer(6)
 //    gl.glGetActiveUniform(backgroundProgram!!.name, index, 6,  length, size, type, name)
-//    println("length = ${length.get()}")
-//    println("size = ${size.get()}")
-//    println("type = ${type.get()}")
-//    println("name = ${name.get().toInt().toChar()} .. repeat for expected # of chars")
 }
