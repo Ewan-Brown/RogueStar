@@ -87,7 +87,9 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
     public class EntityFactory<T : PhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
         fun generate() : T{
-            return generator.invoke(blueprintData.first()) //TODO Make loading from multiple resources choices possible?
+            val ret = generator.invoke(blueprintData.first())
+            ret.setMass(MassType.NORMAL)
+            return ret //TODO Make loading from multiple resources choices possible?
         }
     }
 
@@ -231,12 +233,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return entity
     }
 
-    private fun <E : PhysicsEntity> addEntity(entity: E): E {
-        entity.setMass(MassType.NORMAL)
-        physicsWorld.addBody(entity)
-        return entity
-    }
-
     fun removeEntity(uuid: Int) {
         physicsWorld.bodies.find { it.uuid == uuid }.let {
             if (it == null) throw Exception("Entity with uuid $uuid not found")
@@ -274,8 +270,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          * Function used purely for manually testing proof of concept or debugging.
          */
         open fun testFunc(){
-//            println("PhysicsEntity.testFunc")
-//            componentFixtureMap.entries.stream().skip(3).findFirst().ifPresent {it.value?.kill()}
             val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
             bullet.translate(this.worldCenter.x + 1, this.worldCenter.y + 1)
             worldReference.entityBuffer.add(bullet);
@@ -495,7 +489,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val thrusterComponents = shipDetails.thrusters
         override fun isMarkedForRemoval(): Boolean = false
 
-        var flag = false
         override fun testFunc(){
             super.testFunc()
         }
@@ -551,7 +544,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          * Entites should never be added via addBody, they should go through the buffer first. this lets us handle anything that needs to be handled.
          */
         fun processEntityBuffer(){
-            println("entities in buffer: ${entityBuffer.size}")
             entityBuffer.forEach { addBody(it) }
             entityBuffer.clear()
         }
