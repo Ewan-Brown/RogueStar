@@ -69,12 +69,22 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
         ShipEntity(Team.TEAMLESS, s, worldRef)
     }
-
     //TODO Refactor this?
-    val BULLET = EntityFactory(models, "bullet", PhysicsEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
-    val DEFAULT_SHIP = EntityFactory(models, "ship_default", ShipEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
+    enum class Blueprint{
+        BULLET,
+        DEFAULT_SHIP
+    }
 
-    private val listOfBlueprints = listOf(DEFAULT_SHIP, BULLET)
+    val blueprintGenerator: (Blueprint) -> EntityFactory<*> = {
+        when(it){
+            Blueprint.BULLET -> bulletFactory;
+            Blueprint.DEFAULT_SHIP -> defaultShipFactory;
+        }
+    }
+
+    private val bulletFactory = EntityFactory(models, "bullet", PhysicsEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
+    private val defaultShipFactory = EntityFactory(models, "ship_default", ShipEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
+
     public class EntityFactory<T : PhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
         fun generate() : T{
             return generator.invoke(blueprintData.first()) //TODO Make loading from multiple resources choices possible?
@@ -92,7 +102,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         mapper.registerModules(module)
 
         //Identify that all core entities are present, and create factories for each of them, then validate the data fits the factory.
-        for (blueprint in listOfBlueprints) {
+        for (blueprint in Blueprint.entries.map{blueprintGenerator.invoke(it)}) {
             //Find matching resource file
             val matchingFile = this.javaClass.getResourceAsStream("/entities/entity_"+blueprint.internalName+".json")
             //TODO support having multiple to choose from for same resource
@@ -105,8 +115,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             blueprint.generate()
             blueprint.generate()
         }
-
-        shipFactories.add {DEFAULT_SHIP.generate() }
+        shipFactories.add ( blueprintGenerator.invoke(Blueprint.DEFAULT_SHIP)::generate )
     }
 
     class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
@@ -131,7 +140,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         CATEGORY_SHIELD(0b0100)
     }
 
-    private val physicsWorld = PhysicsWorld()
+    private val physicsWorld = PhysicsWorld(blueprintGenerator)
     private var time = 0.0
     val thisVariable = "test"
 
@@ -163,8 +172,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         if(controlActions.size > i){
             error("More controlActions were supplied than there are entities in the PhysicsWorld!")
         }
-        val effectsRequests = mutableListOf<EffectsRequest>()
-
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
@@ -174,7 +181,11 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 i--
             }
         }
-        return PhysicsOutput(effectsRequests)
+        physicsWorld.processEntityBuffer()
+        val effects = physicsWorld.effectsBuffer
+        physicsWorld.effectsBuffer = mutableListOf()
+
+        return PhysicsOutput(effects)
     }
 
     //TODO Can we delegate this or something
@@ -264,7 +275,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          */
         open fun testFunc(){
 //            println("PhysicsEntity.testFunc")
-            componentFixtureMap.entries.forEach{it.value?.kill()}
+//            componentFixtureMap.entries.stream().skip(3).findFirst().ifPresent {it.value?.kill()}
+            val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
+            bullet.translate(this.worldCenter.x + 1, this.worldCenter.y + 1)
+            worldReference.entityBuffer.add(bullet);
         }
 
         /**
@@ -326,6 +340,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
                                worldReference.entityBuffer.add(newEntity)
+//                               worldReference.addBody(newEntity)
                            }
                        }
                    }
@@ -519,10 +534,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     /**
      * Extension of Dyn4J world
      */
-    class PhysicsWorld : AbstractPhysicsWorld<CustomFixture, PhysicsEntity, WorldCollisionData<CustomFixture, PhysicsEntity>>() {
+    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<CustomFixture, PhysicsEntity, WorldCollisionData<CustomFixture, PhysicsEntity>>() {
 
         val entityBuffer = mutableListOf<PhysicsEntity>()
-        val effectsBuffer = mutableListOf<EffectsRequest>()
+        var effectsBuffer = mutableListOf<EffectsRequest>()
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
@@ -530,6 +545,15 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 it.pair.first.fixture.onCollide(it)
                 it.pair.second.fixture.onCollide(it)
             }
+        }
+
+        /**
+         * Entites should never be added via addBody, they should go through the buffer first. this lets us handle anything that needs to be handled.
+         */
+        fun processEntityBuffer(){
+            println("entities in buffer: ${entityBuffer.size}")
+            entityBuffer.forEach { addBody(it) }
+            entityBuffer.clear()
         }
 
         override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, CustomFixture>>?): WorldCollisionData<CustomFixture, PhysicsEntity> {
