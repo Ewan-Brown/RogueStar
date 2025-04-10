@@ -1,15 +1,17 @@
+package client
+
+import Transformation
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.newt.event.MouseEvent
 import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
-import org.dyn4j.geometry.Matrix33
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.geometry.Vector3
+import plus
+import times
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import java.util.Vector
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
@@ -41,13 +43,13 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     private inner class ModelData {
         var verticeIndex: Int = 0
         var instanceIndex: Int = 0
-        var instanceData: List<Pair<Transformation, GraphicalData>> = ArrayList()
+        var instanceData: List<RenderableEntity> = ArrayList()
         val instanceCount: Int
             get() = instanceData.size
     }
 
     data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
-    fun updateDrawables(data: Map<Model, List<Pair<Transformation, GraphicalData>>>, cameraDetails: CameraDetails) {
+    fun updateDrawables(data: Map<Model, List<RenderableEntity>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
             //Update camera
             val diff = cameraPos.to(cameraDetails.targetPosition)
@@ -356,12 +358,19 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
         POSITION(0, 3, Buffer.VERTEX)
     }
-    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (Pair<Transformation, GraphicalData>) -> List<Float>, val VBOBuffer: Int){
-        POSITION(1, 3, {listOf(it.first.position.x.toFloat(), it.first.position.y.toFloat(), it.second.z)}, Buffer.INSTANCED_POSITIONS),
-        ROTATION(2, 1, {listOf(it.first.rotation.toRadians().toFloat())}, Buffer.INSTANCED_ROTATIONS),
-        SCALE(3, 1, {listOf(it.first.scale.toFloat())}, Buffer.INSTANCED_SCALES),
-        COLOR(4, 3, {listOf(it.second.red, it.second.green, it.second.blue)}, Buffer.INSTANCED_COLORS),
-        HEALTH(5, 1, {listOf(it.second.health)}, Buffer.INSTANCED_HEALTHS)
+
+    data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float){}
+    data class MetaData(val health: Float )
+    class RenderableEntity(val model: Model, val transform: Transformation, val colorData: ColorData, val metaData: MetaData)
+
+    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (RenderableEntity) -> List<Float>, val VBOBuffer: Int){
+        POSITION(1, 3, {listOf(it.transform.translation.x.toFloat(), it.transform.translation.y.toFloat(), it.transform.translation.z.toFloat())},
+            Buffer.INSTANCED_POSITIONS
+        ),
+        ROTATION(2, 1, {listOf(it.transform.rotation.toRadians().toFloat())}, Buffer.INSTANCED_ROTATIONS),
+        SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, Buffer.INSTANCED_SCALES),
+        COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
+        HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)
     }
 
 

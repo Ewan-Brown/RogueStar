@@ -1,5 +1,8 @@
-import Graphics.Model
+import client.Graphics.Model
 import PhysicsLayer.PhysicsEntity.*
+import client.EffectsRequest
+import client.Graphics
+import client.GraphicsService
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
@@ -18,7 +21,7 @@ import java.util.function.Predicate
 import kotlin.collections.HashMap
 import kotlin.math.PI
 
-data class ComponentDefinition(val model : Model, val localTransform: Transformation, val graphicalData: GraphicalData)
+//data class ComponentDefinition(val model : Model, val localTransform: Transformation)
 
 data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
@@ -36,37 +39,45 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             connections = conn
         }
     }
-    val simpleLoader = { entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
+
+    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> ShipEntity = {
+        entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
         val components = entityBlueprint.components
         val connections = entityBlueprint.connections
-        val componentMapping: Map<ComponentBlueprint, Component> = components.associateWith {
+        val fixtureSlotMapping: Map<ComponentBlueprint, FixtureSlot<*>> = components.associateWith {
             val model = models[it.shape]
-            val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
-            val graphicalData = when (it.type) {
-                Type.THRUSTER -> GraphicalData(0.8f, 0.0f, 0.0f, 0.0f)
-                Type.ROOT -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                Type.GUN -> GraphicalData(0.0f, 1.0f, 1.0f, 0.0f)
-                Type.BODY -> GraphicalData(0.4f, 0.4f, 0.5f, 0.0f)
+            val transform = Transformation(Vector3(it.position.x / 30.0, it.position.y / 30.0, 0.0), it.scale, it.rotation * PI / 2.0) //TODO Clean up this
+
+            //TODO Add component implementations for each type!
+            when(it.type){
+                Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
+                Type.ROOT ,
+                Type.GUN ,
+                Type.BODY -> BasicFixtureSlot(model, transform)
             }
-            val def = ComponentDefinition(model, transform, graphicalData)
-            Component(
-                def,
-                TeamFilter(
-                    category = CollisionCategory.CATEGORY_SHIP.bits,
-                    mask = CollisionCategory.CATEGORY_SHIP.bits
-                )
-            )
+
+//            val model = models[it.shape]
+//            val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
+//            val def = ComponentDefinition(model, transform)
+//            def.
+//            Component(
+//                def,
+//                TeamFilter(
+//                    category = CollisionCategory.CATEGORY_SHIP.bits,
+//                    mask = CollisionCategory.CATEGORY_SHIP.bits
+//                )
+//            )
         }
 
-        fun getMatchingComponent(id: Int) = componentMapping[components[id]]
+        fun getMatchingComponent(id: Int) = fixtureSlotMapping[components[id]]
         fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
 
-        val thrusters = componentMapping.filter { it.key.type == Type.THRUSTER }.map { it.value }
-        val root = componentMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
+        val thrusters : List<ThrusterFixtureSlot> = fixtureSlotMapping.values.filterIsInstance<ThrusterFixtureSlot>()
+        val root = fixtureSlotMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first()
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        val s = ShipDetails(componentMapping.values.toList(), thrusters, trueConnectionMap, root)
+        val s = ShipDetails(fixtureSlotMapping.values.toList(), thrusters, trueConnectionMap, root)
         ShipEntity(Team.TEAMLESS, s, worldRef)
     }
     //TODO Refactor this?
@@ -163,7 +174,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return body?.let { it.createBodyData() }
     }
 
-    //TODO this comment needsa  second thought
+    //TODO this comment needsa second thought
     //onCollide() is called during physicsWorld.update(), meaning it always occurs before any body.update() is called.
     //therefore maybe onCollide should simply flag things and store data, allowing .update() to clean up.
     override fun update(input: PhysicsInput) : PhysicsOutput{
@@ -190,8 +201,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return PhysicsOutput(effects)
     }
 
+    val graphicsService = GraphicsService()
+
     //TODO Can we delegate this or something
-    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
         physicsWorld.populateModelMap(modelDataMap)
     }
 
@@ -240,12 +253,12 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     }
 
     public abstract class PhysicsEntity protected constructor(
-        internalComponents: List<Component>,
-        val root: Component = internalComponents[0],
+        internalFixtureSlots: List<FixtureSlot<*>>,
+        val root: FixtureSlot<*> = internalFixtureSlots[0],
         val teamFilter: TeamFilter,
-        private val connectionMap: Map<Component, List<Component>>,
+        private val connectionMap: Map<FixtureSlot<*>, List<FixtureSlot<*>>>,
         val worldReference: PhysicsWorld
-    ) : AbstractPhysicsBody<CustomFixture>() {
+    ) : AbstractPhysicsBody<BasicFixture>() {
 
         private companion object {
             private var UUID_COUNTER = 0
@@ -257,11 +270,12 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         /**
          * This serves two purposes - to keep a list of all the components (fixture slots) as well as a reference to each of the components' fixtures -
          * if a reference is null it means the fixture is destroyed or removed
+         * TODO Why not just have Component.fixture as a field?
          */
-        val componentFixtureMap: MutableMap<Component, CustomFixture?> = internalComponents.associateWith { null }.toMutableMap()
+        val fixtureSlotFixtureMap: MutableMap<FixtureSlot<*>, BasicFixture?> = internalFixtureSlots.associateWith { null }.toMutableMap()
 
         init {
-            for(value in internalComponents){
+            for(value in internalFixtureSlots){
                 reviveComponent(value)
             }
         }
@@ -271,7 +285,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          */
         open fun testFunc(){
             val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
-            bullet.translate(this.worldCenter.x + 1, this.worldCenter.y + 1)
+            for (entry in fixtureSlotFixtureMap.entries) {
+                entry.key
+            }
+            bullet.translate(-bullet.worldCenter.x, -bullet.worldCenter.y)
             worldReference.entityBuffer.add(bullet);
         }
 
@@ -279,33 +296,33 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
          * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
          * */
-        private fun processComponentDestruction(component: Component, trueDestruction: Boolean = true){
-            if(!componentFixtureMap.contains(component)){
+        private fun processComponentDestruction(fixtureSlot: FixtureSlot<*>, trueDestruction: Boolean = true){
+            if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
-               if(componentFixtureMap[component] == null){
-                   throw IllegalStateException("tried to kill a component that is already dead under this entity - $component")
+               if(fixtureSlotFixtureMap[fixtureSlot] == null){
+                   throw IllegalStateException("tried to kill a component that is already dead under this entity - $fixtureSlot")
                }else {
-                   removeFixture(componentFixtureMap[component])
-                   componentFixtureMap[component] = null
+                   removeFixture(fixtureSlotFixtureMap[fixtureSlot])
+                   fixtureSlotFixtureMap[fixtureSlot] = null
                    //Split check!
                    if (trueDestruction) {
-                       val branchRoots = connectionMap[component]
-                       val nodesAlreadyCounted = mutableListOf<Component>()
-                       val branches: List<List<Component>> = branchRoots!!.mapNotNull {
-                           if (componentFixtureMap[it] == null){
+                       val branchRoots = connectionMap[fixtureSlot]
+                       val nodesAlreadyCounted = mutableListOf<FixtureSlot<*>>()
+                       val branches: List<List<FixtureSlot<*>>> = branchRoots!!.mapNotNull {
+                           if (fixtureSlotFixtureMap[it] == null){
                                return@mapNotNull null
                            }
                            if (nodesAlreadyCounted.contains(it)) {
                                return@mapNotNull null
                            } else {
-                               val accumulator = mutableListOf<Component>()
-                               val toIgnore = component
-                               val nodesToExplore = Stack<Component>()
+                               val accumulator = mutableListOf<FixtureSlot<*>>()
+                               val toIgnore = fixtureSlot
+                               val nodesToExplore = Stack<FixtureSlot<*>>()
                                nodesToExplore.push(it)
                                while (nodesToExplore.isNotEmpty()) {
                                    val node = nodesToExplore.pop()
-                                   if (node != toIgnore && !accumulator.contains(node) && componentFixtureMap[node] != null) {
+                                   if (node != toIgnore && !accumulator.contains(node) && fixtureSlotFixtureMap[node] != null) {
                                        accumulator.add(node)
                                        nodesAlreadyCounted.add(node)
                                        nodesToExplore.addAll(connectionMap[node]!!)
@@ -323,9 +340,9 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                    processComponentDestruction(branchComponent, false) //false == non-recursive
                                }
                                //Generate a new connection map for this new entity
-                               val newConnections = mutableMapOf<Component, List<Component>>()
-                               val tempComponentMap = branch.associateWith { it -> Component(it.definition, teamFilter) }
-                               //Iterate across the connections of each component in this branch, creating a structural copy with the new components
+                               val newConnections = mutableMapOf<FixtureSlot<*>, List<FixtureSlot<*>>>()
+                               val tempComponentMap = branch.associateWith { it -> copyFixtureSlot(it)}
+//                               Iterate across the connections of each component in this branch, creating a structural copy with the new components
                                for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
                                    newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                                }
@@ -334,7 +351,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
                                worldReference.entityBuffer.add(newEntity)
-//                               worldReference.addBody(newEntity)
+                               worldReference.addBody(newEntity)
                            }
                        }
                    }
@@ -345,44 +362,85 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         /**
          * Assuming this component's fixture is 'dead' this will regenerate it and add it back to the body.
          */
-        fun reviveComponent(component: Component){
-            if(!componentFixtureMap.contains(component)){
+        fun reviveComponent(fixtureSlot: FixtureSlot<*>){
+            if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
                 throw IllegalArgumentException("tried to kill a component that is not under this entity")
             }else{
-                if(componentFixtureMap[component] != null){
+                if(fixtureSlotFixtureMap[fixtureSlot] != null){
                     throw IllegalStateException("tried to revive a component that is already alive")
                 }else{
-                    val fixture = component.createFixture()
-                    componentFixtureMap[component] = fixture
+                    val fixture = fixtureSlot.createFixture()
+                    fixtureSlotFixtureMap[fixtureSlot] = fixture
                     addFixture(fixture)
                 }
             }
         }
 
+        data class RenderData(val localPosition: Transformation)
+
         /**
-         * A Component describes the "slot" for a body fixture
-         * Component visibility is restricted to the Body they are a part of.
-         * Components references must be valid for the lifetime of the ship they are a part of, but a fixture may or may not be alive for a given component at any point in time (as represented in the connectionMap)
+         * A slot for a fixture of a given type. Think carefully about what fields should go in slot vs fixture.
          */
-        open class Component(val definition: ComponentDefinition, private val filter: TeamFilter){
-            fun createFixture(): CustomFixture {
-                val vertices = arrayOfNulls<Vector2>(definition.model.points)
-                for (i in vertices.indices) {
-                    vertices[i] = definition.model.asVectorData[i].copy()
-                        .multiply(definition.localTransform.scale.toDouble())
-                }
-                val polygon = Polygon(*vertices)
-                polygon.rotate(definition.localTransform.rotation.toRadians())
-                polygon.translate(definition.localTransform.position.copy())
-                val fixture = CustomFixture(polygon)
-                fixture.filter = filter
-                return fixture
-            }
-            fun onDestruction(){
+        sealed class FixtureSlot<T : BasicFixture>(val model: Model, val localTransform: Transformation){
+            abstract fun createFixture(): T
+            fun onDestruction(){}
+            abstract fun getRenderData() : RenderData
+        }
+
+        fun <F : FixtureSlot<*>> copyFixtureSlot(a: F) : F {
+            return when(a){
+                is BasicFixtureSlot -> BasicFixtureSlot(a.model, a.localTransform) as F
+                is ThrusterFixtureSlot -> ThrusterFixtureSlot(a.model, a.localTransform) as F
+                else -> {throw IllegalArgumentException()}
             }
         }
 
-        class ThrusterComponent(definition: ComponentDefinition, filter:TeamFilter, val localExhaustDirection: Rotation) : Component(definition, filter)
+        class BasicFixtureSlot(model: Model, localTransform: Transformation) : FixtureSlot<BasicFixture>(model, localTransform){
+            override fun createFixture(): BasicFixture {
+                val vertices = arrayOfNulls<Vector2>(model.points)
+                for (i in vertices.indices) {
+                    vertices[i] = model.asVectorData[i].copy()
+                        .multiply(localTransform.scale)
+                }
+                val polygon = Polygon(*vertices)
+                polygon.rotate(localTransform.rotation.toRadians())
+                polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
+                val fixture = BasicFixture(polygon)
+                fixture.filter = TeamFilter(
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits
+                )
+                return fixture
+            }
+
+            override fun getRenderData(): RenderData {
+                TODO("Not yet implemented")
+            }
+
+        }
+
+        class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<ThrusterFixture>(model, transform) {
+            override fun createFixture(): ThrusterFixture {
+                val vertices = arrayOfNulls<Vector2>(model.points)
+                for (i in vertices.indices) {
+                    vertices[i] = model.asVectorData[i].copy()
+                        .multiply(localTransform.scale)
+                }
+                val polygon = Polygon(*vertices)
+                polygon.rotate(localTransform.rotation.toRadians())
+                polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
+                val fixture = ThrusterFixture(polygon)
+                fixture.filter = TeamFilter(
+                    category = CollisionCategory.CATEGORY_SHIP.bits,
+                    mask = CollisionCategory.CATEGORY_SHIP.bits
+                )
+                return fixture
+            }
+
+            override fun getRenderData(): RenderData {
+                TODO("Not yet implemented")
+            }
+        }
 
         abstract fun isMarkedForRemoval(): Boolean
 
@@ -391,7 +449,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             var didLoseParts = false;
             val effectsList = mutableListOf<EffectsRequest>()
             val entityList = mutableListOf<PhysicsEntity>();
-            for (entry in componentFixtureMap) {
+            for (entry in fixtureSlotFixtureMap) {
                 entry.value?.let{
                     if (it.isMarkedForRemoval()){
                         entry.key.onDestruction()
@@ -410,16 +468,16 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
         abstract fun processControlActions(actions: List<ControlAction>)
 
-        fun getRenderableComponents(): List<RenderableComponent> {
+        fun getRenderableComponents(): List<Graphics.RenderableEntity> {
             if (!isEnabled) {
                 return listOf()
             } else {
-                val result: MutableList<RenderableComponent> = ArrayList()
+                val result: MutableList<Graphics.RenderableEntity> = ArrayList()
 
                 val entityAngle = getTransform().rotationAngle.toFloat()
                 val entityPos = this.worldCenter
 
-                for (comp in componentFixtureMap.entries){
+                for (comp in fixtureSlotFixtureMap.entries){
                     val renderable = transformLocalRenderableToGlobal(comp.key)
                     if(renderable != null) {
                         result.add(renderable)
@@ -432,32 +490,39 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         /**
          * Take a component (which has coordinates in local space) and transform it to global space, then wrap it with graphical details
          */
-        fun transformLocalRenderableToGlobal(component: Component) : RenderableComponent?{
-            val fixture = componentFixtureMap[component]
+        fun transformLocalRenderableToGlobal(fixtureSlot: FixtureSlot<*>) : Graphics.RenderableEntity?{
+            val fixture = fixtureSlotFixtureMap[fixtureSlot]
             if(fixture != null){
-                val renderable = RenderableComponent(component.definition.model, component.definition.localTransform, component.definition.graphicalData)
+//                val renderable = Graphics.RenderableEntity(
+//                    component.definition.model,
+//                    component.definition.localTransform,
+////                    component.definition.graphicalData
+//                )
                 val entityAngle = getTransform().rotation.toRadians()
                 val entityPos = this.worldCenter
-                val newPos = renderable.transform.position.copy().subtract(this.getMass().center)
-                    .rotate(entityAngle.toDouble()).add(entityPos)
+                val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(this.getMass().center)
+                    .rotate(entityAngle).add(entityPos)
                 val newAngle =
-                    Rotation(renderable.transform.rotation.toRadians() + this.transform.rotationAngle)
-                val scale = renderable.transform.scale
+                    Rotation(fixtureSlot.localTransform.rotation.toRadians() + this.transform.rotationAngle)
+                val scale = fixtureSlot.localTransform.scale
 
+                return Graphics.RenderableEntity(
+                    fixtureSlot.model,
+                    Transformation(absolutePos.toVec3(), scale, newAngle),
+                    Graphics.ColorData(1.0f, 1.0f, 1.0f, 0.0f),
+                    Graphics.MetaData(1.0f)
+//                    GraphicalData(
+//                        renderable.graphicalData.red,
+//                        renderable.graphicalData.green,
+//                        renderable.graphicalData.blue,
+//                        renderable.graphicalData.z,
+//                        fixture.getHealth().toFloat() / 100.0f
+//                    )
+                )
                 //TODO We should probably have two different types -
                 //  'renderable data that is static and attached to fixture'
                 //  and 'class that represents ephemeral data describing a fixture's rendering'
-                return RenderableComponent(
-                    renderable.model,
-                    Transformation(newPos, scale, newAngle),
-                    GraphicalData(
-                        renderable.graphicalData.red,
-                        renderable.graphicalData.green,
-                        renderable.graphicalData.blue,
-                        renderable.graphicalData.z,
-                        fixture.getHealth().toFloat() / 100.0f
-                    )
-                )
+
             }
             return null
         }
@@ -477,10 +542,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
-    public data class ShipDetails(val components: List<Component>, val thrusters: List<Component>, val connectionMap: Map<Component, List<Component>>, val cockpit: Component)
+    public data class ShipDetails(val fixtureSlots: List<FixtureSlot<*>>, val thrusters: List<ThrusterFixtureSlot>, val connectionMap: Map<FixtureSlot<*>, List<FixtureSlot<*>>>, val cockpit: FixtureSlot<*>)
 
     open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
-        shipDetails.components, shipDetails.cockpit, TeamFilter(
+        shipDetails.fixtureSlots, shipDetails.cockpit, TeamFilter(
             team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
         ), shipDetails.connectionMap, worldReference
@@ -499,11 +564,11 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 when(action){
                     is ControlAction.ShootAction -> TODO()
                     is ControlAction.ThrustAction -> {
-                        val thrusterCount = thrusterComponents.count { return@count componentFixtureMap[it] != null }
+                        val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
                         applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                         for (thrusterComponent in thrusterComponents) {
                             transformLocalRenderableToGlobal(thrusterComponent)?.transform?.let{
-                                worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.position, it.rotation.toRadians(), Vector2()))
+                                worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
                             }
                         }
                     }
@@ -527,12 +592,12 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     /**
      * Extension of Dyn4J world
      */
-    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<CustomFixture, PhysicsEntity, WorldCollisionData<CustomFixture, PhysicsEntity>>() {
+    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
         val entityBuffer = mutableListOf<PhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
 
-        override fun processCollisions(iterator: Iterator<WorldCollisionData<CustomFixture, PhysicsEntity>>) {
+        override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, PhysicsEntity>>) {
             super.processCollisions(iterator)
             contactCollisions.forEach {
                 it.pair.first.fixture.onCollide(it)
@@ -548,14 +613,15 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             entityBuffer.clear()
         }
 
-        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, CustomFixture>>?): WorldCollisionData<CustomFixture, PhysicsEntity> {
+        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BasicFixture>>?): WorldCollisionData<BasicFixture, PhysicsEntity> {
             return WorldCollisionData(pair)
         }
 
-        fun populateModelMap(map: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
+        fun populateModelMap(map: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
             for (body in this.bodies) {
                 for (component in body.getRenderableComponents()) {
-                    map[component.model]!!.add(Pair(component.transform, component.graphicalData))
+//                    map[component.model]!!.add(Pair(component.transform, component.graphicalData))
+                    map[component.model]!!.add(component)
                 }
             }
         }
@@ -586,18 +652,23 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     /**
      * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
      */
-    public class CustomFixture(shape: Convex): BodyFixture(shape) {
+    open class BasicFixture(shape: Convex): BodyFixture(shape) {
         private var health = 100;
-        fun onCollide(data: WorldCollisionData<CustomFixture, PhysicsEntity>) {
+        fun onCollide(data: WorldCollisionData<BasicFixture, PhysicsEntity>) {
             health -= 1;
         }
+
+        fun getHealth(): Int = health
+        fun isMarkedForRemoval(): Boolean = health <= 0
 
         /**
          * Just for testing at the moment
          */
         fun kill(){health = 0}
-        fun getHealth(): Int = health
-        fun isMarkedForRemoval(): Boolean = health <= 0
+    }
+
+    class ThrusterFixture(shape: Convex): BasicFixture(shape) {
+        private var direction = 0.0
     }
 }
 

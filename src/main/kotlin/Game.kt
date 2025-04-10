@@ -1,25 +1,24 @@
-import Graphics.Model
+import client.EffectsInput
+import client.EffectsLayer
+import client.Graphics
+import client.Graphics.Model
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
-import com.jogamp.newt.event.MouseEvent
-import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.GL
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
-import java.io.File
+import org.dyn4j.geometry.Vector3
 import java.util.*
-import kotlin.io.path.Path
 
-class Transformation(val position: Vector2 = Vector2(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
-    constructor(position : Vector2, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
+class Transformation(val translation: Vector3 = Vector3(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
+    constructor(position : Vector3, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
 
 //Immutable please
-open class TransformedComponent(val model : Model, val transform: Transformation)
-class GraphicalData(val red : Float, val green : Float, val blue: Float, val z: Float, val health: Float = 1.0f) //Construction to represent the % this part is done being built
-class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
+//open class TransformedComponent(val model : Model, val transform: Transformation)
+//class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
 
 class Team(val name : String){
     companion object{
@@ -81,7 +80,7 @@ fun main() {
         physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     }
 
-    val modelDataMap = hashMapOf<Model, MutableList<Pair<Transformation, GraphicalData>>>()
+    val modelDataMap = hashMapOf<Model, MutableList<Graphics.RenderableEntity>>()
 
     //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
     val populateData = fun (details : Graphics.CameraDetails) {
