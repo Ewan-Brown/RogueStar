@@ -1,4 +1,5 @@
 import org.dyn4j.geometry.Vector2
+import org.dyn4j.geometry.Vector3
 import java.awt.Point
 import java.awt.Polygon
 import kotlin.math.ceil
@@ -12,6 +13,11 @@ operator fun Vector2.plus(vec: Vector2): Vector2 = this.sum(vec)
 operator fun Vector2.minus(vec: Vector2): Vector2 = this.difference(vec)
 operator fun Vector2.times(factor: Double): Vector2 = this.product(factor)
 operator fun Vector2.div(factor: Double): Vector2 = this.quotient(factor)
+operator fun Vector2.plus(vec3: Vector3): Vector3 = Vector3(this.x+vec3.x, this.y+vec3.y, vec3.y)
+operator fun Vector3.plus(vec2: Vector2): Vector3 = Vector3(this.x+vec2.x, this.y+vec2.y, this.y)
+
+fun Vector3.toVec2() : Vector2 = Vector2(x, y)
+fun Vector2.toVec3() : Vector3 = Vector3(x, y, 0.0)
 
 operator fun List<Vector2>.plus(vec: Vector2): List<Vector2> {return this.map { it.add(vec) }}
 operator fun List<Vector2>.minus(vec: Vector2): List<Vector2> {return this.map { it.minus(vec) }}
@@ -23,10 +29,12 @@ fun vectorListToPolygon(vec: List<Vector2>) : Polygon {
 }
 
 fun Vector2.getSlope(): Double = this.y/this.x
-fun Vector2.floor(): Vector2 = Vector2(floor(this.x), floor(this.y))
-fun Vector2.round(): Vector2 = Vector2(round(this.x), round(this.y))
-fun Vector2.ceil(): Vector2 = Vector2(ceil(this.x), ceil(this.y))
+
 fun Vector2.flip(): Vector2 = this.product(-1.0)
+fun Vector2.invoke(v: (Double) -> (Double)): Vector2 = Vector2(v.invoke(this.x), v.invoke(this.y))
+fun Vector2.floor(): Vector2 = this.invoke { floor(it) }
+fun Vector2.round(): Vector2 = this.invoke { round(it) }
+fun Vector2.ceil(): Vector2 = this.invoke { ceil(it) }
 fun Point.toVector(): Vector2 = Vector2(this.getX(), this.getY())
 fun List<Vector2>.getCentroid() : Vector2{
     var A = 0.0;

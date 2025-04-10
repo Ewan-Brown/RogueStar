@@ -3,6 +3,7 @@ import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
 import PhysicsLayer.PhysicsBodyData
+import client.Graphics
 
 data class ControllerInput(val map: Map<Int, PhysicsBodyData>)
 data class ControllerOutput(val map: Map<Int, List<ControlAction>>)
@@ -133,7 +134,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
         return ControllerOutput(amalgamatedMap)
     }
 
-    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Pair<Transformation, GraphicalData>>>) {
+    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.RenderableEntity>>) {
         //Add renderables for player perspective?? Interesting idea
     }
 }

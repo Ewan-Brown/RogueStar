@@ -1,3 +1,5 @@
+package client
+
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.newt.event.MouseListener
 import com.jogamp.newt.event.WindowAdapter

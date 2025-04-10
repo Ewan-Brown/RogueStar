@@ -1,8 +1,14 @@
-import org.dyn4j.geometry.Vector2
-import Graphics.Model
+package client
 
-sealed class EffectsRequest(val model: Model, val initialPosition: Vector2, val initialAngle: Double){
-    class ExhaustRequest(initialPosition: Vector2, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
+import Layer
+import Transformation
+import org.dyn4j.geometry.Vector2
+import client.Graphics.Model
+import org.dyn4j.geometry.Vector3
+import toVec3
+
+sealed class EffectsRequest(val model: Model, val initialPosition: Vector3, val initialAngle: Double){
+    class ExhaustRequest(initialPosition: Vector3, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>)
@@ -15,7 +21,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
         for (effect in effectsRequests) {
             when (effect) {
                 is EffectsRequest.ExhaustRequest -> {
-                    val exhaust = with(effect) {ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
+                    val exhaust = with(effect) { ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
                     entities.add(exhaust)
                 }
             }
@@ -26,22 +32,22 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
         entities.removeIf(EffectsEntity::isMarkedForRemoval)
     }
 
-    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Pair<Transformation, GraphicalData>>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
         for (entity in entities) {
             for (component in entity.getComponents()) {
-                modelDataMap[component.model]!!.add(Pair(component.transform, component.graphicalData))
+                modelDataMap[component.model]!!.add(component)
             }
         }
     }
 }
 
 private abstract class EffectsEntity{
-    abstract fun getComponents(): List<RenderableComponent>
+    abstract fun getComponents(): List<Graphics.RenderableEntity>
     abstract fun update(): Unit
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-private class ExhaustEntity(val model: Model, val position: Vector2, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
+private class ExhaustEntity(val model: Model, val position: Vector3, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
     : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
@@ -52,7 +58,7 @@ private class ExhaustEntity(val model: Model, val position: Vector2, var rotatio
         return (lifetime.toFloat() / MAX_LIFE.toFloat())
     }
 
-    override fun getComponents(): List<RenderableComponent> {
+    override fun getComponents(): List<Graphics.RenderableEntity> {
 
         val variableScale = getLife().toDouble()
         if (variableScale < 0.01) {
@@ -60,17 +66,17 @@ private class ExhaustEntity(val model: Model, val position: Vector2, var rotatio
         }
         val transform = Transformation(position.copy(), variableScale, rotation)
         return listOf(
-            RenderableComponent(
-                model,
-                transform,
-                GraphicalData(getLife(),0.0f,0.0f,10-getLife()))
+//            RenderableComponent(
+//                model,
+//                transform,
+//                GraphicalData(getLife(),0.0f,0.0f,10-getLife()))
         )
 
     }
 
     override fun update() {
         lifetime--
-        position.add(velocity)
+        position.add(velocity.toVec3())
         rotation += drotation * getLife()
     }
 
