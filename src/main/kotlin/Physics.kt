@@ -351,7 +351,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
                                worldReference.entityBuffer.add(newEntity)
-                               worldReference.addBody(newEntity)
                            }
                        }
                    }
@@ -609,7 +608,11 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
          * Entites should never be added via addBody, they should go through the buffer first. this lets us handle anything that needs to be handled.
          */
         fun processEntityBuffer(){
-            entityBuffer.forEach { addBody(it) }
+            println("--------------------------------------")
+            for (physicsEntity in entityBuffer) {
+                println(physicsEntity)
+                addBody(physicsEntity)
+            }
             entityBuffer.clear()
         }
 
