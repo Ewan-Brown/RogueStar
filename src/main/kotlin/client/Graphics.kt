@@ -359,8 +359,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         POSITION(0, 3, Buffer.VERTEX)
     }
 
-    data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float){}
-    data class MetaData(val health: Float )
+    data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
+    class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
     class RenderableEntity(val model: Model, val transform: Transformation, val colorData: ColorData, val metaData: MetaData)
 
     enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (RenderableEntity) -> List<Float>, val VBOBuffer: Int){
