@@ -18,10 +18,10 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
 
     override fun update(input: EffectsInput) {
         val effectsRequests = input.input
-        for (effect in effectsRequests) {
-            when (effect) {
+        for (requests in effectsRequests) {
+            when (requests) {
                 is EffectsRequest.ExhaustRequest -> {
-                    val exhaust = with(effect) { ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
+                    val exhaust = with(requests) { ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
                     entities.add(exhaust)
                 }
             }
@@ -66,10 +66,9 @@ private class ExhaustEntity(val model: Model, val position: Vector3, var rotatio
         }
         val transform = Transformation(position.copy(), variableScale, rotation)
         return listOf(
-//            RenderableComponent(
-//                model,
-//                transform,
-//                GraphicalData(getLife(),0.0f,0.0f,10-getLife()))
+            Graphics.RenderableEntity(
+                model, transform, Graphics.ColorData(1.0f,1.0f,1.0f,1.0f,), Graphics.MetaData(1.0f)
+            )
         )
 
     }
