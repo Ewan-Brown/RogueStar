@@ -385,7 +385,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         override fun mousePressed(e: MouseEvent) {
             val mousePos = Vector2(e.x.toDouble(), e.y.toDouble())
             val gamePos = transformScreenPosToGamePos(mousePos)
-            println("Mouse pressed at : $mousePos")
         }
 
     }
