@@ -1,8 +1,6 @@
-import client.Graphics.Model
+import Graphics.Model
 import PhysicsLayer.PhysicsEntity.*
-import client.EffectsRequest
-import client.Graphics
-import client.GraphicsService
+import Graphics
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
@@ -27,7 +25,7 @@ data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
-
+    val graphicsService = GraphicsService()
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
      */
@@ -201,7 +199,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return PhysicsOutput(effects)
     }
 
-    val graphicsService = GraphicsService()
 
     //TODO Can we delegate this or something
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
@@ -477,7 +474,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 val entityPos = this.worldCenter
 
                 for (comp in fixtureSlotFixtureMap.entries){
-                    val renderable = transformLocalRenderableToGlobal(comp.key)
+                    val renderable = transformLocalRenderableToGlobal(worldReference.graphicsService, comp.key)
                     if(renderable != null) {
                         result.add(renderable)
                     }
@@ -489,40 +486,8 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         /**
          * Take a component (which has coordinates in local space) and transform it to global space, then wrap it with graphical details
          */
-        fun transformLocalRenderableToGlobal(fixtureSlot: FixtureSlot<*>) : Graphics.RenderableEntity?{
-            val fixture = fixtureSlotFixtureMap[fixtureSlot]
-            if(fixture != null){
-//                val renderable = Graphics.RenderableEntity(
-//                    component.definition.model,
-//                    component.definition.localTransform,
-////                    component.definition.graphicalData
-//                )
-                val entityAngle = getTransform().rotation.toRadians()
-                val entityPos = this.worldCenter
-                val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(this.getMass().center)
-                    .rotate(entityAngle).add(entityPos)
-                val newAngle =
-                    Rotation(fixtureSlot.localTransform.rotation.toRadians() + this.transform.rotationAngle)
-                val scale = fixtureSlot.localTransform.scale
-
-                return Graphics.RenderableEntity(
-                    fixtureSlot.model,
-                    Transformation(absolutePos.toVec3(), scale, newAngle),
-                    Graphics.ColorData(1.0f, 1.0f, 1.0f, 0.0f),
-                    Graphics.MetaData(1.0f)
-//                    GraphicalData(
-//                        renderable.graphicalData.red,
-//                        renderable.graphicalData.green,
-//                        renderable.graphicalData.blue,
-//                        renderable.graphicalData.z,
-//                        fixture.getHealth().toFloat() / 100.0f
-//                    )
-                )
-                //TODO We should probably have two different types -
-                //  'renderable data that is static and attached to fixture'
-                //  and 'class that represents ephemeral data describing a fixture's rendering'
-
-            }
+        fun transformLocalRenderableToGlobal(graphicsService: GraphicsService, fixtureSlot: FixtureSlot<*>) : Graphics.RenderableEntity?{
+            return graphicsService.componentToRenderable(this, fixtureSlot);
             return null
         }
 
@@ -566,7 +531,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                         val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
                         applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                         for (thrusterComponent in thrusterComponents) {
-                            transformLocalRenderableToGlobal(thrusterComponent)?.transform?.let{
+                            transformLocalRenderableToGlobal(worldReference.graphicsService, thrusterComponent)?.transform?.let{
                                 worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
                             }
                         }
@@ -593,6 +558,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
      */
     class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
+        val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<PhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
 

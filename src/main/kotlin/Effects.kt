@@ -1,11 +1,7 @@
-package client
-
-import Layer
-import Transformation
+import Graphics
 import org.dyn4j.geometry.Vector2
-import client.Graphics.Model
+import Graphics.Model
 import org.dyn4j.geometry.Vector3
-import toVec3
 
 sealed class EffectsRequest(val model: Model, val initialPosition: Vector3, val initialAngle: Double){
     class ExhaustRequest(initialPosition: Vector3, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
@@ -64,10 +60,10 @@ private class ExhaustEntity(val model: Model, val position: Vector3, var rotatio
         if (variableScale < 0.01) {
             isDead = true
         }
-        val transform = Transformation(position.copy(), variableScale, rotation)
+        val transform = Transformation(position.copy().add(Vector3(0.0, 0.0, 1.0)), variableScale, rotation)
         return listOf(
             Graphics.RenderableEntity(
-                model, transform, Graphics.ColorData(1.0f,1.0f,1.0f,1.0f,), Graphics.MetaData(1.0f)
+                model, transform, Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
             )
         )
 

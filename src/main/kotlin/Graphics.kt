@@ -1,6 +1,3 @@
-package client
-
-import Transformation
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.newt.event.MouseEvent
 import com.jogamp.newt.event.MouseListener
@@ -8,10 +5,15 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
-import plus
-import times
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
+import java.util.ArrayList
+import kotlin.collections.associateWith
+import kotlin.collections.forEach
+import kotlin.collections.getValue
+import kotlin.collections.indices
+import kotlin.collections.set
+import kotlin.collections.withIndex
 
 class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
 
@@ -206,7 +208,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         //TODO Clean this up.
         //For each model type
 
-        val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {FloatArray(it.size * modelCount)}
+        val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {
+            FloatArray(
+                it.size * modelCount
+            )
+        }
         val attributeMarkerMap : MutableMap<INSTANCED_ATTRIBUTE, Int> = mutableMapOf()
         INSTANCED_ATTRIBUTE.entries.forEach {attributeMarkerMap[it] = 0}
         var indexCounter = 0
@@ -321,9 +327,12 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
     }
 
     private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
-        val adjustedScreenPos = Vector2((screenPos.x / width.toDouble()) * 2 - 1, -(screenPos.y / height.toDouble()) * 2 + 1)
+        val adjustedScreenPos =
+            Vector2((screenPos.x / width.toDouble()) * 2 - 1, -(screenPos.y / height.toDouble()) * 2 + 1)
         val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
-        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.x.toFloat(), adjustedScreenPos.y.toFloat(), 0.0f, 1.0f), FloatArray(16))
+        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.x.toFloat(), adjustedScreenPos.y.toFloat(), 0.0f, 1.0f),
+            FloatArray(16)
+        )
         return Vector2(vec4[0].toDouble(), vec4[1].toDouble())
     }
 
