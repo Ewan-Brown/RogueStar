@@ -25,7 +25,6 @@ data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
-    val graphicsService = GraphicsService()
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
      */
@@ -347,6 +346,8 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                newEntity.translate(this.localCenter.product(-1.0))
                                newEntity.rotate(this.transform.rotationAngle)
                                newEntity.translate(this.worldCenter)
+                               newEntity.setLinearVelocity(this.linearVelocity.x, this.linearVelocity.y)
+                               newEntity.angularVelocity = this.angularVelocity.toDouble() // TODO does this copy value instead of reference... ?
                                worldReference.entityBuffer.add(newEntity)
                            }
                        }
@@ -372,7 +373,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             }
         }
 
-        data class RenderData(val localPosition: Transformation)
 
         /**
          * A slot for a fixture of a given type. Think carefully about what fields should go in slot vs fixture.
@@ -380,7 +380,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         sealed class FixtureSlot<T : BasicFixture>(val model: Model, val localTransform: Transformation){
             abstract fun createFixture(): T
             fun onDestruction(){}
-            abstract fun getRenderData() : RenderData
         }
 
         fun <F : FixtureSlot<*>> copyFixtureSlot(a: F) : F {
@@ -409,10 +408,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 return fixture
             }
 
-            override fun getRenderData(): RenderData {
-                TODO("Not yet implemented")
-            }
-
         }
 
         class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<ThrusterFixture>(model, transform) {
@@ -431,10 +426,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                     mask = CollisionCategory.CATEGORY_SHIP.bits
                 )
                 return fixture
-            }
-
-            override fun getRenderData(): RenderData {
-                TODO("Not yet implemented")
             }
         }
 
@@ -469,9 +460,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 return listOf()
             } else {
                 val result: MutableList<Graphics.RenderableEntity> = ArrayList()
-
-                val entityAngle = getTransform().rotationAngle.toFloat()
-                val entityPos = this.worldCenter
 
                 for (comp in fixtureSlotFixtureMap.entries){
                     val renderable = transformLocalRenderableToGlobal(worldReference.graphicsService, comp.key)
@@ -558,6 +546,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
      */
     class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
+        //TODO This shouldn't be tied to physicsworld
         val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<PhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
@@ -587,7 +576,6 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         fun populateModelMap(map: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
             for (body in this.bodies) {
                 for (component in body.getRenderableComponents()) {
-//                    map[component.model]!!.add(Pair(component.transform, component.graphicalData))
                     map[component.model]!!.add(component)
                 }
             }
@@ -604,7 +592,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val mask: Long
     ) : Filter {
         override fun isAllowed(filter: Filter): Boolean {
-            filter ?: throw NullPointerException("filter can never be null...")
+            filter
             return if (filter is TeamFilter) {
                 //Check that the category/mask matches both directions
                 //AND if team logic matches
