@@ -1,5 +1,3 @@
-package client
-
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.newt.event.MouseListener
 import com.jogamp.newt.event.WindowAdapter
@@ -9,6 +7,8 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.glsl.ShaderCode
 import com.jogamp.opengl.util.glsl.ShaderProgram
+import java.lang.Error
+import kotlin.jvm.javaClass
 import kotlin.system.exitProcess
 
 abstract class GraphicsBase : GLEventListener {

@@ -3,7 +3,7 @@ import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
 import PhysicsLayer.PhysicsBodyData
-import client.Graphics
+import Graphics
 
 data class ControllerInput(val map: Map<Int, PhysicsBodyData>)
 data class ControllerOutput(val map: Map<Int, List<ControlAction>>)

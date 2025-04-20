@@ -1,7 +1,5 @@
-import client.EffectsInput
-import client.EffectsLayer
-import client.Graphics
-import client.Graphics.Model
+import Graphics
+import Graphics.Model
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.jogamp.newt.event.KeyEvent
