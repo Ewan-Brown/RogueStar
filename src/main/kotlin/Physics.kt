@@ -353,6 +353,8 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                                newEntity.translate(this.worldCenter)
                                newEntity.setLinearVelocity(this.linearVelocity.x, this.linearVelocity.y)
                                newEntity.angularVelocity = this.angularVelocity.toDouble() // TODO does this copy value instead of reference... ?
+                               newEntity.setMass(MassType.NORMAL)
+                               this.setMass(MassType.NORMAL)
                                worldReference.entityBuffer.add(newEntity)
                            }
                        }
