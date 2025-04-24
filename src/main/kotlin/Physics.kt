@@ -279,13 +279,18 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         /**
          * Function used purely for manually testing proof of concept or debugging.
          */
+        var flag = false;
         open fun testFunc(){
-            val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
-            for (entry in fixtureSlotFixtureMap.entries) {
-                entry.key
+            if(!flag){
+                processComponentDestruction(fixtureSlotFixtureMap.keys.toList()[1])
+                flag = true;
             }
-            bullet.translate(-bullet.worldCenter.x, -bullet.worldCenter.y)
-            worldReference.entityBuffer.add(bullet);
+//            val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
+//            for (entry in fixtureSlotFixtureMap.entries) {
+//                entry.key
+//            }
+//            bullet.translate(-bullet.worldCenter.x, -bullet.worldCenter.y)
+//            worldReference.entityBuffer.add(bullet);
         }
 
         /**
