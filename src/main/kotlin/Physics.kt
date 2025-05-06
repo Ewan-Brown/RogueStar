@@ -515,16 +515,17 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
         override fun testFunc(){
             super.testFunc()
+
         }
 
         override fun processControlActions(actions: List<ControlAction>) {
-
             for (action in actions) {
                 when(action){
                     is ControlAction.ShootAction -> TODO()
                     is ControlAction.ThrustAction -> {
                         val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
-                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
+//                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
+                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()), worldCenter)
                         for (thrusterComponent in thrusterComponents) {
                             transformLocalRenderableToGlobal(worldReference.graphicsService, thrusterComponent)?.transform?.let{
                                 worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
@@ -532,7 +533,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                         }
                     }
                     is ControlAction.TurnAction -> {
-                        applyTorque(action.torque * this.getMass().mass)
+//                        applyTorque(action.torque * this.getMass().mass)
                     }
                     is ControlAction.TestAction -> {
                         testFunc()
