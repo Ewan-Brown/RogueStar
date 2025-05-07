@@ -1,12 +1,5 @@
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializerProvider
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
@@ -248,23 +241,4 @@ fun main() {
 }
 
 
-class VectorDeserializer : StdDeserializer<Vector2>(Vector2::class.java){
-    override fun deserialize(parser: JsonParser, p1: DeserializationContext?): Vector2 {
-        val node: JsonNode = parser.codec.readTree(parser)
-        val x: Double = node.get("x").asDouble()
-        val y: Double = node.get("y").asDouble()
-        return Vector2(x, y)
-    }
-}
 
-class ComponentSerializer : StdSerializer<ComponentBlueprint>(ComponentBlueprint::class.java){
-    override fun serialize(component: ComponentBlueprint, jgen: JsonGenerator, provider: SerializerProvider?) {
-        jgen.writeStartObject()
-        jgen.writeNumberField("shape", component.shape)
-        jgen.writeNumberField("scale", component.scale)
-        jgen.writeObjectField("position", component.position)
-        jgen.writeNumberField("rotation", component.rotation)
-        jgen.writeStringField("type", component.type.toString())
-        jgen.writeEndObject()
-    }
-}

@@ -1,28 +1,26 @@
-import com.jogamp.newt.event.KeyListener
-import com.jogamp.newt.event.MouseListener
-import com.jogamp.newt.event.WindowAdapter
-import com.jogamp.newt.event.WindowEvent
+import com.jogamp.newt.event.*
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.glsl.ShaderCode
 import com.jogamp.opengl.util.glsl.ShaderProgram
+import org.dyn4j.geometry.Vector2
 import java.lang.Error
 import kotlin.jvm.javaClass
 import kotlin.system.exitProcess
 
-abstract class GraphicsBase : GLEventListener {
+abstract class GraphicsBase(keyListener: KeyListener) : GLEventListener {
 
 
     val width: Int = 600
     val height: Int = 600
+    val window: GLWindow
 
-    fun setup(keyListener: KeyListener, mouseListener: MouseListener) {
+    init {
         val glProfile = GLProfile.get(GLProfile.GL3)
         val glCapabilities = GLCapabilities(glProfile)
 
-        val window = GLWindow.create(glCapabilities)
-
+        window = GLWindow.create(glCapabilities)
         window.title = "Rogue Star"
         window.setSize(width,height)
 
@@ -31,7 +29,6 @@ abstract class GraphicsBase : GLEventListener {
 
         window.addGLEventListener(this)
         window.addKeyListener(keyListener)
-        window.addMouseListener(mouseListener)
 
         //        window.setAut
         val animator = Animator(window)
@@ -97,10 +94,5 @@ abstract class GraphicsBase : GLEventListener {
         }
     }
 
-    // UTILITY. REMEMBER THAT SHADER COMPILATION REMOVES UNUSED VARIABLES, MEANING LINKER WONT FIND THEM
-//    val length = GLBuffers.newDirectIntBuffer(1)
-//    val size = GLBuffers.newDirectIntBuffer(1)
-//    val type = GLBuffers.newDirectIntBuffer(1)
-//    val name = GLBuffers.newDirectByteBuffer(6)
-//    gl.glGetActiveUniform(backgroundProgram!!.name, index, 6,  length, size, type, name)
+
 }

@@ -1,9 +1,5 @@
 import Graphics.Model
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
@@ -15,7 +11,7 @@ import kotlin.math.PI
 
 //data class ComponentDefinition(val model : Model, val localTransform: Transformation)
 
-data class PhysicsInput(val map : Map<Int, List<ControlAction>>)
+data class PhysicsInput(val map : Map<Int, List<ControlCommand>>)
 data class PhysicsOutput(val requests: List<EffectsRequest>)
 
 class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
@@ -122,26 +118,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         shipFactories.add ( blueprintGenerator.invoke(Blueprint.DEFAULT_SHIP)::generate )
     }
 
-    class ComponentDeserializer() : StdDeserializer<ComponentBlueprint>(ComponentBlueprint::class.java){
-
-        override fun deserialize(parser: JsonParser, p1: DeserializationContext): ComponentBlueprint {
-            val node: JsonNode = parser.codec.readTree(parser)
-            val shape = node.get("shape").asInt()
-            val scale = node.get("scale").asDouble()
-            val x = node.get("position").get("x").asDouble()
-            val y = node.get("position").get("y").asDouble()
-            val rotation = node.get("rotation").asInt()
-            val type = node.get("type").asText()!!
-
-            val position = Vector2(x, y)
-            return ComponentBlueprint(shape, scale, position, rotation, Type.valueOf(type))
-        }
-    }
 
 
     private val physicsWorld = PhysicsWorld(blueprintGenerator)
     private var time = 0.0
-    val thisVariable = "test"
 
     init {
         physicsWorld.setGravity(0.0, 0.0)
@@ -231,22 +211,13 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return entity
     }
 
-    fun removeEntity(uuid: Int) {
-        physicsWorld.bodies.find { it.uuid == uuid }.let {
-            if (it == null) throw Exception("Entity with uuid $uuid not found")
-        }
-    }
-
-
     //physics DTO as layer output
     open class PhysicsBodyData(
         val uuid: Int, val position: Vector2, val velocity: Vector2,
         val angle: Double, val angularVelocity: Double, val traceRadius: Double,
         val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team
     )
-    /**
-     * Extension of Dyn4J world
-     */
+
     class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
         //TODO This shouldn't be tied to physicsworld

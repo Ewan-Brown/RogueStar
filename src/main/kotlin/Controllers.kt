@@ -3,10 +3,9 @@ import java.awt.event.KeyEvent
 import java.util.BitSet
 import kotlin.math.abs
 import PhysicsLayer.PhysicsBodyData
-import Graphics
 
 data class ControllerInput(val map: Map<Int, PhysicsBodyData>)
-data class ControllerOutput(val map: Map<Int, List<ControlAction>>)
+data class ControllerOutput(val map: Map<Int, List<ControlCommand>>)
 
 class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
@@ -42,15 +41,15 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
 
     abstract class BaseController<E : PhysicsBodyData>{
-        abstract fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>>
+        abstract fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlCommand>>
     }
 
     abstract class GroupController<E : PhysicsBodyData> : BaseController<E>() {
-        abstract override fun update(input : List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>>
+        abstract override fun update(input : List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlCommand>>
     }
 
     abstract class SingleController<E : PhysicsBodyData> : BaseController<E>(){
-        final override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
+        final override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlCommand>> {
             if(input.size > 1){
                 throw IllegalArgumentException("A $javaClass should only ever be attached to one entity at a time ")
             }
@@ -58,7 +57,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
             return mapOf(Pair(uuid, update(input.first(), data)))
         }
 
-        abstract fun update(input: E, data: Map<Int, PhysicsBodyData>) : List<ControlAction>;
+        abstract fun update(input: E, data: Map<Int, PhysicsBodyData>) : List<ControlCommand>;
     }
 
     class BubbleMultiController<E : PhysicsBodyData>(val targetUUID: Int , val radius: Double) : GroupController<E>(){
@@ -70,8 +69,8 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
             bubbleAnchorMap[index] = Vector2(radius*0.5 + Math.random()*radius*0.2,0.0).rotate(Math.random()*2*Math.PI)
         }
 
-        override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>> {
-            val controlMap = mutableMapOf<Int, List<ControlAction>>()
+        override fun update(input: List<E>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlCommand>> {
+            val controlMap = mutableMapOf<Int, List<ControlCommand>>()
             var bubbleVelocity: Vector2 = Vector2()
             if(bubbleAnchorMap.isEmpty()){
                 for(datum in input){
@@ -100,7 +99,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
                         Vector2(datum.angle),
                         bubbleVelocity
                     )
-                    controlMap[datum.uuid] = listOf(ControlAction.ThrustAction(pairResult.first), ControlAction.TurnAction(pairResult.second))
+                    controlMap[datum.uuid] = listOf(ControlCommand.ThrustCommand(pairResult.first), ControlCommand.TurnCommand(pairResult.second))
                 }
             }
             return controlMap
@@ -116,7 +115,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
     }
 
     private data class ControllerInputEntry<E : PhysicsBodyData>(val controller: BaseController<E>, val input: MutableList<Int>){
-        fun update(input: List<PhysicsBodyData>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlAction>>{
+        fun update(input: List<PhysicsBodyData>, data: Map<Int, PhysicsBodyData>) : Map<Int, List<ControlCommand>>{
             return controller.update(input as List<E>, data) //TODO We can do better than this
         }
     }
@@ -125,7 +124,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
     override fun update(input: ControllerInput) : ControllerOutput {
         val entityDataMap = input.map
-        val amalgamatedMap = mutableMapOf<Int, List<ControlAction>>()
+        val amalgamatedMap = mutableMapOf<Int, List<ControlCommand>>()
         for (controllerEntityEntry in controllerList) {
             val input = controllerEntityEntry.input.mapNotNull { entityDataMap[it] } //TODO Deal with disappeared entities?
             val map = controllerEntityEntry.update(input, entityDataMap)
@@ -139,9 +138,9 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
     }
 }
 
-class PlayerController(val input: BitSet) : ControllerLayer.SingleController<PhysicsBodyData>(){
-    override fun update(entityData: PhysicsBodyData, data: Map<Int, PhysicsBodyData>): List<ControlAction> {
-        val actions = mutableListOf<ControlAction>()
+class PlayerController(val input: BitSet, val mousePosProducer: () -> Vector2) : ControllerLayer.SingleController<PhysicsBodyData>(){
+    override fun update(entityData: PhysicsBodyData, data: Map<Int, PhysicsBodyData>): List<ControlCommand> {
+        val actions = mutableListOf<ControlCommand>()
         var x = 0.0
         var y = 0.0
         var r = 0.0
@@ -169,35 +168,27 @@ class PlayerController(val input: BitSet) : ControllerLayer.SingleController<Phy
             r--
         }
 
-        var needsRotation = true
-
-        if(input[KeyEvent.VK_SPACE]){
-            direction = entityData.changeInPosition.flip() * 3.0
-            needsRotation = false
-        }
-
         if(input[KeyEvent.VK_X]){
-            actions.add(ControlAction.TestAction)
+            actions.add(ControlCommand.TestCommand)
         }
 
-        if(needsRotation){
-            direction.rotate(entityData.angle)
-        }
+//        println(entityData.position)
+        println(mousePosProducer())
+//        println(mousePosProducer().to(entityData.position))
 
-        val thrust = direction.product(100.0)
-        val rotate = r*5 - entityData.angularVelocity
+        val desiredVelocity = direction.product(10.0)
+        val desiredAngle = r*5 - entityData.angularVelocity
 
-
-        actions.add(ControlAction.TurnAction(rotate))
-        actions.add(ControlAction.ThrustAction(thrust))
+        actions.add(ControlCommand.TurnCommand(desiredAngle))
+        actions.add(ControlCommand.ThrustCommand(desiredVelocity))
         return actions
     }
 }
 
 
-sealed class ControlAction(){
-    data class ThrustAction(val thrust: Vector2)  : ControlAction()
-    data class TurnAction(val torque: Double)  : ControlAction()
-    data object ShootAction : ControlAction()
-    data object TestAction : ControlAction()
+sealed class ControlCommand(){
+    data class ThrustCommand(val desiredVelocity: Vector2)  : ControlCommand()
+    data class TurnCommand(val desiredAngle: Double)  : ControlCommand()
+    data object ShootCommand : ControlCommand()
+    data object TestCommand : ControlCommand()
 }

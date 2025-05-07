@@ -187,14 +187,7 @@ class Shape(@JsonProperty("points") var points: List<Vector2>, @JsonProperty("id
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off
 
-class VectorSerializer : StdSerializer<Vector2>(Vector2::class.java){
-    override fun serialize(vector: Vector2, jgen: JsonGenerator, p2: SerializerProvider) {
-        jgen.writeStartObject()
-        jgen.writeNumberField("x", vector.x)
-        jgen.writeNumberField("y", vector.y)
-        jgen.writeEndObject()
-    }
-}
+
 
 fun main() {
 

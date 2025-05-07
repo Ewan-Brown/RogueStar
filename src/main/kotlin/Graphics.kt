@@ -1,3 +1,4 @@
+import com.jogamp.nativewindow.util.Point
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.newt.event.MouseEvent
 import com.jogamp.newt.event.MouseListener
@@ -5,6 +6,7 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
 import org.dyn4j.geometry.Vector2
+import java.awt.MouseInfo
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.util.ArrayList
@@ -15,11 +17,7 @@ import kotlin.collections.indices
 import kotlin.collections.set
 import kotlin.collections.withIndex
 
-class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
-
-    fun setup(keyListener: KeyListener) {
-        super.setup(keyListener, mouseListener)
-    }
+class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : GraphicsBase(keyListener) {
 
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
@@ -48,6 +46,13 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         var instanceData: List<RenderableEntity> = ArrayList()
         val instanceCount: Int
             get() = instanceData.size
+    }
+
+    // Make this more descriptive
+    public fun getMousePositionInWorldCoordinates(): Vector2{
+        return transformScreenPosToGamePos(
+            MouseInfo.getPointerInfo()!!.location.toVector() - this.window.getLocationOnScreen(null)!!.toVector()
+        )
     }
 
     data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
@@ -381,21 +386,4 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase() {
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)
     }
-
-
-    val mouseListener: MouseListener = object : MouseListener {
-        override fun mouseClicked(e: MouseEvent?) {}
-        override fun mouseEntered(e: MouseEvent?) {}
-        override fun mouseExited(e: MouseEvent?) {}
-        override fun mouseReleased(e: MouseEvent?) {}
-        override fun mouseMoved(e: MouseEvent?) {}
-        override fun mouseDragged(e: MouseEvent?) {}
-        override fun mouseWheelMoved(e: MouseEvent?) {}
-        override fun mousePressed(e: MouseEvent) {
-            val mousePos = Vector2(e.x.toDouble(), e.y.toDouble())
-            val gamePos = transformScreenPosToGamePos(mousePos)
-        }
-
-    }
-
 }

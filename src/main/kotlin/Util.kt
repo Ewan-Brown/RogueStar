@@ -36,6 +36,7 @@ fun Vector2.floor(): Vector2 = this.invoke { floor(it) }
 fun Vector2.round(): Vector2 = this.invoke { round(it) }
 fun Vector2.ceil(): Vector2 = this.invoke { ceil(it) }
 fun Point.toVector(): Vector2 = Vector2(this.getX(), this.getY())
+fun com.jogamp.nativewindow.util.Point.toVector(): Vector2 = Vector2(this.x.toDouble(), this.y.toDouble())
 fun List<Vector2>.getCentroid() : Vector2{
     var A = 0.0;
     for(i in indices){

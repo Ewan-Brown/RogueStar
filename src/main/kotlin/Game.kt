@@ -1,13 +1,15 @@
-import Graphics
 import Graphics.Model
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.MouseEvent
+import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.GL
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.geometry.Vector3
+import java.awt.MouseInfo
 import java.util.*
 
 class Transformation(val translation: Vector3 = Vector3(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
@@ -45,15 +47,13 @@ fun main() {
 
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
+    val bitSet = BitSet(256)
 
     val physicsLayer = PhysicsLayer(models)
     val effectsLayer = EffectsLayer()
     val controllerLayer = ControllerLayer()
 
     physicsLayer.loadEntities()
-
-    val gui = Graphics(models)
-    val bitSet = BitSet(256)
 
     //We should decouple this from clear server stuff a little better.
     val keyListener : KeyListener = object : KeyListener {
@@ -71,9 +71,14 @@ fun main() {
         }
     }
 
+    val gui = Graphics(models, keyListener)
+    val mousePositionProducer: () -> Vector2 = {gui.getMousePositionInWorldCoordinates ()}
+
+
+
     val testTeam = Team("test");
     val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
-    controllerLayer.addControllerEntry(PlayerController(bitSet), playerID)
+    controllerLayer.addControllerEntry(PlayerController(bitSet, mousePositionProducer), playerID)
     for (i in 0..0){
         physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     }
@@ -99,9 +104,8 @@ fun main() {
         System.err.println("playerdata is null, camera will default to $playerPos")
     }
     populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
-    gui.setup(keyListener)
 
-    var lastControlActions = mapOf<Int, List<ControlAction>>()
+    var lastControlActions = mapOf<Int, List<ControlCommand>>()
 
     while(true){
         Thread.sleep(16)
