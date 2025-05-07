@@ -1,6 +1,4 @@
-import Graphics
 import org.dyn4j.geometry.Rotation
-import kotlin.text.toFloat
 
 
 /*
@@ -11,7 +9,7 @@ class GraphicsService {
      * Take a given entity and a fixtureSlot and determine what (if any) renderable should be extracted
      * This should be easily extensible for a single component to produce multiple renderables (e.g a gun turret with base + barrel)
      */
-    fun <T : PhysicsLayer.BasicFixture> componentToRenderable(entity : PhysicsLayer.PhysicsEntity, fixtureSlot : PhysicsLayer.PhysicsEntity.FixtureSlot<T>) : Graphics.RenderableEntity? {
+    fun <T : BasicFixture> componentToRenderable(entity : PhysicsEntity, fixtureSlot : FixtureSlot<T>) : Graphics.RenderableEntity? {
 
         entity.run {
             val fixture = entity.fixtureSlotFixtureMap[fixtureSlot]
@@ -26,7 +24,7 @@ class GraphicsService {
 
 
                 return when(fixtureSlot){
-                    is PhysicsLayer.PhysicsEntity.ThrusterFixtureSlot -> {
+                    is ThrusterFixtureSlot -> {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             Transformation(absolutePos.toVec3(), scale, newAngle),
@@ -34,7 +32,7 @@ class GraphicsService {
                             Graphics.MetaData(1.0f)
                         )
                     }
-                    is PhysicsLayer.PhysicsEntity.BasicFixtureSlot -> {
+                    is BasicFixtureSlot -> {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             Transformation(absolutePos.toVec3(), scale, newAngle),
