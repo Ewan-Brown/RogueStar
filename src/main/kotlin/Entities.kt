@@ -167,12 +167,12 @@ abstract class PhysicsEntity protected constructor(
         if(didLoseParts) setMass(MassType.NORMAL)
     }
 
-    fun update(actions: List<ControlAction>){
+    fun update(actions: List<ControlCommand>){
         updateFixtures();
         processControlActions(actions);
     }
 
-    abstract fun processControlActions(actions: List<ControlAction>)
+    abstract fun processControlActions(actions: List<ControlCommand>)
 
     fun getRenderableComponents(): List<RenderableEntity> {
         if (!isEnabled) {
@@ -227,24 +227,24 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
 
     }
 
-    override fun processControlActions(actions: List<ControlAction>) {
+    override fun processControlActions(actions: List<ControlCommand>) {
         for (action in actions) {
             when(action){
-                is ControlAction.ShootAction -> TODO()
-                is ControlAction.ThrustAction -> {
+                is ControlCommand.ShootCommand -> TODO()
+                is ControlCommand.ThrustCommand -> {
                     val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
 //                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
-                    applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()), worldCenter)
+                    applyForce(action.desiredVelocity.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()), worldCenter)
                     for (thrusterComponent in thrusterComponents) {
                         transformLocalRenderableToGlobal(worldReference.graphicsService, thrusterComponent)?.transform?.let{
                             worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
                         }
                     }
                 }
-                is ControlAction.TurnAction -> {
+                is ControlCommand.TurnCommand -> {
 //                        applyTorque(action.torque * this.getMass().mass)
                 }
-                is ControlAction.TestAction -> {
+                is ControlCommand.TestCommand -> {
                     testFunc()
                 }
             }
