@@ -242,7 +242,12 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
                     }
                 }
                 is ControlCommand.TurnCommand -> {
-//                        applyTorque(action.torque * this.getMass().mass)
+                    //TODO Why does tihs have to be negated
+                    val angle = Vector2(-this.transform.rotationAngle).getAngleBetween(Vector2(action.desiredAngle))
+//                    println((-this.transform.rotationAngle/Math.PI).format() + " " + action.desiredAngle.format())
+                    println(angle.format())
+//                    println()
+                    applyTorque(-angle*30)
                 }
                 is ControlCommand.TestCommand -> {
                     testFunc()

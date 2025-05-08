@@ -172,15 +172,11 @@ class PlayerController(val input: BitSet, val mousePosProducer: () -> Vector2) :
             actions.add(ControlCommand.TestCommand)
         }
 
-//        println(entityData.position)
-        println(mousePosProducer())
-//        println(mousePosProducer().to(entityData.position))
+        val desiredAngle = entityData.position.to(mousePosProducer())
+//        println(desiredAngle.getAngleBetween(0.0))
 
-        val desiredVelocity = direction.product(10.0)
-        val desiredAngle = r*5 - entityData.angularVelocity
-
-        actions.add(ControlCommand.TurnCommand(desiredAngle))
-        actions.add(ControlCommand.ThrustCommand(desiredVelocity))
+        actions.add(ControlCommand.TurnCommand(desiredAngle.getAngleBetween(0.0)))
+        actions.add(ControlCommand.ThrustCommand(direction))
         return actions
     }
 }
