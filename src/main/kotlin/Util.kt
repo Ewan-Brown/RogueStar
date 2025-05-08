@@ -62,4 +62,6 @@ fun List<Vector2>.getCentroid() : Vector2{
     return Vector2(Cx, Cy)
 }
 
+fun Double.format() = String.format("%+.3f", this)
+
 fun Boolean.toInt() = if (this) 1 else 0
