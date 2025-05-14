@@ -143,8 +143,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
      * Custom codec for Components. We need export TWO files - a list of models with IDs attached, and the actual components themselves.
      */
 
-    private fun exportToFile(){
-
+    private fun exportToFile(named: Boolean){
         val connectionMap: Map<Int, MutableList<Int>> = components.associate{components.indexOf(it) to mutableListOf()}
         for (component : ComponentBlueprint in components) {
             for(otherComponent in components){
@@ -170,7 +169,9 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         module.addSerializer(Vector2::class.java, VectorSerializer())
         module.addDeserializer(Vector2::class.java, VectorDeserializer())
         mapper.registerModules(module)
-        val shipName = JOptionPane.showInputDialog("give your ship a name!")
+        val shipName = if(named){
+            JOptionPane.showInputDialog("give your ship a name!")
+        }else {"ship_default"}
         mapper.writeValue(File("src/main/resources/entities/entity_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
         println("exported!")
     }
@@ -182,7 +183,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     override fun keyTyped(e: KeyEvent) {}
     override fun keyPressed(e: KeyEvent) {
         if(e.keyCode == KeyEvent.VK_ENTER){
-            exportToFile()
+            exportToFile(false)
         }
 
         if(e.keyCode == KeyEvent.VK_SPACE){
@@ -195,7 +196,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
                 selectedType = Type.BODY
             }
             KeyEvent.VK_X -> {
-                selectedType = Type.ROOT
+                selectedType = Type.COCKPIT
             }
             KeyEvent.VK_C -> {
                 selectedType = Type.THRUSTER
@@ -217,7 +218,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
 enum class Type(val c : Color){
     THRUSTER(Color.RED),
-    ROOT(Color.CYAN),
+    COCKPIT(Color.CYAN),
     GUN(Color.YELLOW),
     BODY(Color.BLUE);
 }
