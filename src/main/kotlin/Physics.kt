@@ -38,7 +38,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             //TODO Add component implementations for each type!
             when(it.type){
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
-                Type.ROOT -> RootFixtureSlot(model, transform)
+                Type.COCKPIT -> CockpitFixtureSlot(model, transform)
                 Type.GUN -> GunFixtureSlot(model, transform)
                 Type.BODY -> BasicFixtureSlot(model, transform)
             }
@@ -61,11 +61,11 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
         val thrusters : List<ThrusterFixtureSlot> = fixtureSlotMapping.values.filterIsInstance<ThrusterFixtureSlot>()
         val guns : List<GunFixtureSlot> = fixtureSlotMapping.values.filterIsInstance<GunFixtureSlot>()
-        val root = fixtureSlotMapping.filter { it.key.type == Type.ROOT }.map { it.value }.first() as RootFixtureSlot
+        val cockpits = fixtureSlotMapping.values.filterIsInstance<CockpitFixtureSlot>()
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        val s = ShipDetails(fixtureSlotMapping.values.toList(), thrusters, guns, trueConnectionMap, root)
+        val s = ShipDetails(fixtureSlotMapping.values.toList(), thrusters, guns, trueConnectionMap, cockpits)
         ShipEntity(Team.TEAMLESS, s, worldRef)
     }
     //TODO Refactor this?
