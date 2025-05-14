@@ -39,6 +39,20 @@ class GraphicsService {
                             Graphics.ColorData(0.0f, 0.0f, 1.0f, 0.0f),
                             Graphics.MetaData(1.0f)
                         )
+                    } is GunFixtureSlot -> {
+                        Graphics.RenderableEntity(
+                            fixtureSlot.model,
+                            Transformation(absolutePos.toVec3(), scale, newAngle),
+                            Graphics.ColorData(1.0f, 0.0f, 0.0f, 0.0f),
+                            Graphics.MetaData(1.0f)
+                        )
+                    } is RootFixtureSlot -> {
+                        Graphics.RenderableEntity(
+                            fixtureSlot.model,
+                            Transformation(absolutePos.toVec3(), scale, newAngle),
+                            Graphics.ColorData(01.0f, 010f, 01.0f, 0.0f),
+                            Graphics.MetaData(1.0f)
+                        )
                     }
                 }
             }else{
