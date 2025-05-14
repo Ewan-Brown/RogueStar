@@ -48,16 +48,6 @@ abstract class PhysicsEntity protected constructor(
      */
     var flag = false;
     open fun testFunc(){
-        if(!flag){
-            processComponentDestruction(fixtureSlotFixtureMap.keys.toList()[1])
-            flag = true;
-        }
-//            val bullet = worldReference.blueprintGenerator(Blueprint.BULLET).generate()
-//            for (entry in fixtureSlotFixtureMap.entries) {
-//                entry.key
-//            }
-//            bullet.translate(-bullet.worldCenter.x, -bullet.worldCenter.y)
-//            worldReference.entityBuffer.add(bullet);
     }
 
     /**
@@ -114,7 +104,8 @@ abstract class PhysicsEntity protected constructor(
                             for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
                                 newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                             }
-                            val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), newConnections, newConnections.keys.toList()[0]), worldReference)
+                            println("FIX THIS - debris shouldn't be a 'ship entity', they should be debris") //TODO
+                            val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), listOf(), listOf(), newConnections, newConnections.keys.toList()[0] as RootFixtureSlot), worldReference)
                             newEntity.translate(this.localCenter.product(-1.0))
                             newEntity.rotate(this.transform.rotationAngle)
                             newEntity.translate(this.worldCenter)
@@ -234,7 +225,7 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
                 is ControlCommand.ThrustCommand -> {
                     val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
 //                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
-                    applyForce(action.desiredVelocity.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()), worldCenter)
+                    applyForce(action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle), worldCenter)
                     for (thrusterComponent in thrusterComponents) {
                         transformLocalRenderableToGlobal(worldReference.graphicsService, thrusterComponent)?.transform?.let{
                             worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
@@ -242,12 +233,12 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
                     }
                 }
                 is ControlCommand.TurnCommand -> {
-                    //TODO Why does tihs have to be negated
+                    //TODO Why does this have to be negativified
                     val angle = Vector2(-this.transform.rotationAngle).getAngleBetween(Vector2(action.desiredAngle))
 //                    println((-this.transform.rotationAngle/Math.PI).format() + " " + action.desiredAngle.format())
                     println(angle.format())
 //                    println()
-                    applyTorque(-angle*30)
+                    applyTorque(-angle*120 - angularVelocity*60)
                 }
                 is ControlCommand.TestCommand -> {
                     testFunc()
@@ -281,6 +272,12 @@ open class BasicFixture(shape: Convex): BodyFixture(shape) {
 
 class ThrusterFixture(shape: Convex): BasicFixture(shape) {
     private var direction = 0.0
+}
+
+class GunFixture(shape: Convex): BasicFixture(shape) {
+}
+
+class RootFixture(shape: Convex): BasicFixture(shape) {
 }
 
 /**
@@ -338,6 +335,45 @@ class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlo
     }
 }
 
+class GunFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<GunFixture>(model, transform) {
+    override fun createFixture(): GunFixture {
+        val vertices = arrayOfNulls<Vector2>(model.points)
+        for (i in vertices.indices) {
+            vertices[i] = model.asVectorData[i].copy()
+                .multiply(localTransform.scale)
+        }
+        val polygon = Polygon(*vertices)
+        polygon.rotate(localTransform.rotation.toRadians())
+        polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
+        val fixture = GunFixture(polygon)
+        fixture.filter = TeamFilter(
+            category = CollisionCategory.CATEGORY_SHIP.bits,
+            mask = CollisionCategory.CATEGORY_SHIP.bits
+        )
+        return fixture
+    }
+}
+
+
+class RootFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<RootFixture>(model, transform) {
+    override fun createFixture(): RootFixture {
+        val vertices = arrayOfNulls<Vector2>(model.points)
+        for (i in vertices.indices) {
+            vertices[i] = model.asVectorData[i].copy()
+                .multiply(localTransform.scale)
+        }
+        val polygon = Polygon(*vertices)
+        polygon.rotate(localTransform.rotation.toRadians())
+        polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
+        val fixture = RootFixture(polygon)
+        fixture.filter = TeamFilter(
+            category = CollisionCategory.CATEGORY_SHIP.bits,
+            mask = CollisionCategory.CATEGORY_SHIP.bits
+        )
+        return fixture
+    }
+}
+
 /**************************
  * Filter related code
  *************************/
@@ -369,7 +405,11 @@ class TeamFilter(
  * Misc code
  *************************/
 
-public data class ShipDetails(val fixtureSlots: List<FixtureSlot<*>>, val thrusters: List<ThrusterFixtureSlot>, val connectionMap: Map<FixtureSlot<*>, List<FixtureSlot<*>>>, val cockpit: FixtureSlot<*>)
+public data class ShipDetails(val fixtureSlots: List<FixtureSlot<*>>,
+                              val thrusters: List<ThrusterFixtureSlot>,
+                              val guns: List<GunFixtureSlot>,
+                              val connectionMap: Map<FixtureSlot<*>,
+                                      List<FixtureSlot<*>>>, val cockpit: RootFixtureSlot)
 public enum class CollisionCategory(val bits: Long) {
     CATEGORY_SHIP(0b0001),
     CATEGORY_PROJECTILE(0b0010),
