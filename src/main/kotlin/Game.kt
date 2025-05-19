@@ -74,8 +74,6 @@ fun main() {
     val gui = Graphics(models, keyListener)
     val mousePositionProducer: () -> Vector2 = {gui.getMousePositionInWorldCoordinates ()}
 
-
-
     val testTeam = Team("test");
     val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     controllerLayer.addControllerEntry(PlayerController(bitSet, mousePositionProducer), playerID)

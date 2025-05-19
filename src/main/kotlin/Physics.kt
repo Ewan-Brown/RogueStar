@@ -250,8 +250,14 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
         fun populateModelMap(map: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
             for (body in this.bodies) {
-                for (component in body.getRenderableComponents()) {
-                    map[component.model]!!.add(component)
+                if (body.isEnabled) {
+                    val components = body.fixtureSlotFixtureMap.entries
+                    for (component in components) {
+                        val renderable = graphicsService.componentToRenderable(body, component.key)
+                        if(renderable != null){
+                            map[component.key.model]!!.add(renderable)
+                        }
+                    }
                 }
             }
         }
