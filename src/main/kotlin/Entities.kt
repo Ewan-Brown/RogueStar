@@ -6,10 +6,12 @@ import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Convex
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Polygon
+import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 import java.util.*
 import java.util.function.Predicate
+import kotlin.contracts.Effect
 
 /**************************
  * Game-session Entity related code
@@ -172,29 +174,6 @@ abstract class PhysicsEntity protected constructor(
 
     abstract fun processControlActions(actions: List<ControlCommand>)
 
-    fun getRenderableComponents(): List<RenderableEntity> {
-        if (!isEnabled) {
-            return listOf()
-        } else {
-            val result: MutableList<RenderableEntity> = ArrayList()
-
-            for (comp in fixtureSlotFixtureMap.entries){
-                val renderable = transformLocalRenderableToGlobal(worldReference.graphicsService, comp.key)
-                if(renderable != null) {
-                    result.add(renderable)
-                }
-            }
-            return result
-        }
-    }
-
-    /**
-     * Take a component (which has coordinates in local space) and transform it to global space, then wrap it with graphical details
-     */
-    fun transformLocalRenderableToGlobal(graphicsService: GraphicsService, fixtureSlot: FixtureSlot<*>) : RenderableEntity?{
-        return graphicsService.componentToRenderable(this, fixtureSlot);
-        return null
-    }
 
     fun createBodyData(): PhysicsBodyData {
         return PhysicsBodyData(
@@ -222,7 +201,11 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
 
     override fun testFunc(){
         super.testFunc()
+    }
 
+    fun shootAllWeapons(){
+        //TODO can we do something better than this ...?
+        val gunFixtures: List<GunFixture> = fixtureSlotFixtureMap.filter { it.key is GunFixtureSlot }.map { it.value!! as GunFixture }
     }
 
     override fun processControlActions(actions: List<ControlCommand>) {
@@ -230,13 +213,10 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
             when(action){
                 is ControlCommand.ShootCommand -> TODO()
                 is ControlCommand.ThrustCommand -> {
-                    val thrusterCount = thrusterComponents.count { return@count fixtureSlotFixtureMap[it] != null }
-//                        applyForce(action.thrust.product(thrusterCount.toDouble() / thrusterComponents.size.toDouble()))
                     applyForce(action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle), worldCenter)
                     for (thrusterComponent in thrusterComponents) {
-                        transformLocalRenderableToGlobal(worldReference.graphicsService, thrusterComponent)?.transform?.let{
-                            worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(it.translation, it.rotation.toRadians(), Vector2()))
-                        }
+                        val transform = getFixtureSlotTransform(this, thrusterComponent)
+                        worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(transform.translation, transform.rotation.toRadians(), this.linearVelocity.flip()))
                     }
                 }
                 is ControlCommand.TurnCommand -> {
@@ -405,6 +385,15 @@ class TeamFilter(
             true
         }
     }
+}
+
+fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) : Transformation{
+    val entityAngle = entity.getTransform().rotation.toRadians()
+    val entityPos = entity.worldCenter
+    val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.getMass().center).rotate(entityAngle).add(entityPos)
+    val newAngle = Rotation(fixtureSlot.localTransform.rotation.toRadians() + entity.transform.rotationAngle)
+    val scale = fixtureSlot.localTransform.scale
+    return Transformation(absolutePos.toVec3(), scale, newAngle)
 }
 
 /**************************
