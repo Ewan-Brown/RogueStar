@@ -18,6 +18,7 @@ operator fun Vector3.plus(vec2: Vector2): Vector3 = Vector3(this.x+vec2.x, this.
 
 fun Vector3.toVec2() : Vector2 = Vector2(x, y)
 fun Vector2.toVec3() : Vector3 = Vector3(x, y, 0.0)
+fun Vector3.format() : String = "${this.x.format()},${this.y.format()}"
 
 operator fun List<Vector2>.plus(vec: Vector2): List<Vector2> {return this.map { it.add(vec) }}
 operator fun List<Vector2>.minus(vec: Vector2): List<Vector2> {return this.map { it.minus(vec) }}
