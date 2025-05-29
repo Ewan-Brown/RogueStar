@@ -43,7 +43,7 @@ fun loadModels() : Map<Int, Model> {
 
 fun main() {
 
-
+    val timeStep = 1.0;
 
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE) + entityModels
@@ -107,9 +107,9 @@ fun main() {
 
     while(true){
         Thread.sleep(16)
-        val effectsRequests = physicsLayer.update(PhysicsInput(lastControlActions)).requests
+        val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
-        effectsLayer.update(EffectsInput(effectsRequests))
+        effectsLayer.update(EffectsInput(physicsOut.requests, physicsOut.timeElapsed))
 
         val playerData = physicsLayer.getEntityData(playerID)
         populateData(Graphics.CameraDetails(playerData?.position ?: Vector2(), 1.0, 0.0))

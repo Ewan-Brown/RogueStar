@@ -7,8 +7,9 @@ sealed class EffectsRequest(val model: Model, val initialPosition: Vector3, val 
     class ExhaustRequest(initialPosition: Vector3, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
 }
 
-data class EffectsInput(val input: List<EffectsRequest>)
+data class EffectsInput(val input: List<EffectsRequest>, val timeStep: Double)
 
+//TODO make use of ECS?
 class EffectsLayer : Layer<EffectsInput, Unit> {
     private val entities = mutableListOf<EffectsEntity>()
 
@@ -23,7 +24,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
             }
         }
         for (entity in entities) {
-            entity.update()
+            entity.update(input.timeStep)
         }
         entities.removeIf(EffectsEntity::isMarkedForRemoval)
     }
@@ -39,7 +40,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
 
 private abstract class EffectsEntity{
     abstract fun getComponents(): List<Graphics.RenderableEntity>
-    abstract fun update(): Unit
+    abstract fun update(timeStep: Double): Unit
     abstract fun isMarkedForRemoval(): Boolean
 }
 
@@ -69,9 +70,9 @@ private class ExhaustEntity(val model: Model, val position: Vector3, var rotatio
 
     }
 
-    override fun update() {
+    override fun update(timeStep: Double) {
         lifetime--
-        position.add(velocity.toVec3())
+        position.add((velocity* timeStep).toVec3())
         rotation += drotation * getLife()
     }
 

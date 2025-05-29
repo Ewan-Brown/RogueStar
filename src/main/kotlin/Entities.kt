@@ -213,10 +213,11 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
             when(action){
                 is ControlCommand.ShootCommand -> TODO()
                 is ControlCommand.ThrustCommand -> {
-                    applyForce(action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle), worldCenter)
+                    val force = action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle)
+                    applyForce(force, worldCenter)
                     for (thrusterComponent in thrusterComponents) {
                         val transform = getFixtureSlotTransform(this, thrusterComponent)
-                        worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(transform.translation, transform.rotation.toRadians(), this.linearVelocity.flip()))
+                        worldReference.effectsBuffer.add(EffectsRequest.ExhaustRequest(transform.translation, transform.rotation.toRadians(), this.linearVelocity - force.normalized * 10.0))
                     }
                 }
                 is ControlCommand.TurnCommand -> {
