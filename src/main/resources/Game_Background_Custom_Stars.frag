@@ -72,6 +72,6 @@ void main() {
 //    float dd = length( color.yz );
 //    col = mix( vec3(0.0,0.0,0.0), col, smoothstep( 0.0, 0.05, dd) );
 //  outputColor = vec4(1- col.x, 1- col.y, 0,1.0);
-    float val = val(globalPos.xy) + val(globalPos.xy * 2.0);
+    float val = val(globalPos.xy) + val(globalPos.xy * 0.2);
     outputColor = vec4(val, val, val, 0.0);
 }

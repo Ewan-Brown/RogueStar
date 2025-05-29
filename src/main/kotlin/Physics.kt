@@ -11,8 +11,8 @@ import kotlin.math.PI
 
 //data class ComponentDefinition(val model : Model, val localTransform: Transformation)
 
-data class PhysicsInput(val map : Map<Int, List<ControlCommand>>)
-data class PhysicsOutput(val requests: List<EffectsRequest>)
+data class PhysicsInput(val map : Map<Int, List<ControlCommand>>, val timeStep: Double)
+data class PhysicsOutput(val requests: List<EffectsRequest>, val timeElapsed: Double)
 
 class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
     /**
@@ -147,7 +147,8 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     override fun update(input: PhysicsInput) : PhysicsOutput{
         val controlActions = input.map;
         time++
-        physicsWorld.update(1.0)
+        physicsWorld.update(input.timeStep)
+
         var i = physicsWorld.bodies.size
         if(controlActions.size > i){
             error("More controlActions were supplied than there are entities in the PhysicsWorld!")
@@ -165,7 +166,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val effects = physicsWorld.effectsBuffer
         physicsWorld.effectsBuffer = mutableListOf()
 
-        return PhysicsOutput(effects)
+        return PhysicsOutput(effects, physicsWorld.timeStep.deltaTime)
     }
 
 
