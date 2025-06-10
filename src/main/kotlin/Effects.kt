@@ -1,4 +1,3 @@
-import Graphics
 import org.dyn4j.geometry.Vector2
 import Graphics.Model
 import org.dyn4j.geometry.Vector3
@@ -44,7 +43,7 @@ private abstract class EffectsEntity{
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-private class ExhaustEntity(val model: Model, val position: Vector3, var rotation : Double, val velocity: Vector2, var drotation : Double = 0.0, var scale: Double = 1.0)
+private class ExhaustEntity(val model: Model, val position: Vector3, var rotation : Double, val velocity: Vector2, var angularVelocity : Double = 0.0, var scale: Double = 1.0)
     : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
@@ -73,7 +72,7 @@ private class ExhaustEntity(val model: Model, val position: Vector3, var rotatio
     override fun update(timeStep: Double) {
         lifetime--
         position.add((velocity* timeStep).toVec3())
-        rotation += drotation * getLife()
+        rotation += angularVelocity * getLife()
     }
 
     override fun isMarkedForRemoval(): Boolean {
