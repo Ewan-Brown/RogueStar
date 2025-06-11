@@ -218,7 +218,10 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
             val rotation = shipTransform.rotation.toRadians() + slotTransform.rotation.toRadians()
 
             val finalTransform = Transformation(translation, rotation, 1.0)
-
+//            worldReference.requestEntity(EntityRequest(RequestType.BULLET))
+            //TODO Guns/weapons need a way to keep a reference to what they create/shoot.
+            // Note that this may be dynamically created entities, and may be based off something a bit more static (e.g guns that shoot bullets)
+            // Maybe it's safe for guns to hold onto and require reference to their respective bullets' factories. that would solve alot of problems.
         }
     }
 
