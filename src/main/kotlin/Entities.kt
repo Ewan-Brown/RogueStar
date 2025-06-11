@@ -11,7 +11,6 @@ import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 import java.util.*
 import java.util.function.Predicate
-import kotlin.contracts.Effect
 
 /**************************
  * Game-session Entity related code
@@ -19,7 +18,6 @@ import kotlin.contracts.Effect
 
 abstract class PhysicsEntity protected constructor(
     internalFixtureSlots: List<FixtureSlot<*>>,
-    val root: FixtureSlot<*> = internalFixtureSlots[0],
     val teamFilter: TeamFilter,
     private val connectionMap: Map<FixtureSlot<*>, List<FixtureSlot<*>>>,
     val worldReference: PhysicsWorld
@@ -49,14 +47,15 @@ abstract class PhysicsEntity protected constructor(
      * Function used purely for manually testing proof of concept or debugging.
      */
     var flag = false;
-    open fun testFunc(){
-    }
+    open fun testFunc(){}
 
     /**
      * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
      * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
      * */
-    private fun processComponentDestruction(fixtureSlot: FixtureSlot<*>, trueDestruction: Boolean = true){
+    private fun processComponentDestruction(fixtureSlot: FixtureSlot<*>, initialDestruction: Boolean = true){
+        // The concept of a root here just made thinking about / visualizing it easier. maybe not necessary
+        val root = fixtureSlotFixtureMap.keys.first()
         if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
             throw IllegalArgumentException("tried to kill a component that is not under this entity")
         }else{
@@ -66,7 +65,7 @@ abstract class PhysicsEntity protected constructor(
                 removeFixture(fixtureSlotFixtureMap[fixtureSlot])
                 fixtureSlotFixtureMap[fixtureSlot] = null
                 //Split check!
-                if (trueDestruction) {
+                if (initialDestruction) {
                     val branchRoots = connectionMap[fixtureSlot]
                     val nodesAlreadyCounted = mutableListOf<FixtureSlot<*>>()
                     val branches: List<List<FixtureSlot<*>>> = branchRoots!!.mapNotNull {
@@ -112,8 +111,7 @@ abstract class PhysicsEntity protected constructor(
                             val cockpits = newConnections.keys.filterIsInstance<CockpitFixtureSlot>();
 
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
-                            val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(),thrusters, guns, newConnections,
-                                cockpits
+                            val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), newConnections
                             ),worldReference )
                             newEntity.translate(this.localCenter.product(-1.0))
                             newEntity.rotate(this.transform.rotationAngle)
@@ -190,13 +188,15 @@ abstract class PhysicsEntity protected constructor(
     }
 }
 open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
-    shipDetails.fixtureSlots, if(shipDetails.cockpit.isNotEmpty()) shipDetails.cockpit[0] else shipDetails.fixtureSlots[0], TeamFilter(
+    shipDetails.fixtureSlots, TeamFilter(
         team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
         mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
     ), shipDetails.connectionMap, worldReference
 ) {
 
-    val thrusterComponents = shipDetails.thrusters
+    val thrusterComponents = shipDetails.connectionMap.keys.filterIsInstance<ThrusterFixtureSlot>()
+    val gunComponents = shipDetails.connectionMap.keys.filterIsInstance<GunFixtureSlot>()
+    val cockpits = shipDetails.connectionMap.keys.filterIsInstance<CockpitFixtureSlot>()
     override fun isMarkedForRemoval(): Boolean = false
 
     override fun testFunc(){
@@ -204,14 +204,13 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
     }
 
     fun shootAllWeapons(){
-        //TODO can we do something better than this ...?
-        val gunFixtures: List<GunFixture> = fixtureSlotFixtureMap.filter { it.key is GunFixtureSlot }.map { it.value!! as GunFixture }
+
     }
 
     override fun processControlActions(actions: List<ControlCommand>) {
         for (action in actions) {
             when(action){
-                is ControlCommand.ShootCommand -> TODO()
+                is ControlCommand.ShootCommand -> shootAllWeapons()
                 is ControlCommand.ThrustCommand -> {
                     if(!action.desiredVelocity.isZero) {
                         val force = action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle)
@@ -410,10 +409,8 @@ fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) 
  *************************/
 
 public data class ShipDetails(val fixtureSlots: List<FixtureSlot<*>>,
-                              val thrusters: List<ThrusterFixtureSlot>,
-                              val guns: List<GunFixtureSlot>,
                               val connectionMap: Map<FixtureSlot<*>,
-                                      List<FixtureSlot<*>>>, val cockpit: List<CockpitFixtureSlot>)
+                                      List<FixtureSlot<*>>>)
 public enum class CollisionCategory(val bits: Long) {
     CATEGORY_SHIP(0b0001),
     CATEGORY_PROJECTILE(0b0010),
