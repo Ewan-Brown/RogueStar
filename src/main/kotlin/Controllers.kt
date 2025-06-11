@@ -168,12 +168,11 @@ class PlayerController(val input: BitSet, val mousePosProducer: () -> Vector2) :
             r--
         }
 
-        if(input[KeyEvent.VK_X]){
-            actions.add(ControlCommand.TestCommand)
+        if(input[KeyEvent.VK_SPACE]){
+            actions.add(ControlCommand.ShootCommand)
         }
 
         val desiredAngle = entityData.position.to(mousePosProducer())
-//        println(desiredAngle.getAngleBetween(0.0))
 
         actions.add(ControlCommand.TurnCommand(desiredAngle.getAngleBetween(0.0)))
         actions.add(ControlCommand.ThrustCommand(direction))
