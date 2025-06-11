@@ -42,30 +42,14 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 Type.GUN -> GunFixtureSlot(model, transform)
                 Type.BODY -> BasicFixtureSlot(model, transform)
             }
-
-//            val model = models[it.shape]
-//            val transform = Transformation(it.position / 30.0, it.scale, it.rotation * PI / 2.0)
-//            val def = ComponentDefinition(model, transform)
-//            def.
-//            Component(
-//                def,
-//                TeamFilter(
-//                    category = CollisionCategory.CATEGORY_SHIP.bits,
-//                    mask = CollisionCategory.CATEGORY_SHIP.bits
-//                )
-//            )
         }
 
         fun getMatchingComponent(id: Int) = fixtureSlotMapping[components[id]]
-        fun transform(ids: List<Int>) = ids.map { id -> getMatchingComponent(id)!! }
 
-        val thrusters : List<ThrusterFixtureSlot> = fixtureSlotMapping.values.filterIsInstance<ThrusterFixtureSlot>()
-        val guns : List<GunFixtureSlot> = fixtureSlotMapping.values.filterIsInstance<GunFixtureSlot>()
-        val cockpits = fixtureSlotMapping.values.filterIsInstance<CockpitFixtureSlot>()
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        val s = ShipDetails(fixtureSlotMapping.values.toList(), thrusters, guns, trueConnectionMap, cockpits)
+        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap)
         ShipEntity(Team.TEAMLESS, s, worldRef)
     }
     //TODO Refactor this?

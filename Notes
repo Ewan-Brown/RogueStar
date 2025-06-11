@@ -1,4 +1,10 @@
-Working on writing reusable code for loading ships
+Working on component implementation (thruster, gun etc).
+
+WIP
+- Get the gun/bullets working
+- Fix the controller code to react to when the player dies!
+-   Working on separating the ship from the controller a little better
+-   Weird bug - if you thrust after losing cockpit, the particles spawn in a weird spot.
 
 TODO
 - Clean up the confusing dataclasses (GraphicalData/RenderableComponent)
