@@ -186,6 +186,10 @@ abstract class PhysicsEntity protected constructor(
             team
         );
     }
+
+    fun getTransformation(): Transformation {
+        return Transformation(worldCenter.toVec3(), 1.0, getTransform().rotationAngle)
+    }
 }
 open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
     shipDetails.fixtureSlots, TeamFilter(
@@ -205,7 +209,17 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
     }
 
     fun shootAllWeapons(){
+        gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
+            //TODO Make this a reusable function :) maybe even as a generic Transformation util
+            val shipTransform = getTransformation()
+            val slotTransform = getFixtureSlotTransform(this, it)
 
+            val translation = shipTransform.translation + slotTransform.translation.toVec2().rotate(shipTransform.rotation)
+            val rotation = shipTransform.rotation.toRadians() + slotTransform.rotation.toRadians()
+
+            val finalTransform = Transformation(translation, rotation, 1.0)
+
+        }
     }
 
     override fun processControlActions(actions: List<ControlCommand>) {
