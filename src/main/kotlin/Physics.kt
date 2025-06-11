@@ -161,12 +161,14 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
     /**
      * Process a request to add a new entity to the game. Returns an integer referring to the id of the entity if successful, otherwise null
-     *
      */
     fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
             RequestType.RANDOM_SHIP ->{
-                addEntity(shipFactories.random().invoke(), request.angle, request.position)
+                val ship = shipFactories.random().invoke()
+                ship.translate(request.position)
+                ship.rotate(request.angle)
+                addEntity(ship)
             }
             RequestType.BULLET -> TODO()
         }
@@ -189,9 +191,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team
     )
 
-    private fun <E : PhysicsEntity> addEntity(entity: E, angle: Double, pos: Vector2): E {
-        entity.rotate(angle)
-        entity.translate(pos)
+    private fun <E : PhysicsEntity> addEntity(entity: E): E {
         entity.setMass(MassType.NORMAL)
         physicsWorld.addBody(entity)
         return entity
@@ -204,7 +204,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team
     )
 
-    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
+    inner class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
         //TODO This shouldn't be tied to physicsworld
         val graphicsService = GraphicsService()

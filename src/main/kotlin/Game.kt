@@ -75,6 +75,7 @@ fun main() {
     val mousePositionProducer: () -> Vector2 = {gui.getMousePositionInWorldCoordinates ()}
 
     val testTeam = Team("test");
+    //Instead, the physics layer should return some sort of 'future' like object, used later to refer to get the ID
     val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
     controllerLayer.addControllerEntry(PlayerController(bitSet, mousePositionProducer), playerID)
     for (i in 0..0){
