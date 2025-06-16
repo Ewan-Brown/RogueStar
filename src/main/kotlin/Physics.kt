@@ -3,6 +3,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
+import org.dyn4j.collision.Fixture
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
@@ -39,7 +40,9 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             when(it.type){
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
-                Type.GUN -> GunFixtureSlot(model, transform)
+                Type.GUN -> {
+                    GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
+                }
                 Type.BODY -> BasicFixtureSlot(model, transform)
             }
         }
@@ -204,18 +207,21 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team
     )
 
-    inner class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
+    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
 
         //TODO This shouldn't be tied to physicsworld
         val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<PhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
+        var enableCollisionProcessing = false
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, PhysicsEntity>>) {
-            super.processCollisions(iterator)
-            contactCollisions.forEach {
+            if(enableCollisionProcessing){
+                super.processCollisions(iterator)
+                contactCollisions.forEach {
                 it.pair.first.fixture.onCollide(it)
                 it.pair.second.fixture.onCollide(it)
+            }
             }
         }
 

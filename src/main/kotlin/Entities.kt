@@ -33,7 +33,6 @@ abstract class PhysicsEntity protected constructor(
     /**
      * This serves two purposes - to keep a list of all the components (fixture slots) as well as a reference to each of the components' fixtures -
      * if a reference is null it means the fixture is destroyed or removed
-     * TODO Why not just have Component.fixture as a field?
      */
     val fixtureSlotFixtureMap: MutableMap<FixtureSlot<*>, BasicFixture?> = internalFixtureSlots.associateWith { null }.toMutableMap()
 
@@ -198,9 +197,11 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
     ), shipDetails.connectionMap, worldReference
 ) {
 
-    val thrusterComponents = shipDetails.connectionMap.keys.filterIsInstance<ThrusterFixtureSlot>()
-    val gunComponents = shipDetails.connectionMap.keys.filterIsInstance<GunFixtureSlot>()
-    val cockpits = shipDetails.connectionMap.keys.filterIsInstance<CockpitFixtureSlot>()
+    // FIXME Note that these must be explicitly typed or 'noinfer' gets attached which is irritating
+    //TODO It seems that these might have changed how things work when ship is split in pieces. See bullet test case for eample
+    val thrusterComponents: List<ThrusterFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<ThrusterFixtureSlot>()
+    val gunComponents: List<GunFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<GunFixtureSlot>()
+    val cockpits: List<CockpitFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<CockpitFixtureSlot>()
 
     override fun isMarkedForRemoval(): Boolean = false
 
@@ -210,18 +211,11 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
 
     fun shootAllWeapons(){
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
-            //TODO Make this a reusable function :) maybe even as a generic Transformation util
-            val shipTransform = getTransformation()
-            val slotTransform = getFixtureSlotTransform(this, it)
-
-            val translation = shipTransform.translation + slotTransform.translation.toVec2().rotate(shipTransform.rotation)
-            val rotation = shipTransform.rotation.toRadians() + slotTransform.rotation.toRadians()
-
-            val finalTransform = Transformation(translation, rotation, 1.0)
-//            worldReference.requestEntity(EntityRequest(RequestType.BULLET))
-            //TODO Guns/weapons need a way to keep a reference to what they create/shoot.
-            // Note that this may be dynamically created entities, and may be based off something a bit more static (e.g guns that shoot bullets)
-            // Maybe it's safe for guns to hold onto and require reference to their respective bullets' factories. that would solve alot of problems.
+            val transformation = getFixtureSlotTransform(this, it)
+            val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as GunFixture)
+            projectile.translate(transformation.translation.toVec2())
+            projectile.setMass(MassType.NORMAL)
+            worldReference.entityBuffer.add(projectile)
         }
     }
 
@@ -287,9 +281,9 @@ class TeamFilter(
 }
 
 fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) : Transformation{
-    val entityAngle = entity.getTransform().rotation.toRadians()
+    val entityAngle = entity.transform.rotation.toRadians()
     val entityPos = entity.worldCenter
-    val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.getMass().center).rotate(entityAngle).add(entityPos)
+    val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle).add(entityPos)
     val newAngle = Rotation(fixtureSlot.localTransform.rotation.toRadians() + entity.transform.rotationAngle)
     val scale = fixtureSlot.localTransform.scale
     return Transformation(absolutePos.toVec3(), scale, newAngle)
