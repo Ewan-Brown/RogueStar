@@ -25,7 +25,7 @@ class GraphicsService {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             transform,
-                            Graphics.ColorData(1.0f, 1.0f, 0.0f, 0.0f),
+                            Graphics.ColorData(1.0f, 0.0f, 0.0f, 0.0f),
                             Graphics.MetaData(1.0f)
                         )
                     }
@@ -40,14 +40,14 @@ class GraphicsService {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             transform,
-                            Graphics.ColorData(1.0f, 0.0f, 0.0f, 0.0f),
+                            Graphics.ColorData(1.0f, 1.0f, 0.0f, 0.0f),
                             Graphics.MetaData(1.0f)
                         )
                     } is CockpitFixtureSlot -> {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             transform,
-                            Graphics.ColorData(01.0f, 010f, 01.0f, 0.0f),
+                            Graphics.ColorData(0.0f, 1.0f, 1.0f, 0.0f),
                             Graphics.MetaData(1.0f)
                         )
                     }

@@ -28,10 +28,11 @@ open class BasicFixture(shape: Convex): BodyFixture(shape) {
 }
 
 class ThrusterFixture(shape: Convex): BasicFixture(shape) {
-    private var direction = 0.0
+    private var orientation = 0.0
 }
 
 class GunFixture(shape: Convex): BasicFixture(shape) {
+    private var orientation = 0.0
 }
 
 class CockpitFixture(shape: Convex): BasicFixture(shape) {
@@ -50,7 +51,7 @@ fun <F : FixtureSlot<*>> copyFixtureSlot(a: F) : F {
         is BasicFixtureSlot -> BasicFixtureSlot(a.model, a.localTransform) as F
         is ThrusterFixtureSlot -> ThrusterFixtureSlot(a.model, a.localTransform) as F
         is CockpitFixtureSlot -> CockpitFixtureSlot(a.model, a.localTransform) as F
-        is GunFixtureSlot -> GunFixtureSlot(a.model, a.localTransform) as F
+        is GunFixtureSlot -> GunFixtureSlot(a.model, a.localTransform, a.projectileCreator) as F
         else -> {throw IllegalArgumentException()}
     }
 }
@@ -94,7 +95,7 @@ class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlo
     }
 }
 
-class GunFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<GunFixture>(model, transform) {
+class GunFixtureSlot(model: Model, transform : Transformation, val projectileCreator: (GunFixture) -> PhysicsEntity) : FixtureSlot<GunFixture>(model, transform) {
     override fun createFixture(): GunFixture {
         val vertices = arrayOfNulls<Vector2>(model.points)
         for (i in vertices.indices) {
