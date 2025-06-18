@@ -97,6 +97,7 @@ fun main() {
         gui.updateDrawables(modelDataMap, details)
     }
 
+    //TODO Maybe delegate this to GraphicsService and don't make it hardcoded...
     val playerData = physicsLayer.getEntityData(playerID)
     val playerPos = playerData?.position ?: Vector2()
     if(playerData == null){
@@ -113,7 +114,6 @@ fun main() {
         val playerData = physicsLayer.getEntityData(playerID)
         populateData(Graphics.CameraDetails(playerData?.position ?: Vector2(), 1.0, 0.0))
         effectsLayer.update(EffectsInput(physicsOut.requests, physicsOut.timeElapsed))
-
     }
 }
 

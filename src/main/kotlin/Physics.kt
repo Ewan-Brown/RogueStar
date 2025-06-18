@@ -213,7 +213,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<PhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
-        var enableCollisionProcessing = false
+        var enableCollisionProcessing = true
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, PhysicsEntity>>) {
             if(enableCollisionProcessing){
