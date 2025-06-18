@@ -207,7 +207,7 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
 
     override fun testFunc(){
         this.fixtureSlotFixtureMap.forEach{
-            if(it.key is CockpitFixtureSlot){
+            if(it.key is ThrusterFixtureSlot ){
                 fixtureSlotFixtureMap[it.key]?.kill()
             }
         }
@@ -239,9 +239,9 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
                 is ControlCommand.ThrustCommand -> {
                     if(!action.desiredVelocity.isZero) {
                         val force = action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle)
-                        applyForce(force, worldCenter)
-                        for (thrusterComponent in thrusterComponents) {
+                        for (thrusterComponent in thrusterComponents.filter { fixtureSlotFixtureMap[it] != null }) {
                             val transform = getFixtureSlotTransform(this, thrusterComponent)
+                            applyForce(force, transform.translation.toVec2())
                             worldReference.effectsBuffer.add(
                                 EffectsRequest.ExhaustRequest(
                                     transform.translation,
