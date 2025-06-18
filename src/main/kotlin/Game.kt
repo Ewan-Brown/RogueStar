@@ -108,8 +108,8 @@ fun main() {
 
     while(true){
         Thread.sleep(16)
-        val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
+        val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
         effectsLayer.update(EffectsInput(physicsOut.requests, physicsOut.timeElapsed))
 
         val playerData = physicsLayer.getEntityData(playerID)

@@ -211,11 +211,19 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
 
     fun shootAllWeapons(){
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
+            //TODO This should spawn a bullet and an exhaust in the same spot... it's not working...
             val transformation = getFixtureSlotTransform(this, it)
             val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as GunFixture)
-            projectile.translate(transformation.translation.toVec2())
             projectile.setMass(MassType.NORMAL)
+            projectile.translate(transformation.translation.toVec2() - projectile.localCenter)
             worldReference.entityBuffer.add(projectile)
+            worldReference.effectsBuffer.add(
+                    EffectsRequest.ExhaustRequest(
+                        transformation.translation,
+                        transformation.rotation.toRadians(),
+                       Vector2()
+                    )
+            )
         }
     }
 
@@ -283,7 +291,8 @@ class TeamFilter(
 fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) : Transformation{
     val entityAngle = entity.transform.rotation.toRadians()
     val entityPos = entity.worldCenter
-    val absolutePos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle).add(entityPos)
+    val localPos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle)
+    val absolutePos = entityPos + localPos
     val newAngle = Rotation(fixtureSlot.localTransform.rotation.toRadians() + entity.transform.rotationAngle)
     val scale = fixtureSlot.localTransform.scale
     return Transformation(absolutePos.toVec3(), scale, newAngle)
