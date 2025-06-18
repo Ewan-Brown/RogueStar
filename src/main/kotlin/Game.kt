@@ -110,10 +110,9 @@ fun main() {
         Thread.sleep(16)
         lastControlActions = controllerLayer.update(ControllerInput(physicsLayer.getBodyData())).map
         val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
-        effectsLayer.update(EffectsInput(physicsOut.requests, physicsOut.timeElapsed))
-
         val playerData = physicsLayer.getEntityData(playerID)
         populateData(Graphics.CameraDetails(playerData?.position ?: Vector2(), 1.0, 0.0))
+        effectsLayer.update(EffectsInput(physicsOut.requests, physicsOut.timeElapsed))
 
     }
 }

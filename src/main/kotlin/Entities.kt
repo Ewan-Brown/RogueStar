@@ -217,13 +217,13 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
             projectile.setMass(MassType.NORMAL)
             projectile.translate(transformation.translation.toVec2() - projectile.localCenter)
             worldReference.entityBuffer.add(projectile)
-            worldReference.effectsBuffer.add(
-                    EffectsRequest.ExhaustRequest(
-                        transformation.translation,
-                        transformation.rotation.toRadians(),
-                       Vector2()
-                    )
-            )
+//            worldReference.effectsBuffer.add(
+//                    EffectsRequest.ExhaustRequest(
+//                        transformation.translation,
+//                        transformation.rotation.toRadians(),
+//                       Vector2()
+//                    )
+//            )
         }
     }
 
