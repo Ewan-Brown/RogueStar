@@ -206,6 +206,11 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
     override fun isMarkedForRemoval(): Boolean = false
 
     override fun testFunc(){
+        this.fixtureSlotFixtureMap.forEach{
+            if(it.key is CockpitFixtureSlot){
+                fixtureSlotFixtureMap[it.key]?.kill()
+            }
+        }
         super.testFunc()
     }
 
