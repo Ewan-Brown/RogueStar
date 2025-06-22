@@ -11,7 +11,7 @@ class GraphicsService {
      * Take a given entity and a fixtureSlot and determine what (if any) renderable should be extracted
      * This should be easily extensible for a single component to produce multiple renderables (e.g a gun turret with base + barrel)
      */
-    fun <T : BasicFixture> componentToRenderable(entity : PhysicsEntity, fixtureSlot : FixtureSlot<T>) : Graphics.RenderableEntity? {
+    fun <T : BasicFixture> componentToRenderable(entity : PhysicsEntity, fixtureSlot : AbstractFixtureSlot<T>) : Graphics.RenderableEntity? {
 
         entity.run {
             val fixture = entity.fixtureSlotFixtureMap[fixtureSlot]

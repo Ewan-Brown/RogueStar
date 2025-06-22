@@ -1,25 +1,20 @@
-import Graphics.*
 import PhysicsLayer.*
+import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.collision.Filter
 import org.dyn4j.dynamics.AbstractPhysicsBody
-import org.dyn4j.dynamics.BodyFixture
-import org.dyn4j.geometry.Convex
 import org.dyn4j.geometry.MassType
-import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
-import org.dyn4j.world.WorldCollisionData
+import org.w3c.dom.NamedNodeMap
 import java.util.*
-import java.util.function.Predicate
 
 /**************************
  * Game-session Entity related code
  *************************/
 
 abstract class PhysicsEntity protected constructor(
-    internalFixtureSlots: List<FixtureSlot<*>>,
-    val teamFilter: TeamFilter,
-    private val connectionMap: Map<FixtureSlot<*>, List<FixtureSlot<*>>>,
+    internalFixtureSlots: List<AbstractFixtureSlot<*>>,
+    private val connectionMap: Map<AbstractFixtureSlot<*>, List<AbstractFixtureSlot<*>>>,
     val worldReference: PhysicsWorld
 ) : AbstractPhysicsBody<BasicFixture>() {
 
@@ -27,14 +22,14 @@ abstract class PhysicsEntity protected constructor(
         private var UUID_COUNTER = 0
     }
 
-    val team = teamFilter.team
+    var team: Team? = null
     val uuid = UUID_COUNTER++
 
     /**
      * This serves two purposes - to keep a list of all the components (fixture slots) as well as a reference to each of the components' fixtures -
      * if a reference is null it means the fixture is destroyed or removed
      */
-    val fixtureSlotFixtureMap: MutableMap<FixtureSlot<*>, BasicFixture?> = internalFixtureSlots.associateWith { null }.toMutableMap()
+    val fixtureSlotFixtureMap: MutableMap<AbstractFixtureSlot<*>, BasicFixture?> = internalFixtureSlots.associateWith { null }.toMutableMap()
 
     init {
         for(value in internalFixtureSlots){
@@ -52,7 +47,7 @@ abstract class PhysicsEntity protected constructor(
      * Will remove a given component, and if not disabled, will do 'split check' which checks if this results in a fragment of the entity being lost due to lack of physical connection
      * The reason for the flag is to allow for when we are removing components *due* to an initial destruction, where we don't need to trigger this because we're already processing it.
      * */
-    private fun processComponentDestruction(fixtureSlot: FixtureSlot<*>, initialDestruction: Boolean = true){
+    private fun processComponentDestruction(fixtureSlot: AbstractFixtureSlot<*>, initialDestruction: Boolean = true){
         // The concept of a root here just made thinking about / visualizing it easier. maybe not necessary
         val root = fixtureSlotFixtureMap.keys.first()
         if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
@@ -66,17 +61,17 @@ abstract class PhysicsEntity protected constructor(
                 //Split check!
                 if (initialDestruction) {
                     val branchRoots = connectionMap[fixtureSlot]
-                    val nodesAlreadyCounted = mutableListOf<FixtureSlot<*>>()
-                    val branches: List<List<FixtureSlot<*>>> = branchRoots!!.mapNotNull {
+                    val nodesAlreadyCounted = mutableListOf<AbstractFixtureSlot<*>>()
+                    val branches: List<List<AbstractFixtureSlot<*>>> = branchRoots!!.mapNotNull {
                         if (fixtureSlotFixtureMap[it] == null){
                             return@mapNotNull null
                         }
                         if (nodesAlreadyCounted.contains(it)) {
                             return@mapNotNull null
                         } else {
-                            val accumulator = mutableListOf<FixtureSlot<*>>()
+                            val accumulator = mutableListOf<AbstractFixtureSlot<*>>()
                             val toIgnore = fixtureSlot
-                            val nodesToExplore = Stack<FixtureSlot<*>>()
+                            val nodesToExplore = Stack<AbstractFixtureSlot<*>>()
                             nodesToExplore.push(it)
                             while (nodesToExplore.isNotEmpty()) {
                                 val node = nodesToExplore.pop()
@@ -98,7 +93,7 @@ abstract class PhysicsEntity protected constructor(
                                 processComponentDestruction(branchComponent, false) //false == non-recursive
                             }
                             //Generate a new connection map for this new entity
-                            val newConnections = mutableMapOf<FixtureSlot<*>, List<FixtureSlot<*>>>()
+                            val newConnections = mutableMapOf<AbstractFixtureSlot<*>, List<AbstractFixtureSlot<*>>>()
                             val tempComponentMap = branch.associateWith { it -> copyFixtureSlot(it)}
 //                               Iterate across the connections of each component in this branch, creating a structural copy with the new components
                             for(connectionEntry in connectionMap.filterKeys { branch.contains(it) }) { //Iterate over each branch element
@@ -110,8 +105,8 @@ abstract class PhysicsEntity protected constructor(
                             val cockpits = newConnections.keys.filterIsInstance<CockpitFixtureSlot>();
 
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
-                            val newEntity = ShipEntity(this.team, ShipDetails(newConnections.keys.toList(), newConnections
-                            ),worldReference )
+                            val newEntity = ShipEntity(ShipDetails(newConnections.keys.toList(), newConnections,
+                                this.team),worldReference )
                             newEntity.translate(this.localCenter.product(-1.0))
                             newEntity.rotate(this.transform.rotationAngle)
                             newEntity.translate(this.worldCenter)
@@ -130,14 +125,14 @@ abstract class PhysicsEntity protected constructor(
     /**
      * Assuming this component's fixture is 'dead' this will regenerate it and add it back to the body.
      */
-    fun reviveComponent(fixtureSlot: FixtureSlot<*>){
+    fun reviveComponent(fixtureSlot: AbstractFixtureSlot<*>){
         if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
             throw IllegalArgumentException("tried to kill a component that is not under this entity")
         }else{
             if(fixtureSlotFixtureMap[fixtureSlot] != null){
                 throw IllegalStateException("tried to revive a component that is already alive")
             }else{
-                val fixture = fixtureSlot.createFixture()
+                val fixture = fixtureSlot.createFixture { team }
                 fixtureSlotFixtureMap[fixtureSlot] = fixture
                 addFixture(fixture)
             }
@@ -190,12 +185,16 @@ abstract class PhysicsEntity protected constructor(
         return Transformation(worldCenter.toVec3(), 1.0, getTransform().rotationAngle)
     }
 }
-open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
-    shipDetails.fixtureSlots, TeamFilter(
-        team = team, doesCollide = { it != team }, category = CollisionCategory.CATEGORY_SHIP.bits,
-        mask = CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
+open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
+    shipDetails.fixtureSlots,
+    CategoryFilter(
+        CollisionCategory.CATEGORY_SHIP.bits, CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
     ), shipDetails.connectionMap, worldReference
 ) {
+
+    init {
+        team = shipDetails.team
+    }
 
     // FIXME Note that these must be explicitly typed or 'noinfer' gets attached which is irritating
     //TODO It seems that these might have changed how things work when ship is split in pieces. See bullet test case for eample
@@ -274,26 +273,22 @@ open class ShipEntity(team: Team, shipDetails: ShipDetails, worldReference: Phys
  * A bit-wise (and optional predicate) filter to determine if a given Fixture should intersect with one from another entity
  */
 class TeamFilter(
-    val team: Team = Team.TEAMLESS,
-    val doesCollide: Predicate<Team> = Predicate { it != team  || it == Team.TEAMLESS || team == Team.TEAMLESS},
+    var teamProducer: () -> Team?,
     val category: Long,
     val mask: Long
 ) : Filter {
     override fun isAllowed(filter: Filter): Boolean {
-        filter
-        return if (filter is TeamFilter) {
+        if (filter is TeamFilter) {
             //Check that the category/mask matches both directions
             //AND if team logic matches
-            (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && doesCollide.test(filter.team) && filter.doesCollide.test(
-                team
-            )
+            return (this.category and filter.mask) > 0 && (filter.category and this.mask) > 0 && (filter.teamProducer() == null || teamProducer() == null) || (filter.teamProducer() != this.teamProducer())
         } else {
-            true
+            return filter.isAllowed(this)
         }
     }
 }
 
-fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) : Transformation{
+fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
     val entityAngle = entity.transform.rotation.toRadians()
     val entityPos = entity.worldCenter
     val localPos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle)
@@ -307,9 +302,9 @@ fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: FixtureSlot<*>) 
  * Misc code
  *************************/
 
-public data class ShipDetails(val fixtureSlots: List<FixtureSlot<*>>,
-                              val connectionMap: Map<FixtureSlot<*>,
-                                      List<FixtureSlot<*>>>)
+public data class ShipDetails(val fixtureSlots: List<AbstractFixtureSlot<*>>,
+                              val connectionMap: Map<AbstractFixtureSlot<*>, List<AbstractFixtureSlot<*>>>,
+                              val team: Team?)
 public enum class CollisionCategory(val bits: Long) {
     CATEGORY_SHIP(0b0001),
     CATEGORY_PROJECTILE(0b0010),

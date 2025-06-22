@@ -21,10 +21,6 @@ class Transformation(val translation: Vector3 = Vector3(), val scale : Double = 
 //class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
 
 class Team(val name : String){
-    companion object{
-        private var UUID_COUNTER : Int = 0
-        val TEAMLESS = Team("Teamless")
-    }
 }
 
 fun loadModels() : Map<Int, Model> {
