@@ -41,12 +41,12 @@ class CockpitFixture(shape: Convex): BasicFixture(shape) {
 /**
  * A slot for a fixture of a given type. Think carefully about what fields should go in slot vs fixture.
  */
-sealed class FixtureSlot<T : BasicFixture>(val model: Model, val localTransform: Transformation){
-    abstract fun createFixture(): T
+sealed class AbstractFixtureSlot<T : BasicFixture>(val model: Model, val localTransform: Transformation, val collisionCategory: CollisionCategory, val collisionMask: Long){
+    abstract fun createFixture(teamProducer: () -> Team?): T
     fun onDestruction(){}
 }
 
-fun <F : FixtureSlot<*>> copyFixtureSlot(a: F) : F {
+fun <F : AbstractFixtureSlot<*>> copyFixtureSlot(a: F) : F {
     return when(a){
         is BasicFixtureSlot -> BasicFixtureSlot(a.model, a.localTransform) as F
         is ThrusterFixtureSlot -> ThrusterFixtureSlot(a.model, a.localTransform) as F
@@ -55,9 +55,10 @@ fun <F : FixtureSlot<*>> copyFixtureSlot(a: F) : F {
         else -> {throw IllegalArgumentException()}
     }
 }
-
-class BasicFixtureSlot(model: Model, localTransform: Transformation) : FixtureSlot<BasicFixture>(model, localTransform){
-    override fun createFixture(): BasicFixture {
+//TODO THIS SHIT REPETETETETIVE
+class BasicFixtureSlot(model: Model, localTransform: Transformation, collisionCategory: CollisionCategory, collisionMask: Long)
+    : AbstractFixtureSlot<BasicFixture>(model, localTransform, collisionCategory, collisionMask) {
+    override fun createFixture(teamProducer: () -> Team?): BasicFixture {
         val vertices = arrayOfNulls<Vector2>(model.points)
         for (i in vertices.indices) {
             vertices[i] = model.asVectorData[i].copy()
@@ -67,17 +68,18 @@ class BasicFixtureSlot(model: Model, localTransform: Transformation) : FixtureSl
         polygon.rotate(localTransform.rotation.toRadians())
         polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
         val fixture = BasicFixture(polygon)
-        fixture.filter = TeamFilter(
-            category = CollisionCategory.CATEGORY_SHIP.bits,
-            mask = CollisionCategory.CATEGORY_SHIP.bits
+        fixture.filter = TeamFilter(teamProducer,
+            category = collisionCategory.bits,
+            mask = collisionMask
         )
         return fixture
     }
 
 }
 
-class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<ThrusterFixture>(model, transform) {
-    override fun createFixture(): ThrusterFixture {
+class ThrusterFixtureSlot(model: Model, transform : Transformation, collisionCategory: CollisionCategory, collisionMask: Long)
+    : AbstractFixtureSlot<ThrusterFixture>(model, transform, collisionCategory, collisionMask) {
+    override fun createFixture(teamProducer: () -> Team?): ThrusterFixture {
         val vertices = arrayOfNulls<Vector2>(model.points)
         for (i in vertices.indices) {
             vertices[i] = model.asVectorData[i].copy()
@@ -87,16 +89,18 @@ class ThrusterFixtureSlot(model: Model, transform : Transformation) : FixtureSlo
         polygon.rotate(localTransform.rotation.toRadians())
         polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
         val fixture = ThrusterFixture(polygon)
-        fixture.filter = TeamFilter(
-            category = CollisionCategory.CATEGORY_SHIP.bits,
-            mask = CollisionCategory.CATEGORY_SHIP.bits
+        fixture.filter = TeamFilter(teamProducer,
+            category = collisionCategory.bits,
+            mask = collisionMask
         )
         return fixture
     }
 }
 
-class GunFixtureSlot(model: Model, transform : Transformation, val projectileCreator: (GunFixture) -> PhysicsEntity) : FixtureSlot<GunFixture>(model, transform) {
-    override fun createFixture(): GunFixture {
+class GunFixtureSlot(model: Model, transform : Transformation,
+                     val projectileCreator: (GunFixture) -> PhysicsEntity, collisionCategory: CollisionCategory, collisionMask: Long)
+    : AbstractFixtureSlot<GunFixture>(model, transform, collisionCategory, collisionMask) {
+    override fun createFixture(teamProducer: () -> Team?): GunFixture {
         val vertices = arrayOfNulls<Vector2>(model.points)
         for (i in vertices.indices) {
             vertices[i] = model.asVectorData[i].copy()
@@ -106,17 +110,17 @@ class GunFixtureSlot(model: Model, transform : Transformation, val projectileCre
         polygon.rotate(localTransform.rotation.toRadians())
         polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
         val fixture = GunFixture(polygon)
-        fixture.filter = TeamFilter(
-            category = CollisionCategory.CATEGORY_SHIP.bits,
-            mask = CollisionCategory.CATEGORY_SHIP.bits
+        fixture.filter = TeamFilter(teamProducer,
+            category = collisionCategory.bits,
+            mask = collisionMask
         )
         return fixture
     }
 }
 
 
-class CockpitFixtureSlot(model: Model, transform : Transformation) : FixtureSlot<CockpitFixture>(model, transform) {
-    override fun createFixture(): CockpitFixture {
+class CockpitFixtureSlot(model: Model, transform : Transformation) : AbstractFixtureSlot<CockpitFixture>(model, transform) {
+    override fun createFixture(teamProducer: () -> Team?): CockpitFixture {
         val vertices = arrayOfNulls<Vector2>(model.points)
         for (i in vertices.indices) {
             vertices[i] = model.asVectorData[i].copy()
@@ -126,7 +130,7 @@ class CockpitFixtureSlot(model: Model, transform : Transformation) : FixtureSlot
         polygon.rotate(localTransform.rotation.toRadians())
         polygon.translate(Vector2(localTransform.translation.x, localTransform.translation.y)) //Dyn4J is 2D :P
         val fixture = CockpitFixture(polygon)
-        fixture.filter = TeamFilter(
+        fixture.filter = TeamFilter(teamProducer,
             category = CollisionCategory.CATEGORY_SHIP.bits,
             mask = CollisionCategory.CATEGORY_SHIP.bits
         )

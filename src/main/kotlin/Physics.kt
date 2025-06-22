@@ -3,7 +3,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import org.dyn4j.collision.CollisionItem
 import org.dyn4j.collision.CollisionPair
-import org.dyn4j.collision.Fixture
 import org.dyn4j.geometry.*
 import org.dyn4j.world.AbstractPhysicsWorld
 import org.dyn4j.world.WorldCollisionData
@@ -28,15 +27,14 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
-    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> ShipEntity = {
-        entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
+    val shipLoader:(EntityBlueprint, PhysicsWorld, Team?) -> ShipEntity = {
+            entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, team: Team? ->
         val components = entityBlueprint.components
         val connections = entityBlueprint.connections
-        val fixtureSlotMapping: Map<ComponentBlueprint, FixtureSlot<*>> = components.associateWith {
+        val fixtureSlotMapping: Map<ComponentBlueprint, AbstractFixtureSlot<*>> = components.associateWith {
             val model = models[it.shape]
             val transform = Transformation(Vector3(it.position.x / 30.0, it.position.y / 30.0, 0.0), it.scale, it.rotation * PI / 2.0) //TODO Clean up this
 
-            //TODO Add component implementations for each type!
             when(it.type){
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
@@ -52,8 +50,35 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap)
-        ShipEntity(Team.TEAMLESS, s, worldRef)
+        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, null)
+        ShipEntity(s, worldRef)
+    }
+
+    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> PhysicsEntity = {
+        entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
+        val components = entityBlueprint.components
+        val connections = entityBlueprint.connections
+        val fixtureSlotMapping: Map<ComponentBlueprint, AbstractFixtureSlot<*>> = components.associateWith {
+            val model = models[it.shape]
+            val transform = Transformation(Vector3(it.position.x / 30.0, it.position.y / 30.0, 0.0), it.scale, it.rotation * PI / 2.0) //TODO Clean up this
+
+            when(it.type){
+                Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
+                Type.COCKPIT -> CockpitFixtureSlot(model, transform)
+                Type.GUN -> {
+                    GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
+                }
+                Type.BODY -> BasicFixtureSlot(model, transform)
+            }
+        }
+
+        fun getMatchingComponent(id: Int) = fixtureSlotMapping[components[id]]
+
+        val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
+            getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
+        }
+//        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, null)
+        PhysicsEntity(s, worldRef)
     }
     //TODO Refactor this?
     enum class Blueprint{
@@ -73,9 +98,9 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
 
     public class EntityFactory<T : PhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
         fun generate() : T{
-            val ret = generator.invoke(blueprintData.first())
-            ret.setMass(MassType.NORMAL)
-            return ret //TODO Make loading from multiple resources choices possible?
+            val entity = generator.invoke(blueprintData.first())
+            entity.setMass(MassType.NORMAL)
+            return entity //TODO Make loading from multiple resources choices possible?
         }
     }
 
@@ -169,6 +194,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val entity = when (request.type) {
             RequestType.RANDOM_SHIP ->{
                 val ship = shipFactories.random().invoke()
+                ship.team = request.team
                 ship.translate(request.position)
                 ship.rotate(request.angle)
                 addEntity(ship)
@@ -191,7 +217,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     class EntityRequest(
         val type: RequestType, val position: Vector2, val velocity: Vector2 = Vector2(),
         val angle: Double = 0.0, val angularVelocity: Double = 0.0,
-        val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team
+        val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team?
     )
 
     private fun <E : PhysicsEntity> addEntity(entity: E): E {
@@ -204,7 +230,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     open class PhysicsBodyData(
         val uuid: Int, val position: Vector2, val velocity: Vector2,
         val angle: Double, val angularVelocity: Double, val traceRadius: Double,
-        val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team
+        val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team? = null
     )
 
     class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
