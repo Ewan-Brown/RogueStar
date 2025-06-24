@@ -135,6 +135,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             for (vertexDatum in value.vertexData) {
                 verticeList.add(vertexDatum)
             }
+            //TODO Sometimes we get a noSuchElementException here
             modelData.getValue(value).verticeIndex = marker
             marker += value.points
         }

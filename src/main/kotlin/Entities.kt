@@ -1,18 +1,16 @@
 import PhysicsLayer.*
-import org.dyn4j.collision.CategoryFilter
 import org.dyn4j.collision.Filter
 import org.dyn4j.dynamics.AbstractPhysicsBody
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
-import org.w3c.dom.NamedNodeMap
 import java.util.*
 
 /**************************
  * Game-session Entity related code
  *************************/
 
-abstract class PhysicsEntity protected constructor(
+abstract class AbstractPhysicsEntity(
     internalFixtureSlots: List<AbstractFixtureSlot<*>>,
     private val connectionMap: Map<AbstractFixtureSlot<*>, List<AbstractFixtureSlot<*>>>,
     val worldReference: PhysicsWorld
@@ -146,7 +144,7 @@ abstract class PhysicsEntity protected constructor(
     private fun updateFixtures(){
         var didLoseParts = false;
         val effectsList = mutableListOf<EffectsRequest>()
-        val entityList = mutableListOf<PhysicsEntity>();
+        val entityList = mutableListOf<AbstractPhysicsEntity>();
         for (entry in fixtureSlotFixtureMap) {
             entry.value?.let{
                 if (it.isMarkedForRemoval()){
@@ -161,6 +159,7 @@ abstract class PhysicsEntity protected constructor(
 
     fun update(actions: List<ControlCommand>){
         updateFixtures();
+        //TODO Move this to a sub class
         processControlActions(actions);
     }
 
@@ -185,11 +184,20 @@ abstract class PhysicsEntity protected constructor(
         return Transformation(worldCenter.toVec3(), 1.0, getTransform().rotationAngle)
     }
 }
-open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : PhysicsEntity(
-    shipDetails.fixtureSlots,
-    CategoryFilter(
-        CollisionCategory.CATEGORY_SHIP.bits, CollisionCategory.CATEGORY_SHIP.bits or CollisionCategory.CATEGORY_PROJECTILE.bits
-    ), shipDetails.connectionMap, worldReference
+
+class BasicPhysicsEntity(fixtureSlots: List<AbstractFixtureSlot<*>>, connectionMap: Map<AbstractFixtureSlot<*>,
+        List<AbstractFixtureSlot<*>>>, worldReference: PhysicsWorld) : AbstractPhysicsEntity(fixtureSlots, connectionMap, worldReference) {
+    override fun isMarkedForRemoval(): Boolean {
+        return false
+    }
+
+    override fun processControlActions(actions: List<ControlCommand>) {
+        // Do nothing
+    }
+}
+
+open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : AbstractPhysicsEntity(
+    shipDetails.fixtureSlots, shipDetails.connectionMap, worldReference
 ) {
 
     init {
@@ -288,7 +296,7 @@ class TeamFilter(
     }
 }
 
-fun getFixtureSlotTransform(entity: PhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
+fun getFixtureSlotTransform(entity: AbstractPhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
     val entityAngle = entity.transform.rotation.toRadians()
     val entityPos = entity.worldCenter
     val localPos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle)
