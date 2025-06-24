@@ -70,12 +70,13 @@ fun main() {
     val gui = Graphics(models, keyListener)
     val mousePositionProducer: () -> Vector2 = {gui.getMousePositionInWorldCoordinates ()}
 
-    val testTeam = Team("test");
+    val testTeam1 = Team("test1");
+    val testTeam2 = Team("test2");
     //Instead, the physics layer should return some sort of 'future' like object, used later to refer to get the ID
-    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
+    val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam1))
     controllerLayer.addControllerEntry(PlayerController(bitSet, mousePositionProducer), playerID)
-    for (i in 0..0){
-        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam))
+    for (i in 0..5){
+        physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam2))
     }
 
     val modelDataMap = hashMapOf<Model, MutableList<Graphics.RenderableEntity>>()

@@ -27,6 +27,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
+    //TODO Duplicated code here with these loaders
     val shipLoader:(EntityBlueprint, PhysicsWorld, Team?) -> ShipEntity = {
             entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, team: Team? ->
         val components = entityBlueprint.components
@@ -41,7 +42,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 Type.GUN -> {
                     GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
                 }
-                Type.BODY -> BasicFixtureSlot(model, transform)
+                Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
         }
 
@@ -54,7 +55,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         ShipEntity(s, worldRef)
     }
 
-    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> PhysicsEntity = {
+    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> AbstractPhysicsEntity = {
         entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
         val components = entityBlueprint.components
         val connections = entityBlueprint.connections
@@ -68,7 +69,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 Type.GUN -> {
                     GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
                 }
-                Type.BODY -> BasicFixtureSlot(model, transform)
+                Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
         }
 
@@ -77,8 +78,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-//        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, null)
-        PhysicsEntity(s, worldRef)
+        BasicPhysicsEntity(fixtureSlotMapping.values.toList(), trueConnectionMap, worldRef)
     }
     //TODO Refactor this?
     enum class Blueprint{
@@ -93,10 +93,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
-    private val bulletFactory = EntityFactory(models, "bullet", PhysicsEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
-    private val defaultShipFactory = EntityFactory(models, "ship_default", ShipEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
+    private val bulletFactory = EntityFactory(models, "bullet", AbstractPhysicsEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
+    private val defaultShipFactory = EntityFactory(models, "ship_default", ShipEntity::class.java, { shipLoader(it, physicsWorld, null)}, mutableListOf());
 
-    public class EntityFactory<T : PhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+    public class EntityFactory<T : AbstractPhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
         fun generate() : T{
             val entity = generator.invoke(blueprintData.first())
             entity.setMass(MassType.NORMAL)
@@ -105,7 +105,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     }
 
     //Just a list of the ship factories available, useful for testing.
-    private val shipFactories = mutableListOf<() -> PhysicsEntity>()
+    private val shipFactories = mutableListOf<() -> AbstractPhysicsEntity>()
 
     public fun loadEntities(){
         val mapper = ObjectMapper()
@@ -144,7 +144,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         return physicsWorld.bodies.associate { it.uuid to it.createBodyData() }
     }
 
-    private fun getEntity(uuid: Int): PhysicsEntity? {
+    private fun getEntity(uuid: Int): AbstractPhysicsEntity? {
         return physicsWorld.bodies.firstOrNull { it -> it.uuid == uuid }
     }
 
@@ -220,7 +220,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val scale: Double = 1.0, val r: Float, val g: Float, val b: Float, val team: Team?
     )
 
-    private fun <E : PhysicsEntity> addEntity(entity: E): E {
+    private fun <E : AbstractPhysicsEntity> addEntity(entity: E): E {
         entity.setMass(MassType.NORMAL)
         physicsWorld.addBody(entity)
         return entity
@@ -233,15 +233,15 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val changeInPosition: Vector2, val changeInOrientation: Double, val team: Team? = null
     )
 
-    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, PhysicsEntity, WorldCollisionData<BasicFixture, PhysicsEntity>>() {
+    class PhysicsWorld(val blueprintGenerator: (Blueprint) -> EntityFactory<*>) : AbstractPhysicsWorld<BasicFixture, AbstractPhysicsEntity, WorldCollisionData<BasicFixture, AbstractPhysicsEntity>>() {
 
         //TODO This shouldn't be tied to physicsworld
         val graphicsService = GraphicsService()
-        val entityBuffer = mutableListOf<PhysicsEntity>()
+        val entityBuffer = mutableListOf<AbstractPhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
         var enableCollisionProcessing = true
 
-        override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, PhysicsEntity>>) {
+        override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, AbstractPhysicsEntity>>) {
             if(enableCollisionProcessing){
                 super.processCollisions(iterator)
                 contactCollisions.forEach {
@@ -261,7 +261,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             entityBuffer.clear()
         }
 
-        override fun createCollisionData(pair: CollisionPair<CollisionItem<PhysicsEntity, BasicFixture>>?): WorldCollisionData<BasicFixture, PhysicsEntity> {
+        override fun createCollisionData(pair: CollisionPair<CollisionItem<AbstractPhysicsEntity, BasicFixture>>?): WorldCollisionData<BasicFixture, AbstractPhysicsEntity> {
             return WorldCollisionData(pair)
         }
 
