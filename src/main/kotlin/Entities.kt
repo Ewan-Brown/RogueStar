@@ -1,4 +1,6 @@
+import BasicFixtureSlot.*
 import PhysicsLayer.*
+import RifleFixtureSlot.RifleFixture
 import org.dyn4j.collision.Filter
 import org.dyn4j.dynamics.AbstractPhysicsBody
 import org.dyn4j.geometry.MassType
@@ -98,10 +100,6 @@ abstract class AbstractPhysicsEntity(
                                 newConnections[connectionEntry.key] = connectionEntry.value.filter { branch.contains(it) }.map { tempComponentMap[it]!! }
                             }
 
-                            val thrusters = newConnections.keys.filterIsInstance<ThrusterFixtureSlot>();
-                            val guns = newConnections.keys.filterIsInstance<GunFixtureSlot>();
-                            val cockpits = newConnections.keys.filterIsInstance<CockpitFixtureSlot>();
-
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
                             val newEntity = ShipEntity(ShipDetails(newConnections.keys.toList(), newConnections,
                                 this.team),worldReference )
@@ -123,14 +121,14 @@ abstract class AbstractPhysicsEntity(
     /**
      * Assuming this component's fixture is 'dead' this will regenerate it and add it back to the body.
      */
-    fun reviveComponent(fixtureSlot: AbstractFixtureSlot<*>){
+    private fun reviveComponent(fixtureSlot: AbstractFixtureSlot<*>){
         if(!fixtureSlotFixtureMap.contains(fixtureSlot)){
             throw IllegalArgumentException("tried to kill a component that is not under this entity")
         }else{
             if(fixtureSlotFixtureMap[fixtureSlot] != null){
                 throw IllegalStateException("tried to revive a component that is already alive")
             }else{
-                val fixture = fixtureSlot.createFixture { team }
+                val fixture = fixtureSlot.generateFixture {team}
                 fixtureSlotFixtureMap[fixtureSlot] = fixture
                 addFixture(fixture)
             }
@@ -143,8 +141,6 @@ abstract class AbstractPhysicsEntity(
     //Check if any parts needs to be removed, and then calculate new center of mass.
     private fun updateFixtures(){
         var didLoseParts = false;
-        val effectsList = mutableListOf<EffectsRequest>()
-        val entityList = mutableListOf<AbstractPhysicsEntity>();
         for (entry in fixtureSlotFixtureMap) {
             entry.value?.let{
                 if (it.isMarkedForRemoval()){
@@ -157,14 +153,9 @@ abstract class AbstractPhysicsEntity(
         if(didLoseParts) setMass(MassType.NORMAL)
     }
 
-    fun update(actions: List<ControlCommand>){
+    open fun update(){
         updateFixtures();
-        //TODO Move this to a sub class
-        processControlActions(actions);
     }
-
-    abstract fun processControlActions(actions: List<ControlCommand>)
-
 
     fun createBodyData(): PhysicsBodyData {
         return PhysicsBodyData(
@@ -190,10 +181,6 @@ class BasicPhysicsEntity(fixtureSlots: List<AbstractFixtureSlot<*>>, connectionM
     override fun isMarkedForRemoval(): Boolean {
         return false
     }
-
-    override fun processControlActions(actions: List<ControlCommand>) {
-        // Do nothing
-    }
 }
 
 open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : AbstractPhysicsEntity(
@@ -207,8 +194,10 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
     // FIXME Note that these must be explicitly typed or 'noinfer' gets attached which is irritating
     //TODO It seems that these might have changed how things work when ship is split in pieces. See bullet test case for eample
     val thrusterComponents: List<ThrusterFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<ThrusterFixtureSlot>()
-    val gunComponents: List<GunFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<GunFixtureSlot>()
+    val gunComponents: List<RifleFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<RifleFixtureSlot>()
     val cockpits: List<CockpitFixtureSlot> = shipDetails.connectionMap.keys.filterIsInstance<CockpitFixtureSlot>()
+
+    private val actions: MutableList<ControlCommand> = mutableListOf()
 
     override fun isMarkedForRemoval(): Boolean = false
 
@@ -225,21 +214,24 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
             //TODO This should spawn a bullet and an exhaust in the same spot... it's not working...
             val transformation = getFixtureSlotTransform(this, it)
-            val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as GunFixture)
+            val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as RifleFixture)
             projectile.setMass(MassType.NORMAL)
             projectile.translate(transformation.translation.toVec2() - projectile.localCenter)
             worldReference.entityBuffer.add(projectile)
-//            worldReference.effectsBuffer.add(
-//                    EffectsRequest.ExhaustRequest(
-//                        transformation.translation,
-//                        transformation.rotation.toRadians(),
-//                       Vector2()
-//                    )
-//            )
         }
     }
 
-    override fun processControlActions(actions: List<ControlCommand>) {
+    fun queueActions(actions: List<ControlCommand>){
+        this.actions.addAll(actions)
+    }
+
+    override fun update() {
+        super.update()
+        processControlActions(actions)
+        actions.clear()
+    }
+
+    private fun processControlActions(actions: List<ControlCommand>) {
         for (action in actions) {
             when(action){
                 is ControlCommand.ShootCommand -> shootAllWeapons()

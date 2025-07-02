@@ -1,3 +1,4 @@
+import BasicFixtureSlot.*
 import Graphics.Model
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -18,7 +19,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     /**
      * Output of EntityDesigner, serialized to file and consumed by loadEntities().
      */
-    public class EntityBlueprint(){
+    class EntityBlueprint(){
         var components: List<ComponentBlueprint> = listOf()
         var connections: Map<Int, List<Int>> = mapOf()
         constructor(comp: List<ComponentBlueprint>, conn: Map<Int, List<Int>>) : this(){
@@ -27,7 +28,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
-    //TODO Duplicated code here with these loaders
+    //TODO Duplicated code, not very extensible 'loader' functions...
     val shipLoader:(EntityBlueprint, PhysicsWorld, Team?) -> ShipEntity = {
             entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, team: Team? ->
         val components = entityBlueprint.components
@@ -40,7 +41,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
                 Type.GUN -> {
-                    GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
+                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate() }
                 }
                 Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
@@ -51,7 +52,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, null)
+        val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, team)
         ShipEntity(s, worldRef)
     }
 
@@ -67,7 +68,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
                 Type.GUN -> {
-                    GunFixtureSlot(model, transform, {_: GunFixture -> bulletFactory.generate()})
+                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate() }
                 }
                 Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
@@ -168,7 +169,13 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         while(i > 0){
             i--
             val body = physicsWorld.bodies[i]
-            body.update(controlActions.getOrElse(body.uuid) { emptyList() })
+            if(body is ShipEntity){
+                val actions = controlActions.get(body.uuid)
+                if(actions != null){
+                    body.queueActions(actions)
+                }
+            }
+            body.update()
             if(body.isMarkedForRemoval()){
                 physicsWorld.removeBody(body)
                 i--

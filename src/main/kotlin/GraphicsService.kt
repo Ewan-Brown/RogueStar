@@ -1,3 +1,5 @@
+import BasicFixtureSlot.*
+
 /*
  * A nice place for things to be translated from 'game' to 'graphics'
  */
@@ -33,7 +35,7 @@ class GraphicsService {
                             Graphics.ColorData(0.0f, 0.0f, 1.0f, 0.0f),
                             Graphics.MetaData(1.0f)
                         )
-                    } is GunFixtureSlot -> {
+                    } is RifleFixtureSlot -> {
                         Graphics.RenderableEntity(
                             fixtureSlot.model,
                             transform,
@@ -48,6 +50,8 @@ class GraphicsService {
                             Graphics.MetaData(1.0f)
                         )
                     }
+
+                    is GunFixtureSlot<*> -> TODO()
                 }
             }else{
                 return null;
