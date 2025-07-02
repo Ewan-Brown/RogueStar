@@ -16,12 +16,7 @@ class Transformation(val translation: Vector3 = Vector3(), val scale : Double = 
     constructor(position : Vector3, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
 }
 
-//Immutable please
-//open class TransformedComponent(val model : Model, val transform: Transformation)
-//class RenderableComponent(model : Model, transform: Transformation, val graphicalData: GraphicalData) : TransformedComponent(model, transform)
-
-class Team(val name : String){
-}
+class Team(val name : String)
 
 fun loadModels() : Map<Int, Model> {
     val mapper = ObjectMapper()
@@ -102,7 +97,7 @@ fun main() {
     }
     populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
 
-    var lastControlActions = mapOf<Int, List<ControlCommand>>()
+    var lastControlActions: Map<Int, List<ControlCommand>>
 
     while(true){
         Thread.sleep(16)
