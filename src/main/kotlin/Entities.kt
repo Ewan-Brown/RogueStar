@@ -213,7 +213,7 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
     fun shootAllWeapons(){
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
             //TODO This should spawn a bullet and an exhaust in the same spot... it's not working...
-            val transformation = getFixtureSlotTransform(this, it)
+//            val transformation = getFixtureSlotTransform(this, it)
             val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as RifleFixture)
             projectile.setMass(MassType.NORMAL)
             projectile.translate(transformation.translation.toVec2() - projectile.localCenter)

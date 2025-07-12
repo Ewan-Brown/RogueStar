@@ -1,4 +1,4 @@
-Working on component implementation (thruster, gun etc).
+Working on generic weapons
 
 WIP
 - Get the gun/bullets working
@@ -14,8 +14,6 @@ TODO
 - Clean up camera stuff, allow manual movement
 - Setup code to go from mouse click to world space
 - Make it fail gracefully when you hit the exit button!
--
-
 - POC Client<->Server ???
 
 = Confirmed that fixture removal/revival and collisions/breaking still work
