@@ -8,6 +8,7 @@ import ThrusterFixtureSlot.*
 import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Convex
 import org.dyn4j.geometry.Polygon
+import org.dyn4j.geometry.Rotation
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.WorldCollisionData
 
@@ -84,23 +85,24 @@ class ThrusterFixtureSlot(model: Model, transform : Transformation)
 }
 
 abstract class GunFixtureSlot<T : GunFixture>(model: Model, transform : Transformation,
-                     val projectileCreator: (T) -> AbstractPhysicsEntity, producer: (Polygon) -> GunFixture)
+                     projectileCreator: (T) -> AbstractPhysicsEntity, producer: (Polygon) -> GunFixture)
     : AbstractFixtureSlot<GunFixture>(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits, producer) {
 
     abstract class GunFixture(shape: Convex): BasicFixture(shape) {
     }
 
-    abstract fun shoot()
+    abstract fun readyToFire(): Boolean
+
+    abstract fun getFiringPosition(): Vector2
+    abstract fun getFiringRotation(): Double
+    abstract fun generateProjectile(): AbstractPhysicsEntity
+
 }
 
 class RifleFixtureSlot(model: Model, transform : Transformation, projectileCreator: (RifleFixture) -> AbstractPhysicsEntity)
     : GunFixtureSlot<RifleFixture>(model, transform, projectileCreator, {p -> RifleFixture(p)}) {
 
     class RifleFixture(shape: Convex): GunFixture(shape){}
-
-    override fun shoot() {
-        println("bang!")
-    }
 
 }
 
