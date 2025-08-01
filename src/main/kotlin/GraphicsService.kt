@@ -16,7 +16,7 @@ class GraphicsService {
             val fixture = entity.fixtureSlotFixtureMap[fixtureSlot]
             if(fixture != null){
 
-                val transform = getFixtureSlotTransform(this, fixtureSlot)
+                val transform = getFixtureSlotGlobalTransform(this, fixtureSlot)
 
                 //TODO this is repetitive!
                 return when(fixtureSlot){

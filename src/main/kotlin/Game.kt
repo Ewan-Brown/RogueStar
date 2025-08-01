@@ -14,6 +14,10 @@ import java.util.*
 
 class Transformation(val translation: Vector3 = Vector3(), val scale : Double = 1.0, val rotation: Rotation = Rotation(0.0)){
     constructor(position : Vector3, scale : Double, rot : Double) : this(position, scale , Rotation(rot))
+
+    override fun toString(): String {
+        return "{translation=$translation, scale=$scale, rotation=$rotation}"
+    }
 }
 
 class Team(val name : String)
@@ -68,9 +72,10 @@ fun main() {
     val testTeam1 = Team("test1");
     val testTeam2 = Team("test2");
     //Instead, the physics layer should return some sort of 'future' like object, used later to refer to get the ID
+    //Introduce proxy thing for camera tracking.
     val playerID = physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam1))
     controllerLayer.addControllerEntry(PlayerController(bitSet, mousePositionProducer), playerID)
-    for (i in 0..5){
+    for (i in 0..0){
         physicsLayer.requestEntity(PhysicsLayer.EntityRequest(PhysicsLayer.RequestType.RANDOM_SHIP, Vector2(10.0, 0.0).rotate((i.toFloat() / 100.0f) * Math.PI * 2), velocity = Vector2(1.0, 0.0), r = 1.0f, g = 1.0f, b = 1.0f, team = testTeam2))
     }
 

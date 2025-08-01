@@ -135,7 +135,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             for (vertexDatum in value.vertexData) {
                 verticeList.add(vertexDatum)
             }
-            //TODO Sometimes we get a noSuchElementException here
+            //TODO Sometimes we get a noSuchElementException here - I think has to do with threading and pausing other threads.
             modelData.getValue(value).verticeIndex = marker
             marker += value.points
         }

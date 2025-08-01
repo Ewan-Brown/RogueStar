@@ -103,7 +103,7 @@ abstract class AbstractPhysicsEntity(
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
                             val newEntity = ShipEntity(ShipDetails(newConnections.keys.toList(), newConnections,
                                 this.team),worldReference )
-                            newEntity.translate(this.localCenter.product(-1.0))
+//                            newEntity.translate(this.localCenter.product(-1.0))
                             newEntity.rotate(this.transform.rotationAngle)
                             newEntity.translate(this.worldCenter)
                             newEntity.setLinearVelocity(this.linearVelocity.x, this.linearVelocity.y)
@@ -212,11 +212,20 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
 
     fun shootAllWeapons(){
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
-            //TODO This should spawn a bullet and an exhaust in the same spot... it's not working...
-//            val transformation = getFixtureSlotTransform(this, it)
-            val projectile = it.projectileCreator(fixtureSlotFixtureMap[it] as RifleFixture)
-            projectile.setMass(MassType.NORMAL)
-            projectile.translate(transformation.translation.toVec2() - projectile.localCenter)
+            val fixtureSlotGlobalTransform = getFixtureSlotGlobalTransform(this, it)
+            val fixtureSlotLocalTransform = getFixtureSlotLocalTransform(this, it)
+            val (projectile, transform) = it.generateProjectile(fixtureSlotFixtureMap[it] as RifleFixture)
+
+            projectile.rotate(transform.rotation)
+            projectile.translate(projectile.localCenter.flip())
+            projectile.translate(transform.translation.toVec2())
+
+            projectile.rotate(fixtureSlotLocalTransform.rotation)
+            projectile.translate(fixtureSlotLocalTransform.translation.toVec2())
+
+            projectile.rotate(fixtureSlotGlobalTransform.rotation)
+            projectile.translate(fixtureSlotGlobalTransform.translation.toVec2())
+
             worldReference.entityBuffer.add(projectile)
         }
     }
@@ -239,7 +248,7 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
                     if(!action.desiredVelocity.isZero) {
                         val force = action.desiredVelocity.product(100.0).rotate(getTransform().rotationAngle)
                         for (thrusterComponent in thrusterComponents.filter { fixtureSlotFixtureMap[it] != null }) {
-                            val transform = getFixtureSlotTransform(this, thrusterComponent)
+                            val transform = getFixtureSlotGlobalTransform(this, thrusterComponent)
                             applyForce(force, transform.translation.toVec2())
                             worldReference.effectsBuffer.add(
                                 EffectsRequest.ExhaustRequest(
@@ -288,7 +297,7 @@ class TeamFilter(
     }
 }
 
-fun getFixtureSlotTransform(entity: AbstractPhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
+fun getFixtureSlotGlobalTransform(entity: AbstractPhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
     val entityAngle = entity.transform.rotation.toRadians()
     val entityPos = entity.worldCenter
     val localPos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center).rotate(entityAngle)
@@ -296,6 +305,13 @@ fun getFixtureSlotTransform(entity: AbstractPhysicsEntity, fixtureSlot: Abstract
     val newAngle = Rotation(fixtureSlot.localTransform.rotation.toRadians() + entity.transform.rotationAngle)
     val scale = fixtureSlot.localTransform.scale
     return Transformation(absolutePos.toVec3(), scale, newAngle)
+}
+
+fun getFixtureSlotLocalTransform(entity: AbstractPhysicsEntity, fixtureSlot: AbstractFixtureSlot<*>) : Transformation{
+    val localPos = fixtureSlot.localTransform.translation.toVec2().subtract(entity.mass.center)
+    val newAngle = Rotation(fixtureSlot.localTransform.rotation.toRadians())
+    val scale = fixtureSlot.localTransform.scale
+    return Transformation(localPos.toVec3(), scale, newAngle)
 }
 
 /**************************

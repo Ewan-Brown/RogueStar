@@ -20,13 +20,10 @@ import org.dyn4j.world.WorldCollisionData
  * Needed a custom extension of this to easily react for fixture<->fixture collision events. Dyn4J is focused on Body<->Body collisions - this just makes life easier for me.
  */
 
-
-
-
-
-
 /**
  * A slot for a fixture of a given type. Think carefully about what fields should go in slot vs fixture.
+ *
+ * At the moment (7/13/2025) - I think there needs to be 1-to-1 SLOT - FIXTURE class relationships
  */
 sealed class AbstractFixtureSlot<T : BasicFixture>(val model: Model, val localTransform: Transformation, val collisionCategory: CollisionCategory, val collisionMask: Long, val fixtureProducer: (Polygon) -> T) {
 
@@ -85,24 +82,37 @@ class ThrusterFixtureSlot(model: Model, transform : Transformation)
 }
 
 abstract class GunFixtureSlot<T : GunFixture>(model: Model, transform : Transformation,
-                     projectileCreator: (T) -> AbstractPhysicsEntity, producer: (Polygon) -> GunFixture)
+                     val projectileCreator: (T) -> AbstractPhysicsEntity, producer: (Polygon) -> GunFixture)
     : AbstractFixtureSlot<GunFixture>(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits, producer) {
 
-    abstract class GunFixture(shape: Convex): BasicFixture(shape) {
-    }
+    abstract class GunFixture(shape: Convex): BasicFixture(shape)
 
-    abstract fun readyToFire(): Boolean
-
-    abstract fun getFiringPosition(): Vector2
-    abstract fun getFiringRotation(): Double
-    abstract fun generateProjectile(): AbstractPhysicsEntity
+    abstract fun generateProjectile(t: T): Pair<AbstractPhysicsEntity, Transformation>
 
 }
 
 class RifleFixtureSlot(model: Model, transform : Transformation, projectileCreator: (RifleFixture) -> AbstractPhysicsEntity)
     : GunFixtureSlot<RifleFixture>(model, transform, projectileCreator, {p -> RifleFixture(p)}) {
 
-    class RifleFixture(shape: Convex): GunFixture(shape){}
+    //Assumes everything is oriented correctly...
+    //TODO check that this correctly works for scale?
+    val bulletSpawnOffset: Vector2 = Vector2(model.asVectorData.maxOf { it.x  * transform.scale } + 0.5, 0.0)
+
+    class RifleFixture(shape: Convex): GunFixture(shape){
+        val rotation : Double = 0.0
+    }
+
+
+    // The projectile's desired transformation relative to the fixture's coordinate system
+    fun getProjectileTransformation(t: RifleFixture): Transformation {
+        return Transformation(bulletSpawnOffset.toVec3(), 1.0, t.rotation)
+    }
+
+    override fun generateProjectile(t: RifleFixture): Pair<AbstractPhysicsEntity, Transformation> {
+        val projectile = projectileCreator(t);
+        val transform = getProjectileTransformation(t);
+        return Pair(projectile, transform)
+    }
 
 }
 
