@@ -15,7 +15,7 @@ import java.util.*
 abstract class AbstractPhysicsEntity(
     internalFixtureSlots: List<AbstractFixtureSlot<*>>,
     private val connectionMap: Map<AbstractFixtureSlot<*>, List<AbstractFixtureSlot<*>>>,
-    val worldReference: PhysicsWorld
+    val worldReference: PhysicsWorld, val scale: Double
 ) : AbstractPhysicsBody<BasicFixture>() {
 
     private companion object {
@@ -102,7 +102,7 @@ abstract class AbstractPhysicsEntity(
 
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
                             val newEntity = ShipEntity(ShipDetails(newConnections.keys.toList(), newConnections,
-                                this.team),worldReference )
+                                this.team),worldReference, scale)
                             newEntity.translate(this.localCenter.flip()) //TODO ROGUE-9
                             newEntity.rotate(this.transform.rotationAngle)
                             newEntity.translate(this.worldCenter)
@@ -172,19 +172,19 @@ abstract class AbstractPhysicsEntity(
     }
 
     fun getTransformation(): Transformation {
-        return Transformation(worldCenter.toVec3(), 1.0, getTransform().rotationAngle)
+        return Transformation(worldCenter.toVec3(), scale, getTransform().rotationAngle)
     }
 }
 
 class BasicPhysicsEntity(fixtureSlots: List<AbstractFixtureSlot<*>>, connectionMap: Map<AbstractFixtureSlot<*>,
-        List<AbstractFixtureSlot<*>>>, worldReference: PhysicsWorld) : AbstractPhysicsEntity(fixtureSlots, connectionMap, worldReference) {
+        List<AbstractFixtureSlot<*>>>, worldReference: PhysicsWorld, scale: Double) : AbstractPhysicsEntity(fixtureSlots, connectionMap, worldReference, scale) {
     override fun isMarkedForRemoval(): Boolean {
         return false
     }
 }
 
-open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : AbstractPhysicsEntity(
-    shipDetails.fixtureSlots, shipDetails.connectionMap, worldReference
+open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld, scale: Double) : AbstractPhysicsEntity(
+    shipDetails.fixtureSlots, shipDetails.connectionMap, worldReference, scale
 ) {
 
     init {
@@ -220,8 +220,6 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
 
             projectile.rotate(transform.rotation)
             projectile.translate(transform.translation.toVec2())
-
-            println(transform.translation)
 
             projectile.rotate(fixtureSlotGlobalTransform.rotation)
             projectile.translate(fixtureSlotGlobalTransform.translation.toVec2())
