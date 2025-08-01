@@ -66,7 +66,7 @@ private class ExhaustEntity(val model: Model, val velocity: Vector2, transformat
         }
         return listOf(
             Graphics.RenderableEntity(
-                model, Transformation(position, rotation, scale), Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
+                model, Transformation(position.copy(), rotation, scale), Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
             )
         )
 
