@@ -213,15 +213,15 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
     fun shootAllWeapons(){
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
             val fixtureSlotGlobalTransform = getFixtureSlotGlobalTransform(this, it)
-            val fixtureSlotLocalTransform = getFixtureSlotLocalTransform(this, it)
             val (projectile, transform) = it.generateProjectile(fixtureSlotFixtureMap[it] as RifleFixture)
 
-            projectile.rotate(transform.rotation)
+            //TODO This needs to be done to get rotations working... make this more globally applicable somehow
             projectile.translate(projectile.localCenter.flip())
+
+            projectile.rotate(transform.rotation)
             projectile.translate(transform.translation.toVec2())
 
-            projectile.rotate(fixtureSlotLocalTransform.rotation)
-            projectile.translate(fixtureSlotLocalTransform.translation.toVec2())
+            println(transform.translation)
 
             projectile.rotate(fixtureSlotGlobalTransform.rotation)
             projectile.translate(fixtureSlotGlobalTransform.translation.toVec2())

@@ -94,9 +94,8 @@ abstract class GunFixtureSlot<T : GunFixture>(model: Model, transform : Transfor
 class RifleFixtureSlot(model: Model, transform : Transformation, projectileCreator: (RifleFixture) -> AbstractPhysicsEntity)
     : GunFixtureSlot<RifleFixture>(model, transform, projectileCreator, {p -> RifleFixture(p)}) {
 
-    //Assumes everything is oriented correctly...
-    //TODO check that this correctly works for scale?
-    val bulletSpawnOffset: Vector2 = Vector2(model.asVectorData.maxOf { it.x  * transform.scale } + 0.5, 0.0)
+    //Assumes everything is oriented correctly..
+    val bulletSpawnOffset: Vector2 = Vector2(0.0, 0.0)
 
     class RifleFixture(shape: Convex): GunFixture(shape){
         val rotation : Double = 0.0
