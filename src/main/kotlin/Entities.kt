@@ -252,8 +252,8 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld, sc
                             applyForce(force, transform.translation.toVec2())
                             worldReference.effectsBuffer.add(
                                 EffectsRequest.ExhaustRequest(
-                                    transform.translation,
-                                    transform.rotation.toRadians(),
+                                    Transformation( transform.translation,
+                                        transform.rotation.toRadians(), scale),
                                     this.linearVelocity - force.normalized * 10.0
                                 )
                             )

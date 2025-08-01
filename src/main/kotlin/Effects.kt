@@ -2,8 +2,8 @@ import org.dyn4j.geometry.Vector2
 import Graphics.Model
 import org.dyn4j.geometry.Vector3
 
-sealed class EffectsRequest(val model: Model, val initialPosition: Vector3, val initialAngle: Double){
-    class ExhaustRequest(initialPosition: Vector3, initialAngle: Double, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, initialPosition, initialAngle);
+sealed class EffectsRequest(val model: Model, val transformation: Transformation){
+    class ExhaustRequest(transformation: Transformation, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, transformation);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>, val timeStep: Double)
@@ -17,7 +17,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
         for (requests in effectsRequests) {
             when (requests) {
                 is EffectsRequest.ExhaustRequest -> {
-                    val exhaust = with(requests) { ExhaustEntity(model, initialPosition, initialAngle, initialVelocity) }
+                    val exhaust = with(requests) { ExhaustEntity(model, initialVelocity, transformation) }
                     entities.add(exhaust)
                 }
             }
@@ -43,12 +43,16 @@ private abstract class EffectsEntity{
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-private class ExhaustEntity(val model: Model, val position: Vector3, var rotation : Double, val velocity: Vector2, var angularVelocity : Double = 0.0, var scale: Double = 1.0)
+private class ExhaustEntity(val model: Model, val velocity: Vector2, transformation: Transformation,  var angularVelocity : Double = 0.0)
     : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
     private var lifetime: Int = MAX_LIFE
     private var isDead = false
+    private var position: Vector3 = transformation.translation
+    private var rotation = transformation.rotation.toRadians()
+    private var scale = transformation.scale
+
 
     fun getLife(): Float {
         return (lifetime.toFloat() / MAX_LIFE.toFloat())
@@ -60,10 +64,9 @@ private class ExhaustEntity(val model: Model, val position: Vector3, var rotatio
         if (variableScale < 0.01) {
             isDead = true
         }
-        val transform = Transformation(position.copy().add(Vector3(0.0, 0.0, 1.0)), variableScale, rotation)
         return listOf(
             Graphics.RenderableEntity(
-                model, transform, Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
+                model, Transformation(position, rotation, scale), Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
             )
         )
 
