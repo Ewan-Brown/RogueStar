@@ -95,7 +95,7 @@ class RifleFixtureSlot(model: Model, transform : Transformation, projectileCreat
     : GunFixtureSlot<RifleFixture>(model, transform, projectileCreator, {p -> RifleFixture(p)}) {
 
     //Assumes everything is oriented correctly..
-    val bulletSpawnOffset: Vector2 = Vector2(0.0, 0.0)
+    val bulletSpawnOffset: Vector2 = Vector2(1.0 * transform.scale, 0.0)
 
     class RifleFixture(shape: Convex): GunFixture(shape){
         val rotation : Double = 0.0
@@ -107,6 +107,9 @@ class RifleFixtureSlot(model: Model, transform : Transformation, projectileCreat
         return Transformation(bulletSpawnOffset.toVec3(), 1.0, t.rotation)
     }
 
+    /**
+     * This is generated in local coords!
+     */
     override fun generateProjectile(t: RifleFixture): Pair<AbstractPhysicsEntity, Transformation> {
         val projectile = projectileCreator(t);
         val transform = getProjectileTransformation(t);

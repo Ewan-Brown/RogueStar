@@ -53,7 +53,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
         val s = ShipDetails(fixtureSlotMapping.values.toList(), trueConnectionMap, team)
-        ShipEntity(s, worldRef)
+        ShipEntity(s, worldRef, scale)
     }
 
     val simpleLoader: (EntityBlueprint, PhysicsWorld, Double) -> AbstractPhysicsEntity = {
@@ -79,7 +79,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val trueConnectionMap = connections.entries.associate { entry: Map.Entry<Int, List<Int>> ->
             getMatchingComponent(entry.key)!! to entry.value.map { getMatchingComponent(it)!! }.toList()
         }
-        BasicPhysicsEntity(fixtureSlotMapping.values.toList(), trueConnectionMap, worldRef)
+        BasicPhysicsEntity(fixtureSlotMapping.values.toList(), trueConnectionMap, worldRef, scale)
     }
     
     //TODO Refactor this?
@@ -247,7 +247,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<AbstractPhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
-        var enableCollisionProcessing = true
+        var enableCollisionProcessing = false
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, AbstractPhysicsEntity>>) {
             if(enableCollisionProcessing){
