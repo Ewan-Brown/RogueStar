@@ -224,6 +224,8 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld, sc
             projectile.rotate(fixtureSlotGlobalTransform.rotation)
             projectile.translate(fixtureSlotGlobalTransform.translation.toVec2())
 
+            projectile.linearVelocity = this.linearVelocity + Vector2(projectile.transform.rotationAngle) * 10.0
+
             worldReference.entityBuffer.add(projectile)
         }
     }
