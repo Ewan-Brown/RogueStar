@@ -103,7 +103,7 @@ abstract class AbstractPhysicsEntity(
                             //TODO shouldn't this be a 'DebrisEntity' or something? Should it always really be a ship?
                             val newEntity = ShipEntity(ShipDetails(newConnections.keys.toList(), newConnections,
                                 this.team),worldReference )
-//                            newEntity.translate(this.localCenter.product(-1.0))
+                            newEntity.translate(this.localCenter.flip()) //TODO ROGUE-9
                             newEntity.rotate(this.transform.rotationAngle)
                             newEntity.translate(this.worldCenter)
                             newEntity.setLinearVelocity(this.linearVelocity.x, this.linearVelocity.y)
@@ -216,7 +216,7 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld) : 
             val (projectile, transform) = it.generateProjectile(fixtureSlotFixtureMap[it] as RifleFixture)
 
             //TODO This needs to be done to get rotations working... make this more globally applicable somehow
-            projectile.translate(projectile.localCenter.flip())
+            projectile.translate(projectile.localCenter.flip()) //TODO ROGUE-9
 
             projectile.rotate(transform.rotation)
             projectile.translate(transform.translation.toVec2())
