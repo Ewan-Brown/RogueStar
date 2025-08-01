@@ -81,6 +81,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
         BasicPhysicsEntity(fixtureSlotMapping.values.toList(), trueConnectionMap, worldRef)
     }
+    
     //TODO Refactor this?
     enum class Blueprint{
         BULLET,
@@ -246,7 +247,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         val graphicsService = GraphicsService()
         val entityBuffer = mutableListOf<AbstractPhysicsEntity>()
         var effectsBuffer = mutableListOf<EffectsRequest>()
-        var enableCollisionProcessing = true
+        var enableCollisionProcessing = false
 
         override fun processCollisions(iterator: Iterator<WorldCollisionData<BasicFixture, AbstractPhysicsEntity>>) {
             if(enableCollisionProcessing){
@@ -256,6 +257,10 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
                 it.pair.second.fixture.onCollide(it)
             }
             }
+        }
+
+        override fun addBody(body: AbstractPhysicsEntity) {
+            super.addBody(body)
         }
 
         /**
