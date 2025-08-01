@@ -29,19 +29,19 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     }
 
     //TODO Duplicated code, not very extensible 'loader' functions...
-    val shipLoader:(EntityBlueprint, PhysicsWorld, Team?) -> ShipEntity = {
-            entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, team: Team? ->
+    val shipLoader:(EntityBlueprint, PhysicsWorld, Team?, Double) -> ShipEntity = {
+            entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, team: Team?, scale: Double ->
         val components = entityBlueprint.components
         val connections = entityBlueprint.connections
         val fixtureSlotMapping: Map<ComponentBlueprint, AbstractFixtureSlot<*>> = components.associateWith {
             val model = models[it.shape]
-            val transform = Transformation(Vector3(it.position.x / 30.0, it.position.y / 30.0, 0.0), it.scale, it.rotation * PI / 2.0) //TODO Clean up this
+            val transform = Transformation(Vector3(it.position.x / 30.0 * scale, it.position.y / 30.0 * scale, 0.0), it.scale * scale, it.rotation * PI / 2.0) //TODO Clean up this
 
             when(it.type){
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
                 Type.GUN -> {
-                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate() }
+                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate(scale) }
                 }
                 Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
@@ -56,19 +56,19 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         ShipEntity(s, worldRef)
     }
 
-    val simpleLoader: (EntityBlueprint, PhysicsWorld) -> AbstractPhysicsEntity = {
-        entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld ->
+    val simpleLoader: (EntityBlueprint, PhysicsWorld, Double) -> AbstractPhysicsEntity = {
+        entityBlueprint: EntityBlueprint, worldRef: PhysicsWorld, scale: Double ->
         val components = entityBlueprint.components
         val connections = entityBlueprint.connections
         val fixtureSlotMapping: Map<ComponentBlueprint, AbstractFixtureSlot<*>> = components.associateWith {
             val model = models[it.shape]
-            val transform = Transformation(Vector3(it.position.x / 30.0, it.position.y / 30.0, 0.0), it.scale, it.rotation * PI / 2.0) //TODO Clean up this
+            val transform = Transformation(Vector3(it.position.x / 30.0 * scale, it.position.y / 30.0 * scale, 0.0), it.scale * scale   , it.rotation * PI / 2.0) //TODO Clean up this
 
             when(it.type){
                 Type.THRUSTER -> ThrusterFixtureSlot(model, transform)
                 Type.COCKPIT -> CockpitFixtureSlot(model, transform)
                 Type.GUN -> {
-                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate() }
+                    RifleFixtureSlot(model, transform) { _: RifleFixtureSlot.RifleFixture -> bulletFactory.generate(scale) }
                 }
                 Type.BODY -> BasicFixtureSlot(model, transform, CollisionCategory.CATEGORY_SHIP, CollisionCategory.CATEGORY_SHIP.bits)
             }
@@ -95,19 +95,19 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
         }
     }
 
-    private val bulletFactory = EntityFactory(models, "bullet", AbstractPhysicsEntity::class.java, { simpleLoader(it, physicsWorld)}, mutableListOf());
-    private val defaultShipFactory = EntityFactory(models, "ship_default", ShipEntity::class.java, { shipLoader(it, physicsWorld, null)}, mutableListOf());
+    private val bulletFactory = EntityFactory( "bullet", {b, s ->  simpleLoader(b, physicsWorld, s)}, mutableListOf());
+    private val defaultShipFactory = EntityFactory("ship_default", {b, s -> shipLoader(b, physicsWorld, null, s)}, mutableListOf());
 
-    public class EntityFactory<T : AbstractPhysicsEntity>(val models: List<Graphics.Model>, val internalName: String, val clazz : Class<T>, private val generator : (EntityBlueprint) -> T, val blueprintData: MutableList<EntityBlueprint>) {
-        fun generate() : T{
-            val entity = generator.invoke(blueprintData.first())
+    public class EntityFactory<T : AbstractPhysicsEntity>(val internalName: String, private val generator : (EntityBlueprint, Double) -> T, val blueprintData: MutableList<EntityBlueprint>) {
+        fun generate(scale: Double) : T{
+            val entity = generator.invoke(blueprintData.first(), scale)
             entity.setMass(MassType.NORMAL)
             return entity //TODO Make loading from multiple resources choices possible?
         }
     }
 
     //Just a list of the ship factories available, useful for testing.
-    private val shipFactories = mutableListOf<() -> AbstractPhysicsEntity>()
+    private val shipFactories = mutableListOf<(Double) -> AbstractPhysicsEntity>()
 
     public fun loadEntities(){
         val mapper = ObjectMapper()
@@ -126,9 +126,9 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
             blueprint.blueprintData.add(blueprintData)
 
             //Test generation of this entity
-            blueprint.generate()
-            blueprint.generate()
-            blueprint.generate()
+            blueprint.generate(1.0)
+            blueprint.generate(1.0)
+            blueprint.generate(1.0)
         }
         shipFactories.add ( blueprintGenerator.invoke(Blueprint.DEFAULT_SHIP)::generate )
     }
@@ -201,7 +201,7 @@ class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput>
     fun requestEntity(request: EntityRequest): Int {
         val entity = when (request.type) {
             RequestType.RANDOM_SHIP ->{
-                val ship = shipFactories.random().invoke()
+                val ship = shipFactories.random().invoke(request.scale)
                 ship.team = request.team
                 ship.translate(request.position)
                 ship.rotate(request.angle)
