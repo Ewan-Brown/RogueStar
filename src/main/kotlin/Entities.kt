@@ -214,6 +214,7 @@ open class ShipEntity(shipDetails: ShipDetails, worldReference: PhysicsWorld, sc
         gunComponents.filter { fixtureSlotFixtureMap[it] != null }.forEach {
             val fixtureSlotGlobalTransform = getFixtureSlotGlobalTransform(this, it)
             val (projectile, transform) = it.generateProjectile(fixtureSlotFixtureMap[it] as RifleFixture)
+            projectile.team = this.team
 
             //TODO This needs to be done to get rotations working... make this more globally applicable somehow
             projectile.translate(projectile.localCenter.flip()) //TODO ROGUE-9
