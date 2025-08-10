@@ -1,5 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
+import org.dyn4j.geometry.Polygon
 import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
@@ -136,6 +137,15 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             val y = round(vec.y / spacing) * spacing
             val position = Vector2(x, y) - selectedShape.placementOffset
             components.add(ComponentBlueprint(selectedShape.ID,1.0, position, selectedQuarterRotations, selectedType))
+        }else if(e.button == MouseEvent.BUTTON3){
+            val pos : Vector2 = getMousePos() / spacing.toDouble();
+            for (component in components.iterator()) {
+                val shape : Shape = transformShape(shapes[component.shape], component.position, component.rotation, component.scale)
+                val polygon = Polygon(*(shape.points / spacing.toDouble()).toTypedArray())
+                if(polygon.contains(pos)){
+                    component.type = selectedType
+                }
+            }
         }
     }
 
