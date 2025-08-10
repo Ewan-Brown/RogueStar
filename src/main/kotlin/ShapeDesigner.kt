@@ -156,8 +156,6 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             val max = Vector2(it.points.maxOf { it.x }, it.points.maxOf { it.y })
             val midpoint = (min + max) / 2.0;
             val offset = Vector2(midpoint.x % spacing, midpoint.y % spacing)
-            println("midpoint = ${midpoint}")
-            println("offset = ${offset}")
             return@map Shape(it.points - midpoint, it.ID, it.sockets - midpoint, offset)
         }
 
@@ -182,7 +180,10 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
     }
 }
 
-class Shape(@JsonProperty("points") var points: List<Vector2>, @JsonProperty("id") val ID : Int, @JsonProperty("sockets") var sockets : List<Vector2>, @JsonProperty("placementOffset") var placementOffset : Vector2)
+class Shape(@JsonProperty("points") var points: List<Vector2>,
+            @JsonProperty("id") val ID : Int,
+            @JsonProperty("sockets") var sockets : List<Vector2>,
+            @JsonProperty("placementOffset") var placementOffset : Vector2)
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off
