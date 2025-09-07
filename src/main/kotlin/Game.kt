@@ -55,6 +55,7 @@ fun main() {
         }
     }
 
+    Thread.sleep(100)
     val gui = Graphics(models, keyListener)
     val mousePositionProducer: () -> Vector2 = {gui.getMousePositionInWorldCoordinates ()}
 
@@ -91,7 +92,7 @@ fun main() {
 //    if(playerData == null){
 //        System.err.println("playerdata is null, camera will default to $playerPos")
 //    }
-//    populateData(Graphics.CameraDetails(playerPos, 1.0, 0.0))
+    populateData(Graphics.CameraDetails(Vector2(0.0) , 1.0, 0.0))
 
     var lastControlActions: Map<Int, List<ControlCommand>>
 
@@ -100,8 +101,10 @@ fun main() {
         lastControlActions = controllerLayer.update(ControllerInput(mapOf())).map
         val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
 //        val playerData = physicsLayer.getEntityData(playerID)
-//        populateData(Graphics.CameraDetails(playerData?.position ?: Vector2(0.0, 0.0), 1.0, 0.0))
-        effectsLayer.update(EffectsInput(physicsOut.requests, timeStep))
+        populateData(Graphics.CameraDetails(Vector2(0.0) , 1.0, 0.0))
+        val temp = mutableListOf<EffectsRequest>()
+        temp.add(EffectsRequest.ExhaustRequest(Transformation3(Vector3(0.0, 0.0, 0.0), Rotation(0.0), 0.0), Vector2(0.0, 0.0)))
+        effectsLayer.update(EffectsInput(temp, timeStep))
     }
 }
 
