@@ -271,7 +271,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
-
+        println("Graphics.display")
         synchronized(modelData) {
             updateInstanceData(gl)
             // view matrix
@@ -308,6 +308,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             gl.glUniform1f(entityProgram!!.time, time)
 
             for ((model, data) in modelData) {
+                println(data)
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
                         model.drawMode,
