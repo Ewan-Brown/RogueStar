@@ -1,10 +1,6 @@
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.MouseInfo
@@ -15,7 +11,6 @@ import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import java.awt.geom.Line2D
 import java.io.*
-import java.net.Socket
 import javax.swing.JFrame
 import javax.swing.JPanel
 import kotlin.math.round
@@ -29,7 +24,8 @@ import kotlin.math.round
 class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
     private var currentPoints = mutableListOf<Vector2>()
-    val shapes = mutableListOf<Shape>()
+    private val finishedPolygons = mutableListOf<Polygon2>()
+//    val shapes = mutableListOf<Shape>()
 
     override fun paint(g: Graphics) {
         super.paint(g)
@@ -41,18 +37,21 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         paintGrid(g)
 
         //Draw existing shapes
-        for (shape in shapes) {
-            paintShape(g, shape)
+        for (polygon in finishedPolygons) {
+            val xArray: IntArray = polygon.points.stream().mapToInt { it.getX().toInt() }.toArray()
+            val yArray: IntArray = polygon.points.stream().mapToInt { it.getY().toInt() }.toArray()
+            val numPoints = polygon.points.size
+            paintPolygon(g, Polygon(xArray,yArray,numPoints))
             g.color = Color.RED
-            for(s in shape.sockets){
-                g.drawRect(s.x.toInt() - 2, s.y.toInt() - 2, 5, 5)
-            }
+//            for(s in shape.sockets){
+//                g.drawRect(s.getX().toInt() - 2, s.getY().toInt() - 2, 5, 5)
+//            }
         }
         //Draw outline of current shape in progress
         if(currentPoints.size > 1){
             g.color = Color.blue
             for(i in 1..< currentPoints.size){
-                g.drawLine(currentPoints[i-1].x.toInt(), currentPoints[i-1].y.toInt(), currentPoints[i].x.toInt(), currentPoints[i].y.toInt())
+                g.drawLine(currentPoints[i-1].getX().toInt(), currentPoints[i-1].getY().toInt(), currentPoints[i].getX().toInt(), currentPoints[i].getY().toInt())
             }
             g.color = Color.RED
 
@@ -62,7 +61,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         g.color = Color.cyan
         if(currentPoints.size > 0){
             val currentMousePosRounded = getRoundedMousePos(getMousePos())
-            g.drawLine(currentPoints.last().x.toInt(), currentPoints.last().y.toInt(), currentMousePosRounded.x.toInt(), currentMousePosRounded.y.toInt())
+            g.drawLine(currentPoints.last().getX().toInt(), currentPoints.last().getY().toInt(), currentMousePosRounded.getX().toInt(), currentMousePosRounded.getY().toInt())
         }
     }
 
@@ -76,20 +75,19 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         }
     }
 
-    private fun paintShape(g: Graphics, shape : Shape){
+    private fun paintPolygon(g: Graphics, poly : Polygon){
         g.color = Color.GREEN
-        val poly = Polygon(shape.points.map { it.x.toInt() }.toIntArray(), shape.points.map { it.y.toInt() }.toIntArray(), shape.points.size)
         g.fillPolygon(poly)
     }
 
     private fun getMousePos() : Vector2{
-        val absoluteMousePos = MouseInfo.getPointerInfo().location.toVector()
-        val componentPos = locationOnScreen.toVector()
+        val absoluteMousePos = Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
+        val componentPos = Vector2(locationOnScreen.getX(), locationOnScreen.getY())
         return absoluteMousePos - componentPos
     }
 
     private fun getRoundedMousePos(vec: Vector2) : Vector2{
-        return getRoundedMousePos(vec.x, vec.y)
+        return getRoundedMousePos(vec.getX(), vec.getY())
     }
 
     private fun getRoundedMousePos(x: Double, y: Double) : Vector2{
@@ -102,20 +100,21 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         return getRoundedMousePos(m.x.toDouble(), m.y.toDouble())
     }
 
+    //TODO Stop using Line2D...
     override fun mousePressed(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
             val pos = getRoundedMousePos(e)
             //Check that the line isn't intersecting with any existing polygons
             var isSafe = true;
             if(currentPoints.size > 0){
-                val newLineLocalVector = (pos - currentPoints.last()).normalized
-                val lineX = newLineLocalVector.x
-                val lineY = newLineLocalVector.y
-                val newLineShortened = Line2D.Double(currentPoints.last().x + lineX, currentPoints.last().y + lineY, pos.x - lineX, pos.y - lineY)
-                for (shape in shapes) {
+                val newLineLocalVector = (pos - currentPoints.last()).getNormalized()
+                val lineX = newLineLocalVector.getX()
+                val lineY = newLineLocalVector.getY()
+                val newLineShortened = Line2D.Double(currentPoints.last().getX() + lineX, currentPoints.last().getY() + lineY, pos.getX() - lineX, pos.getY() - lineY)
+                for (shape in finishedPolygons) {
                     for (i in 1..<shape.points.size){
-                        val testLine = Line2D.Double(shape.points[i-1].x, shape.points[i-1].y, shape.points[i].x, shape.points[i].y)
-                        val testLineVector = (shape.points[i] - shape.points[i-1]).normalized
+                        val testLine = Line2D.Double(shape.points[i-1].getX(), shape.points[i-1].getY(), shape.points[i].getX(), shape.points[i].getY())
+                        val testLineVector = (shape.points[i] - shape.points[i-1]).getNormalized()
                         val slope1 = newLineLocalVector.getSlope()
                         val slope2 = testLineVector.getSlope()
                         val intersect1 = (newLineShortened.y1 - newLineShortened.x1 * slope1)
@@ -129,14 +128,9 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
                 }
             }
             if(isSafe){
-                if(currentPoints.isNotEmpty() && pos.equals(currentPoints[0])){
+                if(currentPoints.isNotEmpty() && (currentPoints[0] - pos).getMagnitude() < Double.MIN_VALUE){
                     if(currentPoints.size > 1){
-                        val sockets = mutableListOf<Vector2>()
-                        for(i in 0..< currentPoints.size -1){
-                            sockets.add((currentPoints[i] + currentPoints[i+1]) / 2.0)
-                        }
-                        sockets.add((currentPoints.last() + currentPoints.first()) / 2.0)
-                        shapes.add(Shape(currentPoints, shapes.size, sockets, Vector2())) //Offset isn't bothered to be calculated until export
+                        finishedPolygons.add(Polygon2(currentPoints))
                         currentPoints = mutableListOf()
                     }
                 }else{
@@ -145,18 +139,32 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             }
         }
     }
+    
 
     private fun exportToFile(){
+        
+        val shapes: MutableList<Shape> = mutableListOf()
+        for(shape in finishedPolygons){
+            val sockets = mutableListOf<Vector2>()
+            val points = shape.points
+            for(i in 0..< points.size -1){
+                sockets.add((points[i].add(points[i+1])) / 2.0)
+            }
+            sockets.add((points.last().add(points.first())) / 2.0)
+            shapes.add(Shape(points, shapes.size, sockets, Vector2(0.0, 0.0))) //Offset isn't bothered to be calculated until export
+        }
         println("exporting ${shapes.size} shapes")
         //Localize all shapes (make it so their center is congruent with grid )
         // This means finding the 'grid-center', essentially find the bounding box of this shape (aligned with grid coords, so the bounding box should have only integer values for corners)
         // Then taking the center of that bounding box and centering this shape around it. This might work
-        val localizedShapes: List<Shape> = shapes.map {
-            val min = Vector2(it.points.minOf { it.x }, it.points.minOf { it.y })
-            val max = Vector2(it.points.maxOf { it.x }, it.points.maxOf { it.y })
-            val midpoint = (min + max) / 2.0;
-            val offset = Vector2(midpoint.x % spacing, midpoint.y % spacing)
-            return@map Shape(it.points - midpoint, it.ID, it.sockets - midpoint, offset)
+        val localizedShapes: List<Shape> = shapes.map { shape ->
+            val min = Vector2(shape.points.minOf { it.getX() }, shape.points.minOf { it.getY() })
+            val max = Vector2(shape.points.maxOf { it.getX() }, shape.points.maxOf { it.getY() })
+            val midpoint = (min.add(max)) / 2.0;
+            val offset = Vector2(midpoint.getX() % spacing, midpoint.getY() % spacing)
+
+
+            return@map Shape(shape.points - midpoint, shape.ID, shape.sockets - midpoint, offset)
         }
 
         val mapper = ObjectMapper()

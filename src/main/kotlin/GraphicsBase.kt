@@ -4,7 +4,6 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.glsl.ShaderCode
 import com.jogamp.opengl.util.glsl.ShaderProgram
-import org.dyn4j.geometry.Vector2
 import java.lang.Error
 import kotlin.jvm.javaClass
 import kotlin.system.exitProcess

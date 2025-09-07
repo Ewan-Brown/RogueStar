@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import org.dyn4j.geometry.Vector2
 
+//TODO I don't think we need these anymore!
 class VectorSerializer : StdSerializer<Vector2>(Vector2::class.java){
     override fun serialize(vector: Vector2, jgen: JsonGenerator, p2: SerializerProvider) {
         jgen.writeStartObject()
-        jgen.writeNumberField("x", vector.x)
-        jgen.writeNumberField("y", vector.y)
+        jgen.writeNumberField("x", vector.getX())
+        jgen.writeNumberField("y", vector.getY())
         jgen.writeEndObject()
     }
 }
