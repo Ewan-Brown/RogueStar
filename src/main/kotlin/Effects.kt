@@ -1,14 +1,11 @@
-import org.dyn4j.geometry.Vector2
 import Graphics.Model
-import org.dyn4j.geometry.Vector3
 
-sealed class EffectsRequest(val model: Model, val transformation: Transformation){
-    class ExhaustRequest(transformation: Transformation, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, transformation);
+sealed class EffectsRequest(val model: Model, val transformation: Transformation3){
+    class ExhaustRequest(transformation: Transformation3, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, transformation);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>, val timeStep: Double)
 
-//TODO make use of ECS?
 class EffectsLayer : Layer<EffectsInput, Unit> {
     private val entities = mutableListOf<EffectsEntity>()
 
@@ -43,16 +40,13 @@ private abstract class EffectsEntity{
     abstract fun isMarkedForRemoval(): Boolean
 }
 
-private class ExhaustEntity(val model: Model, val velocity: Vector2, transformation: Transformation,  var angularVelocity : Double = 0.0)
+//TODO What about entities that can save on resources by not needing updates, rather just calculating their transformation when called?
+private class ExhaustEntity(val model: Model, val velocity: Vector2, private var transformation: Transformation3,  var angularVelocity : Double = 0.0)
     : EffectsEntity() {
 
     private val MAX_LIFE: Int = 100
     private var lifetime: Int = MAX_LIFE
     private var isDead = false
-    private var position: Vector3 = transformation.translation
-    private var rotation = transformation.rotation.toRadians()
-    private var scale = transformation.scale
-
 
     fun getLife(): Float {
         return (lifetime.toFloat() / MAX_LIFE.toFloat())
@@ -66,7 +60,7 @@ private class ExhaustEntity(val model: Model, val velocity: Vector2, transformat
         }
         return listOf(
             Graphics.RenderableEntity(
-                model, Transformation(position.copy(), rotation, scale), Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
+                model, transformation, Graphics.ColorData(1.0f, 0.0f, 0.0f, 1.0f,), Graphics.MetaData(1.0f)
             )
         )
 
@@ -74,8 +68,8 @@ private class ExhaustEntity(val model: Model, val velocity: Vector2, transformat
 
     override fun update(timeStep: Double) {
         lifetime--
-        position.add((velocity* timeStep).toVec3())
-        rotation += angularVelocity * getLife()
+        transformation.translation += Vector3(velocity * timeStep)
+        transformation.rotation += Rotation(angularVelocity * getLife())
     }
 
     override fun isMarkedForRemoval(): Boolean {

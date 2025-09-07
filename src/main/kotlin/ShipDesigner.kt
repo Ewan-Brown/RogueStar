@@ -1,10 +1,9 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
-import org.dyn4j.geometry.Polygon
-import org.dyn4j.geometry.Vector2
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.MouseInfo
+import java.awt.Polygon
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
@@ -65,9 +64,9 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     }
 
     private fun getTransformedShapeAtMouse(): List<Vector2>{
-        val vec = getMousePos() + selectedShape.placementOffset
-        val x = round(vec.x / spacing) * spacing
-        val y = round(vec.y / spacing) * spacing
+        val vec = getMousePos().add(selectedShape.placementOffset)
+        val x = round(vec.getX() / spacing) * spacing
+        val y = round(vec.getY() / spacing) * spacing
         val position = Vector2(x, y) - selectedShape.placementOffset
         val transformedShape = transformShape(selectedShape, position, selectedQuarterRotations, 1.0)
         return transformedShape.points
@@ -83,7 +82,8 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     private fun transformPoint(point: Vector2, rotations: Int, scale: Double, position: Vector2): Vector2{
         val rotation = rotations * quarterPI
-        return point.copy().rotate(rotation).round() * scale + position
+        val newPoint = (point.rotate(rotation).round() * scale).add(position)
+        return newPoint
     }
 
     private fun paintGrid(g: Graphics){
@@ -98,8 +98,12 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     private fun paintSockets(g: Graphics, points: List<Vector2>){
         for(point in points){
-            g.drawRect((point.x - 2).toInt(), (point.y - 2).toInt(), 5, 5)
+            g.drawRect((point.getX() - 2).toInt(), (point.getY() - 2).toInt(), 5, 5)
         }
+    }
+
+    private fun vectorListToPolygon(vec: List<Vector2>) : Polygon {
+        return Polygon(vec.map { it -> it.getX().toInt() }.toIntArray(), vec.map { it -> it.getY().toInt() }.toIntArray(), vec.size)
     }
 
     private fun paintPolygon(g: Graphics, points: List<Vector2>, fill: Boolean){
@@ -112,36 +116,23 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     }
 
     private fun getMousePos() : Vector2{
-        val absoluteMousePos = MouseInfo.getPointerInfo().location.toVector()
-        val componentPos = locationOnScreen.toVector()
+        val absoluteMousePos = Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
+        val componentPos = Vector2(locationOnScreen.getX(), locationOnScreen.getY())
         return absoluteMousePos - componentPos
-    }
-
-    private fun getRoundedMousePos() : Vector2{
-        val vec = getMousePos()
-        val x = round(vec.x / spacing) * spacing
-        val y = round(vec.y / spacing) * spacing
-        return Vector2(x, y)
-    }
-
-    private fun getRoundedMousePos(m: MouseEvent) : Vector2{
-        val x = round(m.x.toDouble() / spacing) * spacing
-        val y = round(m.y.toDouble() / spacing) * spacing
-        return Vector2(x, y)
     }
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            val vec = getMousePos() + selectedShape.placementOffset
-            val x = round(vec.x / spacing) * spacing
-            val y = round(vec.y / spacing) * spacing
+            val vec = getMousePos().add(selectedShape.placementOffset)
+            val x = round(vec.getX() / spacing) * spacing
+            val y = round(vec.getY() / spacing) * spacing
             val position = Vector2(x, y) - selectedShape.placementOffset
             components.add(ComponentBlueprint(selectedShape.ID,1.0, position, selectedQuarterRotations, selectedType))
         }else if(e.button == MouseEvent.BUTTON3){
             val pos : Vector2 = getMousePos() / spacing.toDouble();
             for (component in components.iterator()) {
                 val shape : Shape = transformShape(shapes[component.shape], component.position, component.rotation, component.scale)
-                val polygon = Polygon(*(shape.points / spacing.toDouble()).toTypedArray())
+                val polygon = Polygon2((shape.points.map { it / spacing.toDouble() }))
                 if(polygon.contains(pos)){
                     component.type = selectedType
                 }
@@ -182,7 +173,8 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         val shipName = if(named){
             JOptionPane.showInputDialog("give your ship a name!")
         }else {"ship_default"}
-        mapper.writeValue(File("src/main/resources/entities/entity_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
+        //TODO Resurrect!
+//        mapper.writeValue(File("src/main/resources/entities/entity_$shipName.json"), PhysicsLayer.EntityBlueprint(components, connectionMap))
         println("exported!")
     }
 

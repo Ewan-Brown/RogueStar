@@ -101,11 +101,6 @@
             <version>1.9.0</version>
         </dependency>
         <dependency>
-            <groupId>com.ewan</groupId>
-            <artifactId>dyn4j</artifactId>
-            <version>5.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.jogamp.gluegen</groupId>
             <artifactId>gluegen-rt-main</artifactId>
             <version>2.3.2</version>

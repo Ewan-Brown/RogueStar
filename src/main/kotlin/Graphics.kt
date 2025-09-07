@@ -1,11 +1,7 @@
-import com.jogamp.nativewindow.util.Point
 import com.jogamp.newt.event.KeyListener
-import com.jogamp.newt.event.MouseEvent
-import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
-import org.dyn4j.geometry.Vector2
 import java.awt.MouseInfo
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
@@ -29,8 +25,8 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     private val modelData = mutableMapOf<Model, ModelData>()
 
-    var cameraPos: Vector2 = Vector2()
-    var cameraVelocity: Vector2 = Vector2()
+    var cameraPos: Vector2 = Vector2(0.0, 0.0)
+    var cameraVelocity: Vector2 = Vector2(0.0, 0.0)
     var cameraScale: Float = 1.0f
 
     var entityProgram: EntityProgram? = null
@@ -51,7 +47,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
     // Make this more descriptive
     public fun getMousePositionInWorldCoordinates(): Vector2{
         return transformScreenPosToGamePos(
-            MouseInfo.getPointerInfo()!!.location.toVector() - this.window.getLocationOnScreen(null)!!.toVector()
+            Vector2(MouseInfo.getPointerInfo()!!.location) - Vector2(this.window.getLocationOnScreen(null)!!)
         )
     }
 
@@ -59,11 +55,11 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
     fun updateDrawables(data: Map<Model, List<RenderableEntity>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
             //Update camera
-            val diff = cameraPos.to(cameraDetails.targetPosition)
+            val diff = cameraDetails.targetPosition - cameraPos
             cameraVelocity = diff * 0.3
 //            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
             // TODO Control the camera velocity, there's currently no limit - velocity should have hysteresis
-            cameraPos += cameraVelocity
+            cameraPos = cameraPos.add(cameraVelocity)
             //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
@@ -268,7 +264,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     private fun calculateViewMat() : FloatArray {
         val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
-        val translate = FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.x.toFloat(), -cameraPos.y.toFloat(), 0f)
+        val translate = FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.getX().toFloat(), -cameraPos.getY().toFloat(), 0f)
         val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
         return FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
     }
@@ -308,7 +304,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             gl.glUseProgram(0)
             gl.glUseProgram(entityProgram!!.name)
             gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
-            gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.x.toFloat(), cameraVelocity.y.toFloat())
+            gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.getX().toFloat(), cameraVelocity.getY().toFloat())
             gl.glUniform1f(entityProgram!!.time, time)
 
             for ((model, data) in modelData) {
@@ -334,9 +330,9 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
         val adjustedScreenPos =
-            Vector2((screenPos.x / width.toDouble()) * 2 - 1, -(screenPos.y / height.toDouble()) * 2 + 1)
+            Vector2((screenPos.getX() / width.toDouble()) * 2 - 1, -(screenPos.getY() / height.toDouble()) * 2 + 1)
         val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
-        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.x.toFloat(), adjustedScreenPos.y.toFloat(), 0.0f, 1.0f),
+        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.getX().toFloat(), adjustedScreenPos.getY().toFloat(), 0.0f, 1.0f),
             FloatArray(16)
         )
         return Vector2(vec4[0].toDouble(), vec4[1].toDouble())
@@ -376,13 +372,13 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
-    class RenderableEntity(val model: Model, val transform: Transformation, val colorData: ColorData, val metaData: MetaData)
+    class RenderableEntity(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
 
     enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (RenderableEntity) -> List<Float>, val VBOBuffer: Int){
-        POSITION(1, 3, {listOf(it.transform.translation.x.toFloat(), it.transform.translation.y.toFloat(), it.transform.translation.z.toFloat())},
+        POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
             Buffer.INSTANCED_POSITIONS
         ),
-        ROTATION(2, 1, {listOf(it.transform.rotation.toRadians().toFloat())}, Buffer.INSTANCED_ROTATIONS),
+        ROTATION(2, 1, {listOf(it.transform.rotation.getRotation().toFloat())}, Buffer.INSTANCED_ROTATIONS),
         SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, Buffer.INSTANCED_SCALES),
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)
