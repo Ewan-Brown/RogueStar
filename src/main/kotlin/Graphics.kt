@@ -110,6 +110,10 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
     override fun init(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
+        for (preloadedModel in loadedModels) {
+            modelData[preloadedModel] = ModelData()
+        }
+
         initVBOs(gl)
 
         updateInstanceData(gl)
@@ -131,7 +135,6 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             for (vertexDatum in value.vertexData) {
                 verticeList.add(vertexDatum)
             }
-            //TODO Sometimes we get a noSuchElementException here - I think has to do with threading and pausing other threads.
             modelData.getValue(value).verticeIndex = marker
             marker += value.points
         }
@@ -158,12 +161,6 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 //        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
 
         checkError(gl, "initBuffers")
-    }
-
-    init {
-        for (preloadedModel in loadedModels) {
-            modelData[preloadedModel] = ModelData()
-        }
     }
 
     private fun initVAOs(gl: GL3) {
