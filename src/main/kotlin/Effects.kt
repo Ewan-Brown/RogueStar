@@ -1,7 +1,7 @@
 import Graphics.Model
 
 sealed class EffectsRequest(val model: Model, val transformation: Transformation3){
-    class ExhaustRequest(transformation: Transformation3, val initialVelocity: Vector2) : EffectsRequest(Model.SQUARE, transformation);
+    class ExhaustRequest(transformation: Transformation3, val initialVelocity: Vector2, val initialAngularVelocity: Double) : EffectsRequest(Model.SQUARE, transformation);
 }
 
 data class EffectsInput(val input: List<EffectsRequest>, val timeStep: Double)
@@ -14,7 +14,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
         for (requests in effectsRequests) {
             when (requests) {
                 is EffectsRequest.ExhaustRequest -> {
-                    val exhaust = with(requests) { ExhaustEntity(model, initialVelocity, transformation) }
+                    val exhaust = with(requests) { ExhaustEntity(model, initialVelocity, transformation, initialAngularVelocity) }
                     entities.add(exhaust)
                 }
             }
