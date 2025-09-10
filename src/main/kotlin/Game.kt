@@ -103,7 +103,7 @@ fun main() {
 //        val playerData = physicsLayer.getEntityData(playerID)
         populateData(Graphics.CameraDetails(Vector2(0.0) , 1.0, 0.0))
         val temp = mutableListOf<EffectsRequest>()
-        temp.add(EffectsRequest.ExhaustRequest(Transformation3(Vector3(0.0, 0.0, 0.0), Rotation(0.0), 0.0), Vector2(0.0, 0.0)))
+        temp.add(EffectsRequest.ExhaustRequest(Transformation3(Vector3(0.0, 0.0, 0.0), Rotation(0.0), 1.0), Vector2(Math.random()/10.0, Math.random()/10.0)))
         effectsLayer.update(EffectsInput(temp, timeStep))
     }
 }

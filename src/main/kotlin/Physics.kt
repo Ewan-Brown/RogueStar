@@ -12,7 +12,6 @@ data class PhysicsOutput(val requests: List<EffectsRequest>)
 class PhysicsLayer(val models: List<Model>) : Layer<PhysicsInput, PhysicsOutput> {
 
     override fun update(input: PhysicsInput): PhysicsOutput {
-        println("do nothing")
         return PhysicsOutput(listOf())
     }
 

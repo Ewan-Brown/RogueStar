@@ -44,8 +44,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             get() = instanceData.size
     }
 
-    // Make this more descriptive
-    public fun getMousePositionInWorldCoordinates(): Vector2{
+    fun getMousePositionInWorldCoordinates(): Vector2{
         return transformScreenPosToGamePos(
             Vector2(MouseInfo.getPointerInfo()!!.location) - Vector2(this.window.getLocationOnScreen(null)!!)
         )
@@ -204,7 +203,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
                 .sum()
 
-        //TODO Clean this up.
+        //TODO Document this
         //For each model type
 
         val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {
@@ -268,7 +267,6 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
-        println("Graphics.display")
         synchronized(modelData) {
             updateInstanceData(gl)
             // view matrix
@@ -305,7 +303,6 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
             gl.glUniform1f(entityProgram!!.time, time)
 
             for ((model, data) in modelData) {
-                println(data)
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
                         model.drawMode,
