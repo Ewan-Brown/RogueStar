@@ -1,12 +1,13 @@
 import java.awt.event.KeyEvent
-import java.util.BitSet
+import java.util.*
+import kotlin.collections.HashMap
 import kotlin.math.abs
 
 //TODO Resurrect!
 class ControllerInputPlaceHolder
 
-data class ControllerInput(val map: Map<Int, ControllerInputPlaceHolder>)
-data class ControllerOutput(val map: Map<Int, List<ControlCommand>>)
+data class ControllerInput(val map: Map<UUID, ControllerInputPlaceHolder>)
+data class ControllerOutput(val map: Map<UUID, List<ControlCommand>>)
 
 class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
@@ -125,7 +126,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
 
     override fun update(input: ControllerInput) : ControllerOutput {
 //        val entityDataMap = input.map
-        val amalgamatedMap = mutableMapOf<Int, List<ControlCommand>>()
+        val amalgamatedMap = mutableMapOf<UUID, List<ControlCommand>>()
 //        for (controllerEntityEntry in controllerList) {
 //            val input = controllerEntityEntry.input.mapNotNull { entityDataMap[it] } //TODO Deal with disappeared entities?
 //            val map = controllerEntityEntry.update(input, entityDataMap)
@@ -134,7 +135,7 @@ class ControllerLayer : Layer<ControllerInput, ControllerOutput>{
         return ControllerOutput(amalgamatedMap)
     }
 
-    fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.RenderableEntity>>) {
+    override fun populateModelMap(modelDataMap: HashMap<Graphics.Model, MutableList<Graphics.RenderableEntity>>) {
         //Add renderables for player perspective?? Interesting idea
     }
 }

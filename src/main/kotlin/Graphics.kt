@@ -221,7 +221,11 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
                     val floats = attribute.dataExtractor(instancedDatum)
                     val floatBuffer = attributeMap[attribute]
                     for ((index, float) in floats.withIndex()) {
-                        floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
+                        //TODO without this, intermittent crashes. Why
+                        if((attributeMarkerMap[attribute]!! + index) < floatBuffer!!.size){
+                            floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
+                        }
+
                     }
                     attributeMarkerMap[attribute] = attributeMarkerMap[attribute]!! + floats.size
                 }
@@ -373,7 +377,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
         POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
             Buffer.INSTANCED_POSITIONS
         ),
-        ROTATION(2, 1, {listOf(it.transform.rotation.getRotation().toFloat())}, Buffer.INSTANCED_ROTATIONS),
+        ROTATION(2, 1, {listOf(it.transform.rotation.toFloat())}, Buffer.INSTANCED_ROTATIONS),
         SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, Buffer.INSTANCED_SCALES),
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)

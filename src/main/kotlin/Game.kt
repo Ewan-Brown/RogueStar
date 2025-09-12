@@ -86,30 +86,22 @@ fun main() {
         gui.updateDrawables(modelDataMap, details)
     }
 
-    //TODO Maybe delegate this to GraphicsService and don't make it hardcoded...
-//    val playerData = physicsLayer.getEntityData(playerID)
-//    val playerPos = playerData?.position ?: Vector2()
-//    if(playerData == null){
-//        System.err.println("playerdata is null, camera will default to $playerPos")
-//    }
     populateData(Graphics.CameraDetails(Vector2(0.0) , 1.0, 0.0))
 
-    var lastControlActions: Map<Int, List<ControlCommand>>
+    var lastControlActions: Map<UUID, List<ControlCommand>>
 
     while(true){
         Thread.sleep(16)
         lastControlActions = controllerLayer.update(ControllerInput(mapOf())).map
         val physicsOut = physicsLayer.update(PhysicsInput(lastControlActions, timeStep))
-//        val playerData = physicsLayer.getEntityData(playerID)
         populateData(Graphics.CameraDetails(Vector2(0.0) , 1.0, 0.0))
-        val temp = mutableListOf<EffectsRequest>()
-        temp.add(EffectsRequest.ExhaustRequest(Transformation3(Vector3(0.0, 0.0, 0.0), Rotation(0.0), 1.0), Vector2(Math.random()/10.0, Math.random()/10.0), Math.random()))
-        effectsLayer.update(EffectsInput(temp, timeStep))
+        effectsLayer.update(EffectsInput(listOf(), timeStep))
     }
 }
 
 interface Layer<in I, out O>{
     fun update(input: I) : O
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>)
 }
 
 
