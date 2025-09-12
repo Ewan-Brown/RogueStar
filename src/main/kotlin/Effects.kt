@@ -25,7 +25,7 @@ class EffectsLayer : Layer<EffectsInput, Unit> {
         entities.removeIf(EffectsEntity::isMarkedForRemoval)
     }
 
-    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
+    override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.RenderableEntity>>) {
         for (entity in entities) {
             for (component in entity.getComponents()) {
                 modelDataMap[component.model]!!.add(component)
@@ -69,7 +69,7 @@ private class ExhaustEntity(val model: Model, val velocity: Vector2, private var
     override fun update(timeStep: Double) {
         lifetime--
         transformation.translation += Vector3(velocity * timeStep)
-        transformation.rotation += Rotation(angularVelocity * getLife())
+        transformation.rotation += angularVelocity * getLife()
     }
 
     override fun isMarkedForRemoval(): Boolean {

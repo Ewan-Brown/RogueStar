@@ -73,13 +73,13 @@ class Vector2(private val x :Double, private val y :Double) {
     }
 }
 
-class Transformation2(var translation: Vector2, var rotation: Rotation, var scale: Double){
+data class Transformation2(var translation: Vector2, var rotation: Double, var scale: Double){
     fun copy() : Transformation2{
         return Transformation2(translation, rotation, scale)
     }
 }
 
-class Transformation3(var translation: Vector3, var rotation: Rotation, var scale: Double){
+data class Transformation3(var translation: Vector3, var rotation: Double, var scale: Double){
     fun copy() : Transformation3{
         return Transformation3(translation, rotation, scale)
     }
