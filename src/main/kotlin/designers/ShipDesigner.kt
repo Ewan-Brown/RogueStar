@@ -1,3 +1,10 @@
+package designers
+
+import codec.ComponentSerializer
+import math.Polygon2
+import math.Vector2
+import codec.VectorDeserializer
+import codec.VectorSerializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import java.awt.Color
@@ -64,7 +71,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
     }
 
     private fun getTransformedShapeAtMouse(): List<Vector2>{
-        val vec = getMousePos().add(selectedShape.placementOffset)
+        val vec = getMousePos() + selectedShape.placementOffset
         val x = round(vec.getX() / spacing) * spacing
         val y = round(vec.getY() / spacing) * spacing
         val position = Vector2(x, y) - selectedShape.placementOffset
@@ -74,15 +81,15 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
 
     private val quarterPI = PI/2.0
 
-    private fun transformShape(shape: Shape, position: Vector2, rotations: Int, scale: Double): Shape{
+    private fun transformShape(shape: Shape, position: Vector2, rotations: Int, scale: Double): Shape {
         val points = shape.points.map { point -> transformPoint(point, rotations, scale, position) }
         val sockets = shape.sockets.map { point -> transformPoint(point, rotations, scale, position) }
         return Shape(points, shape.ID, sockets, shape.placementOffset)
     }
 
-    private fun transformPoint(point: Vector2, rotations: Int, scale: Double, position: Vector2): Vector2{
+    private fun transformPoint(point: Vector2, rotations: Int, scale: Double, position: Vector2): Vector2 {
         val rotation = rotations * quarterPI
-        val newPoint = (point.rotate(rotation).round() * scale).add(position)
+        val newPoint = (point.rotate(rotation).round() * scale) + position
         return newPoint
     }
 
@@ -115,15 +122,16 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
         g.drawPolygon(poly)
     }
 
-    private fun getMousePos() : Vector2{
-        val absoluteMousePos = Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
+    private fun getMousePos() : Vector2 {
+        val absoluteMousePos =
+            Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
         val componentPos = Vector2(locationOnScreen.getX(), locationOnScreen.getY())
         return absoluteMousePos - componentPos
     }
 
     override fun mouseClicked(e: MouseEvent) {
         if(e.button == MouseEvent.BUTTON1){
-            val vec = getMousePos().add(selectedShape.placementOffset)
+            val vec = getMousePos() + selectedShape.placementOffset
             val x = round(vec.getX() / spacing) * spacing
             val y = round(vec.getY() / spacing) * spacing
             val position = Vector2(x, y) - selectedShape.placementOffset
