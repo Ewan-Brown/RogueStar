@@ -1,7 +1,13 @@
+package graphics
+
+import models.Model
+import math.Transformation3
+import math.Vector2
 import com.jogamp.newt.event.KeyListener
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.GLBuffers
+import graphics.Graphics.Renderable
 import java.awt.MouseInfo
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
@@ -13,7 +19,15 @@ import kotlin.collections.indices
 import kotlin.collections.set
 import kotlin.collections.withIndex
 
-class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : GraphicsBase(keyListener) {
+data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
+interface GraphicsI{
+    fun getMousePositionInWorldCoordinates() : Vector2
+    fun updateDrawables(data: Map<Model, List<Renderable>>, cameraDetails: CameraDetails)
+    //TODO Genericize this!
+    fun addListener(keyListener: KeyListener)
+}
+
+class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
 
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
@@ -39,26 +53,25 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
     private inner class ModelData {
         var verticeIndex: Int = 0
         var instanceIndex: Int = 0
-        var instanceData: List<RenderableEntity> = ArrayList()
+        var instanceData: List<Renderable> = ArrayList()
         val instanceCount: Int
             get() = instanceData.size
     }
 
-    fun getMousePositionInWorldCoordinates(): Vector2{
+    override fun getMousePositionInWorldCoordinates(): Vector2 {
         return transformScreenPosToGamePos(
             Vector2(MouseInfo.getPointerInfo()!!.location) - Vector2(this.window.getLocationOnScreen(null)!!)
         )
     }
 
-    data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
-    fun updateDrawables(data: Map<Model, List<RenderableEntity>>, cameraDetails: CameraDetails) {
+    override fun updateDrawables(data: Map<Model, List<Renderable>>, cameraDetails: CameraDetails) {
         synchronized(modelData) {
             //Update camera
             val diff = cameraDetails.targetPosition - cameraPos
             cameraVelocity = diff * 0.3
 //            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
             // TODO Control the camera velocity, there's currently no limit - velocity should have hysteresis
-            cameraPos = cameraPos.add(cameraVelocity)
+            cameraPos += cameraVelocity
             //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
@@ -66,31 +79,8 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
         }
     }
 
-    class Model internal constructor(val vertexData: FloatArray, dMode: Int) {
-        val points: Int = vertexData.size / 3 //Change if vertex data size changes!
-        val drawMode: Int = dMode
-        val asVectorData: List<Vector2> = List(points){
-            Vector2(vertexData[it * 3].toDouble(), vertexData[it * 3 + 1].toDouble())
-        }
-
-        companion object {
-            var SQUARE: Model = Model(
-                floatArrayOf(
-                    -0.5f, -0.5f, +0.1f,
-                    +0.5f, -0.5f, +0.1f,
-                    +0.5f, +0.5f, +0.1f,
-                    -0.5f, +0.5f, +0.1f
-                ), GL.GL_TRIANGLE_FAN
-            )
-            var BACKPLATE: Model = Model(
-                floatArrayOf(
-                    -1f, -1f, +0.4f,
-                    -1f, +1f, +0.4f,
-                    +1f, +1f, +0.4f,
-                    +1f, -1f, +0.4f
-                ), GL.GL_TRIANGLE_FAN
-            )
-        }
+    override fun addListener(keyListener: KeyListener) {
+        window.addKeyListener(keyListener)
     }
 
     private interface Buffer {
@@ -327,7 +317,7 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
         time += 1f
     }
 
-    private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2{
+    private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2 {
         val adjustedScreenPos =
             Vector2((screenPos.getX() / width.toDouble()) * 2 - 1, -(screenPos.getY() / height.toDouble()) * 2 + 1)
         val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
@@ -371,9 +361,9 @@ class Graphics(val loadedModels: List<Model>, keyListener: KeyListener) : Graphi
 
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
-    class RenderableEntity(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
+    class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
 
-    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (RenderableEntity) -> List<Float>, val VBOBuffer: Int){
+    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
         POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
             Buffer.INSTANCED_POSITIONS
         ),

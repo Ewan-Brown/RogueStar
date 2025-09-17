@@ -1,3 +1,5 @@
+package codec
+
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -5,6 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import designers.ComponentBlueprint
+import designers.Type
+import math.Vector2
 
 //TODO I don't think we need these anymore!
 class VectorSerializer : StdSerializer<Vector2>(Vector2::class.java){

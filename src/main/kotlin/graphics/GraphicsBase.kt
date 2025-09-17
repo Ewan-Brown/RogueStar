@@ -1,3 +1,5 @@
+package graphics
+
 import com.jogamp.newt.event.*
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
@@ -8,7 +10,8 @@ import java.lang.Error
 import kotlin.jvm.javaClass
 import kotlin.system.exitProcess
 
-abstract class GraphicsBase(keyListener: KeyListener) : GLEventListener {
+//TODO Why is this separate from Graphics? I think this is confusing
+abstract class GraphicsBase() : GLEventListener {
 
 
     val width: Int = 600
@@ -27,7 +30,6 @@ abstract class GraphicsBase(keyListener: KeyListener) : GLEventListener {
         window.isVisible = true
 
         window.addGLEventListener(this)
-        window.addKeyListener(keyListener)
 
         //        window.setAut
         val animator = Animator(window)

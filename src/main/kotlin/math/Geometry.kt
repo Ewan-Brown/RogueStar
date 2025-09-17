@@ -1,6 +1,8 @@
+package math
+
 import kotlin.math.*
 
-fun List<Vector2>.add(vec: Vector2): List<Vector2> {return this.map { it.add(vec) }}
+operator fun List<Vector2>.plus(vec: Vector2): List<Vector2> {return this.map { it.plus(vec) }}
 operator fun List<Vector2>.minus(vec: Vector2): List<Vector2> {return this.map { it.minus(vec) }}
 operator fun List<Vector2>.times(factor: Double): List<Vector2> {return this.map { it.times(factor) }}
 operator fun List<Vector2>.div(factor: Double): List<Vector2> {return this.map { it.div(factor) }}
@@ -9,6 +11,7 @@ class Vector2(private val x :Double, private val y :Double) {
     constructor(angle: Double) : this(cos(angle), sin(angle))
     constructor(point: java.awt.Point) : this(point.x.toDouble(), point.y.toDouble())
     constructor(point: com.jogamp.nativewindow.util.Point) : this(point.x.toDouble(), point.y.toDouble())
+    constructor(vector3: Vector3) : this(vector3.getX(), vector3.getY())
     fun getMagnitude(): Double = sqrt(x.pow(2.0) + y.pow(2.0))
     fun getX(): Double {
         return x
@@ -16,12 +19,12 @@ class Vector2(private val x :Double, private val y :Double) {
     fun getY(): Double {
         return y
     }
-    fun getNormalized() : Vector2 {
+    fun normalize() : Vector2 {
         val length = getMagnitude()
         return this / length
     }
 
-    fun add(v : Vector2) : Vector2 {
+    operator fun plus(v : Vector2) : Vector2 {
         return Vector2(getX() + v.getX(), getY() + v.getY())
     }
 
@@ -73,14 +76,26 @@ class Vector2(private val x :Double, private val y :Double) {
     }
 }
 
+/** Mutable fields!!!*/
 data class Transformation2(var translation: Vector2, var rotation: Double, var scale: Double){
-    fun copy() : Transformation2{
+    init {
+        if(scale < Double.MIN_VALUE){
+            throw Exception("Attempted to create a Transformation2 with an invalid scale value: $scale")
+        }
+    }
+    fun copy() : Transformation2 {
         return Transformation2(translation, rotation, scale)
     }
 }
 
+/** Mutable fields!!!*/
 data class Transformation3(var translation: Vector3, var rotation: Double, var scale: Double){
-    fun copy() : Transformation3{
+    init {
+        if(scale < Double.MIN_VALUE){
+            throw Exception("Attempted to create a Transformation2 with an invalid scale value: $scale")
+        }
+    }
+    fun copy() : Transformation3 {
         return Transformation3(translation, rotation, scale)
     }
 }
@@ -108,7 +123,7 @@ fun doesPolygonContainPoint(points: List<Vector2>, point: Vector2) : Boolean {
     return c;
 }
 
-fun List<Vector2>.getCentroid() : Vector2{
+fun List<Vector2>.getCentroid() : Vector2 {
     var A = 0.0;
     for(i in indices){
         val p = this[i]
@@ -198,6 +213,7 @@ class Vector3(private val x :Double, private val y :Double, private val z :Doubl
 
 fun Vector2.extruded(z : Double) : Vector3 = Vector3(getX(), getY(), z)
 
+//TODO use this...
 class Rotation(private val rotation: Double){
     fun getRotation(): Double {return rotation}
     operator fun plus(r : Rotation) : Rotation {

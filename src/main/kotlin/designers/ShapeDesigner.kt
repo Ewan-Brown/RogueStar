@@ -1,6 +1,12 @@
+package designers
+
+import math.Polygon2
+import math.Vector2
+import codec.VectorSerializer
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
+import math.minus
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.MouseInfo
@@ -80,23 +86,24 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         g.fillPolygon(poly)
     }
 
-    private fun getMousePos() : Vector2{
-        val absoluteMousePos = Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
+    private fun getMousePos() : Vector2 {
+        val absoluteMousePos =
+            Vector2(MouseInfo.getPointerInfo().location.x.toDouble(), MouseInfo.getPointerInfo().location.y.toDouble())
         val componentPos = Vector2(locationOnScreen.getX(), locationOnScreen.getY())
         return absoluteMousePos - componentPos
     }
 
-    private fun getRoundedMousePos(vec: Vector2) : Vector2{
+    private fun getRoundedMousePos(vec: Vector2) : Vector2 {
         return getRoundedMousePos(vec.getX(), vec.getY())
     }
 
-    private fun getRoundedMousePos(x: Double, y: Double) : Vector2{
+    private fun getRoundedMousePos(x: Double, y: Double) : Vector2 {
         val x2 = round(x / spacing) * spacing
         val y2 = round(y / spacing) * spacing
         return Vector2(x2, y2)
     }
 
-    private fun getRoundedMousePos(m: MouseEvent) : Vector2{
+    private fun getRoundedMousePos(m: MouseEvent) : Vector2 {
         return getRoundedMousePos(m.x.toDouble(), m.y.toDouble())
     }
 
@@ -107,14 +114,14 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             //Check that the line isn't intersecting with any existing polygons
             var isSafe = true;
             if(currentPoints.size > 0){
-                val newLineLocalVector = (pos - currentPoints.last()).getNormalized()
+                val newLineLocalVector = (pos - currentPoints.last()).normalize()
                 val lineX = newLineLocalVector.getX()
                 val lineY = newLineLocalVector.getY()
                 val newLineShortened = Line2D.Double(currentPoints.last().getX() + lineX, currentPoints.last().getY() + lineY, pos.getX() - lineX, pos.getY() - lineY)
                 for (shape in finishedPolygons) {
                     for (i in 1..<shape.points.size){
                         val testLine = Line2D.Double(shape.points[i-1].getX(), shape.points[i-1].getY(), shape.points[i].getX(), shape.points[i].getY())
-                        val testLineVector = (shape.points[i] - shape.points[i-1]).getNormalized()
+                        val testLineVector = (shape.points[i] - shape.points[i-1]).normalize()
                         val slope1 = newLineLocalVector.getSlope()
                         val slope2 = testLineVector.getSlope()
                         val intersect1 = (newLineShortened.y1 - newLineShortened.x1 * slope1)
@@ -148,9 +155,9 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             val sockets = mutableListOf<Vector2>()
             val points = shape.points
             for(i in 0..< points.size -1){
-                sockets.add((points[i].add(points[i+1])) / 2.0)
+                sockets.add((points[i] + points[i+1]) / 2.0)
             }
-            sockets.add((points.last().add(points.first())) / 2.0)
+            sockets.add((points.last() +(points.first()) / 2.0))
             shapes.add(Shape(points, shapes.size, sockets, Vector2(0.0, 0.0))) //Offset isn't bothered to be calculated until export
         }
         println("exporting ${shapes.size} shapes")
@@ -160,7 +167,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         val localizedShapes: List<Shape> = shapes.map { shape ->
             val min = Vector2(shape.points.minOf { it.getX() }, shape.points.minOf { it.getY() })
             val max = Vector2(shape.points.maxOf { it.getX() }, shape.points.maxOf { it.getY() })
-            val midpoint = (min.add(max)) / 2.0;
+            val midpoint = (min + max) / 2.0;
             val offset = Vector2(midpoint.getX() % spacing, midpoint.getY() % spacing)
 
 
@@ -191,7 +198,8 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
 class Shape(@JsonProperty("points") var points: List<Vector2>,
             @JsonProperty("id") val ID : Int,
             @JsonProperty("sockets") var sockets : List<Vector2>,
-            @JsonProperty("placementOffset") var placementOffset : Vector2)
+            @JsonProperty("placementOffset") var placementOffset : Vector2
+)
 
 //Jackson shits the bed when it hits Vector2, so I wrote a custom codec here for it as it's trivial.
 // My assumption is some internal fields used for caching are throwing it off
