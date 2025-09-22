@@ -3,7 +3,7 @@ import effects.Effect
 import models.Model
 import effects.EffectsInput
 import graphics.Graphics
-import physics.Entity
+import physics.KinematicEntityImpl
 import physics.EntityI
 import physics.PhysicsInput
 import physics.PhysicsOutput
@@ -11,7 +11,7 @@ import physics.PhysicsOutput
 interface PhysicsLayerI {
     fun update(input: PhysicsInput) : PhysicsOutput
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>)
-    fun addEntity(entity: Entity)
+    fun addEntity(entity: KinematicEntityImpl)
 }
 
 interface EffectsLayerI {

@@ -10,9 +10,14 @@ import kotlin.math.abs
 interface EntityI {
     fun getGlobalTransform() : Transformation3
     fun markedForRemoval() : Boolean
+    fun getRenderableComponents() : List<Graphics.Renderable>
 }
 
-interface KinematicEntity : EntityI{
+interface KinematicPart{
+    fun getPolygon() : List<Vector2>
+}
+
+interface KinematicEntityI : EntityI{
     fun getVelocity() : Vector2
     fun getRotationalVelocity() : Double
 
@@ -24,13 +29,13 @@ interface KinematicEntity : EntityI{
 
     fun getCenterOfMass() : Vector2
     fun getMass() : Double
-    fun getRenderableComponents() : List<Graphics.Renderable>
+    fun update(timeStep: Double)
 
-    abstract fun update(timeStep: Double)
+    fun getKinematicParts() : List<KinematicPart>
 }
 
 //TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
-abstract class Entity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntity{
+abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityI{
 
     private var position = transform.translation
     private var rotation = transform.rotation
@@ -52,20 +57,34 @@ abstract class Entity(transform: Transformation3, kinematicData: KinematicData) 
         }
         return massVector / getEntityParts().size.toDouble()
     }
-
+    private fun getFinalTransform(localTransform : Transformation3) : Transformation3 {
+        val finalTranslation = getGlobalTransform().translation + (localTransform.translation * getGlobalTransform().scale).rotate(getGlobalTransform().rotation)
+        val finalRotation = getGlobalTransform().rotation + localTransform.rotation
+        val finalScale = getGlobalTransform().scale * localTransform.scale
+        return Transformation3(finalTranslation, finalRotation, finalScale)
+    }
     override fun getRenderableComponents() : List<Graphics.Renderable> {
-        val getFinalTransform = fun(localTransform : Transformation3) : Transformation3 {
-            val finalTranslation = getGlobalTransform().translation + (localTransform.translation * getGlobalTransform().scale).rotate(getGlobalTransform().rotation)
-            val finalRotation = getGlobalTransform().rotation + localTransform.rotation
-            val finalScale = getGlobalTransform().scale * localTransform.scale
-            return Transformation3(finalTranslation, finalRotation, finalScale)
-        }
         return getEntityParts().map {
             Graphics.Renderable(
                 it.getModel(), getFinalTransform(it.getLocalTransform()), it.getColor(), it.getMetadata()
             )
         }
     }
+
+    override fun getKinematicParts(): List<KinematicPart> {
+        return getEntityParts().map { part ->
+            object : KinematicPart{
+                override fun getPolygon(): List<Vector2> {
+                    val transform = getFinalTransform(part.getLocalTransform())
+                    val polygon = part.getModel().asVectors().map { point ->
+                        (point * transform.scale).rotate(transform.rotation) + Vector2(transform.translation)
+                    }
+                    return polygon
+                }
+            }
+        }
+    }
+
     abstract override fun markedForRemoval() : Boolean
     override fun getRotationalVelocity(): Double {
         return rotVelocity
@@ -104,17 +123,24 @@ abstract class Entity(transform: Transformation3, kinematicData: KinematicData) 
     }
 }
 
-open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) : Entity(transform, kinematicData) {
-    private val parts: List<EntityPart> = listOf(DumbPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0))
+open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
+    private val parts: List<EntityPart> = listOf(
+        DumbPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0),
+        DumbPart(Transformation3(Vector3(1.0, 1.0, 0.0), 0.0, 1.0),1.0)
+    )
     override fun getEntityParts(): List<EntityPart> { return parts }
     override fun update(timeStep: Double) {}
     override fun markedForRemoval(): Boolean {return false }
 }
 
 
-class ControllableEntity(transform: Transformation3, kinematicData: KinematicData) : Entity(transform, kinematicData) {
+class ControllableEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
 
-    private val parts: List<EntityPart> = listOf(SuperPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0))
+    private val parts: List<EntityPart> = listOf(
+        SuperPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0),
+//        SuperPart(Transformation3(Vector3(1.0, 0.0, 0.0), 0.0, 1.0),1.0),
+//        SuperPart(Transformation3(Vector3(-1.0, 0.0, 0.0), 0.0, 1.0),1.0)
+    )
 
     override fun getEntityParts(): List<EntityPart> { return parts }
 
@@ -127,7 +153,7 @@ class ControllableEntity(transform: Transformation3, kinematicData: KinematicDat
         var appliedTorque: Double = 0.0
         getEntityParts().filterIsInstance<Thruster>().forEach {
             appliedThrust += it.getCurrentThrust()
-            val offsetVector = it.getLocalTransform()
+            val offsetVector = (it as EntityPart).getLocalTransform() //TODO This is awkward.
         }
         getEntityParts().filterIsInstance<Torquer>().forEach {
             appliedTorque += it.getTorque()

@@ -5,16 +5,13 @@ import math.Transformation3
 import math.Vector2
 import models.Model
 import java.util.*
-import kotlin.math.max
 
-interface Part{
-    fun getLocalTransform() : Transformation3
-}
-
-abstract class EntityPart(val mass: Double) : Part{
+abstract class EntityPart(val mass: Double) {
     abstract fun getModel() : Model
     abstract fun getColor() : Graphics.ColorData
     abstract fun getMetadata() : Graphics.MetaData
+    abstract fun isCollideable() : Boolean
+    abstract fun getLocalTransform() : Transformation3
 }
 
 open class DumbPart(private val transform: Transformation3, density: Double) : EntityPart(density) {
@@ -22,6 +19,10 @@ open class DumbPart(private val transform: Transformation3, density: Double) : E
     override fun getModel(): Model { return Model.SQUARE }
     override fun getColor(): Graphics.ColorData { return Graphics.ColorData(1.0f, 0.0f, 1.0f, 1.0f) }
     override fun getMetadata(): Graphics.MetaData { return Graphics.MetaData(1.0f)
+    }
+
+    override fun isCollideable(): Boolean {
+        return true
     }
 }
 
@@ -65,12 +66,12 @@ enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
 data class RadarReading(val uuid: UUID, val position: Vector2, val velocity: Double, val affiliation: Affiliation)
 
 
-interface Torquer : Part{
+interface Torquer {
     fun getTorque() : Double
     fun setTorque(torque: Double)
 }
 
-interface Thruster : Part{
+interface Thruster {
     fun getOrientationUnitVector() : Vector2
     fun getMaxPower() : Double
     fun getThrottle() : Double
@@ -81,13 +82,13 @@ interface Thruster : Part{
 
 //interface data
 
-interface Radar : Part{
+interface Radar {
     fun updateReadings(world: PhysicsLayer.World)
     fun getReadings() : List<RadarReading>
 }
 
-interface Gun : Part{
+interface Gun {
     abstract fun getFiringPosition() : Transformation3
     abstract fun getFiringOrientation() : Double
-    abstract fun createProjectile() : Entity
+    abstract fun createProjectile() : KinematicEntityImpl
 }

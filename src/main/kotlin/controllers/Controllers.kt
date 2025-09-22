@@ -89,8 +89,6 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
             }
         }
 
-        println(torque)
-
         for (thruster in thrusters) {
 
             thruster.setOrientation(thrust)

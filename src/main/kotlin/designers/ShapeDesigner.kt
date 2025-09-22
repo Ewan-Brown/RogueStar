@@ -1,6 +1,5 @@
 package designers
 
-import math.Polygon2
 import math.Vector2
 import codec.VectorSerializer
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -10,7 +9,6 @@ import math.minus
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.MouseInfo
-import java.awt.Polygon
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseEvent
@@ -30,7 +28,7 @@ import kotlin.math.round
 class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListener {
 
     private var currentPoints = mutableListOf<Vector2>()
-    private val finishedPolygons = mutableListOf<Polygon2>()
+    private val finishedPolygons = mutableListOf<math.Polygon2>()
 //    val shapes = mutableListOf<Shape>()
 
     override fun paint(g: Graphics) {
@@ -47,7 +45,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             val xArray: IntArray = polygon.points.stream().mapToInt { it.getX().toInt() }.toArray()
             val yArray: IntArray = polygon.points.stream().mapToInt { it.getY().toInt() }.toArray()
             val numPoints = polygon.points.size
-            paintPolygon(g, Polygon(xArray,yArray,numPoints))
+            paintPolygon(g, java.awt.Polygon(xArray, yArray, numPoints))
             g.color = Color.RED
 //            for(s in shape.sockets){
 //                g.drawRect(s.getX().toInt() - 2, s.getY().toInt() - 2, 5, 5)
@@ -81,7 +79,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
         }
     }
 
-    private fun paintPolygon(g: Graphics, poly : Polygon){
+    private fun paintPolygon(g: Graphics, poly : java.awt.Polygon){
         g.color = Color.GREEN
         g.fillPolygon(poly)
     }
@@ -137,7 +135,7 @@ class DesignerUI(private val spacing: Int) : JPanel(), MouseListener, KeyListene
             if(isSafe){
                 if(currentPoints.isNotEmpty() && (currentPoints[0] - pos).getMagnitude() < Double.MIN_VALUE){
                     if(currentPoints.size > 1){
-                        finishedPolygons.add(Polygon2(currentPoints))
+                        finishedPolygons.add(math.Polygon2(currentPoints))
                         currentPoints = mutableListOf()
                     }
                 }else{

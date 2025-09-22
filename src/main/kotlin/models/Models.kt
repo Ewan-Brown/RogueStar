@@ -8,6 +8,16 @@ public class Model internal constructor(val vertexData: FloatArray, dMode: Int) 
     val drawMode: Int = dMode
     val area: Double
 
+    fun asVectors() : List<Vector2>{
+        val vectors = mutableListOf<Vector2>()
+        for(vIndice in 0 until points){
+            val x = vertexData[vIndice*3].toDouble()
+            val y = vertexData[vIndice*3 + 1].toDouble()
+            vectors.add(Vector2(x, y))
+        }
+        return vectors
+    }
+
     //https://web.archive.org/web/20100405070507/http://valis.cs.uiuc.edu/~sariel/research/CG/compgeom/msg00831.html
     // Calculate area of polygon
     init {

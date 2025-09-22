@@ -36,6 +36,10 @@ class Vector2(private val x :Double, private val y :Double) {
         return elementwiseOperation { it*scalar }
     }
 
+    fun dot(vec : Vector2) : Double {
+        return getX() * vec.getX() + getY() * vec.getY()
+    }
+
     operator fun div(scalar : Double) : Vector2 {
         return elementwiseOperation { it/scalar }
     }
@@ -74,6 +78,28 @@ class Vector2(private val x :Double, private val y :Double) {
     override fun toString(): String {
         return "x = $x, y = $y"
     }
+
+    fun projectOnto(otherVector: Vector2) : Vector2 {
+        val dotProduct = this.dot(otherVector)
+        return Vector2(
+            (dotProduct / (otherVector.x * otherVector.x + otherVector.y * otherVector.y)) * otherVector.x,
+            (dotProduct / (otherVector.x * otherVector.x + otherVector.y * otherVector.y)) * otherVector.y)
+    }
+
+    fun leftHandNormal() : Vector2 {
+        return Vector2(
+            this.y,
+            -this.x
+        )
+    }
+
+    fun rightHandNormal() : Vector2 {
+        return Vector2(
+            -this.y,
+            this.x
+        )
+    }
+
 }
 
 /** Mutable fields!!!*/
