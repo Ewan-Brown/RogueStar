@@ -75,7 +75,8 @@ fun main() {
 
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
-
+    val dumbEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
+    physicsLayer.addEntity(dumbEntity)
     val playerEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
     physicsLayer.addEntity(playerEntity)
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)

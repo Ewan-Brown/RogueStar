@@ -1,7 +1,6 @@
 package designers
 
 import codec.ComponentSerializer
-import math.Polygon2
 import math.Vector2
 import codec.VectorDeserializer
 import codec.VectorSerializer
@@ -140,7 +139,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             val pos : Vector2 = getMousePos() / spacing.toDouble();
             for (component in components.iterator()) {
                 val shape : Shape = transformShape(shapes[component.shape], component.position, component.rotation, component.scale)
-                val polygon = Polygon2((shape.points.map { it / spacing.toDouble() }))
+                val polygon = math.Polygon2((shape.points.map { it / spacing.toDouble() }))
                 if(polygon.contains(pos)){
                     component.type = selectedType
                 }
