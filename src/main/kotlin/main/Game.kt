@@ -27,6 +27,7 @@ import controllers.Controller
 import controllers.PlayerController
 import graphics.CameraDetails
 import graphics.GraphicsI
+import physics.DumbEntity
 
 fun loadModels() : Map<Int, Model> {
     val mapper = ObjectMapper()
@@ -75,10 +76,18 @@ fun main() {
 
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
-    val dumbEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
-    physicsLayer.addEntity(dumbEntity)
+
+
     val playerEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
     physicsLayer.addEntity(playerEntity)
+    for (i in 0..0) {
+        val dumbEntity = DumbEntity(
+            Transformation3(Vector3(-0.9, 0.001, 0.0), 0.0, 1.0),
+            PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0),
+            false
+        )
+        physicsLayer.addEntity(dumbEntity)
+    }
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
 

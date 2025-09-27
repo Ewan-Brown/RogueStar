@@ -6,27 +6,31 @@ import math.Vector2
 import models.Model
 import java.util.*
 
-abstract class EntityPart(val mass: Double) {
+abstract class EntityPart() {
     abstract fun getModel() : Model
     abstract fun getColor() : Graphics.ColorData
     abstract fun getMetadata() : Graphics.MetaData
     abstract fun isCollideable() : Boolean
     abstract fun getLocalTransform() : Transformation3
+    abstract fun getDensity() : Double
 }
 
-open class DumbPart(private val transform: Transformation3, density: Double) : EntityPart(density) {
+open class DumbPart(private val transform: Transformation3) : EntityPart() {
     override fun getLocalTransform(): Transformation3 {return transform.copy()}
     override fun getModel(): Model { return Model.SQUARE }
     override fun getColor(): Graphics.ColorData { return Graphics.ColorData(1.0f, 0.0f, 1.0f, 1.0f) }
     override fun getMetadata(): Graphics.MetaData { return Graphics.MetaData(1.0f)
     }
-
     override fun isCollideable(): Boolean {
         return true
     }
+
+    override fun getDensity(): Double {
+        return 1.0
+    }
 }
 
-class SuperPart(transform: Transformation3, density: Double) : DumbPart(transform, density), Thruster, Torquer{
+class SuperPart(transform: Transformation3) : DumbPart(transform), Thruster, Torquer{
     private var orientation: Vector2 = Vector2(0.0, 0.0)
     private val maxPower = 0.01
     private var throttle = 0.0
@@ -62,9 +66,6 @@ class SuperPart(transform: Transformation3, density: Double) : DumbPart(transfor
 
 }
 
-enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
-data class RadarReading(val uuid: UUID, val position: Vector2, val velocity: Double, val affiliation: Affiliation)
-
 
 interface Torquer {
     fun getTorque() : Double
@@ -80,8 +81,6 @@ interface Thruster {
     fun getCurrentThrust() : Vector2 = getOrientationUnitVector() * (getMaxPower() * getThrottle())
 }
 
-//interface data
-
 interface Radar {
     fun updateReadings(world: PhysicsLayer.World)
     fun getReadings() : List<RadarReading>
@@ -92,3 +91,6 @@ interface Gun {
     abstract fun getFiringOrientation() : Double
     abstract fun createProjectile() : KinematicEntityImpl
 }
+
+enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
+data class RadarReading(val uuid: UUID, val position: Vector2, val velocity: Double, val affiliation: Affiliation)
