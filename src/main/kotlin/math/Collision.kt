@@ -6,13 +6,18 @@ import kotlin.math.sign
 
 //https://dyn4j.org/2010/01/sat/
 
-//TODO
+//TODO make sure to check for containment!
 fun getCollisionMTV(p1 : List<Vector2>, p2: List<Vector2>) : Vector2? {
     val projTest1 = projectionTest(p1, p2) ?: return null
     val projTest2 = projectionTest(p2, p1) ?: return null
 
     //Important to flip one of these, as they are coming from opposing perspectives :)
-    return if (projTest1.getMagnitude() < projTest2.getMagnitude() ) projTest1 * -1.0 else projTest2
+    val mtv = if (projTest1.getMagnitude() < projTest2.getMagnitude() ) projTest1 * -1.0 else projTest2
+
+    //Attempt to find the point of contact, if it exists
+
+
+    return mtv
 }
 
 private fun projectionTest(p1 : List<Vector2>, p2 : List<Vector2>) : Vector2? {
