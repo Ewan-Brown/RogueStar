@@ -4,8 +4,10 @@ import graphics.Graphics
 import math.Transformation3
 import math.Vector2
 import math.Vector3
+import math.extruded
 import physics.PhysicsLayer.*
 import kotlin.math.abs
+import kotlin.math.sin
 
 interface EntityI {
     fun getGlobalTransform() : Transformation3
@@ -17,31 +19,46 @@ interface KinematicPart{
     fun getPolygon() : List<Vector2>
 }
 
+data class Force(val vector: Vector2, val localOrigin: Vector2)
+
 interface KinematicEntityI : EntityI{
     fun getVelocity() : Vector2
     fun getRotationalVelocity() : Double
 
+    fun isImmovable() : Boolean
     fun setVelocity(vel: Vector2)
     fun setRotationalVelocity(rotVel: Double)
 
-    fun translate(translation: Vector3)
+    fun translate(translation: Vector2)
     fun rotate(rotation: Double)
 
     fun getCenterOfMass() : Vector2
     fun getMass() : Double
     fun update(timeStep: Double)
 
+    fun applyForce(force: Force)
+    fun applyTorque(torque: Double)
+    fun checkNetForce() : Vector2
+    fun checkNetTorque() : Double
+
     fun getKinematicParts() : List<KinematicPart>
 }
 
 //TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
-abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityI{
+abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: KinematicData, val immovable: Boolean = false) : KinematicEntityI{
 
     private var position = transform.translation
     private var rotation = transform.rotation
     private var scale = transform.scale
     private var vel = kinematicData.velocity
     private var rotVelocity = kinematicData.rotationalVelocity
+
+    private var forceAccumulator = Vector2(0.0, 0.0) //TODO Case for a mutable version of Vector2...? or is that pedantic
+    private var torqueAccumulator = 0.0
+
+    override fun isImmovable(): Boolean {
+        return immovable
+    }
 
     override fun getGlobalTransform(): Transformation3 {
         return Transformation3(position, rotation, scale)
@@ -106,8 +123,8 @@ abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: Ki
         this.rotation += rotation
     }
 
-    override fun translate(translation: Vector3) {
-        this.position += translation
+    override fun translate(translation: Vector2) {
+        this.position += translation.extruded(0.0)
     }
 
     //TODO Flesh this out
@@ -115,18 +132,36 @@ abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: Ki
         return 1.0
     }
 
-    fun accelerate(acceleration: Vector2){
-        this.vel += acceleration
+    // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
+    override fun applyForce(force: Force) {
+        forceAccumulator += force.vector
+        val originToForce: Vector2 = force.localOrigin - getCenterOfMass()
+        val r = originToForce.getMagnitude();
+        val theta = force.vector.getAngleTo(originToForce)
+        applyTorque(r * force.vector.getMagnitude() * sin(theta))
     }
-    fun rotationallyAccelerate(acceleration: Double){
-        this.rotVelocity += acceleration
+
+    override fun applyTorque(torque: Double) {
+        torqueAccumulator += torque
     }
+
+    final override fun checkNetForce(): Vector2 {
+        val netForce = forceAccumulator
+        forceAccumulator = Vector2(0.0, 0.0)
+        return netForce
+    }
+
+    final override fun checkNetTorque(): Double {
+        val netTorque = torqueAccumulator
+        torqueAccumulator = 0.0;
+        return netTorque
+    }
+
 }
 
-open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
+open class DumbEntity(transform: Transformation3, kinematicData: KinematicData, immovable: Boolean = false) : KinematicEntityImpl(transform, kinematicData, immovable) {
     private val parts: List<EntityPart> = listOf(
-        DumbPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0),
-        DumbPart(Transformation3(Vector3(1.0, 1.0, 0.0), 0.0, 1.0),1.0)
+        DumbPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0)),
     )
     override fun getEntityParts(): List<EntityPart> { return parts }
     override fun update(timeStep: Double) {}
@@ -137,9 +172,7 @@ open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) 
 class ControllableEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
 
     private val parts: List<EntityPart> = listOf(
-        SuperPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0),1.0),
-//        SuperPart(Transformation3(Vector3(1.0, 0.0, 0.0), 0.0, 1.0),1.0),
-//        SuperPart(Transformation3(Vector3(-1.0, 0.0, 0.0), 0.0, 1.0),1.0)
+        SuperPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0)),
     )
 
     override fun getEntityParts(): List<EntityPart> { return parts }
@@ -149,20 +182,22 @@ class ControllableEntity(transform: Transformation3, kinematicData: KinematicDat
     public fun getRadars() : List<Radar> {return parts.filterIsInstance<Radar>()}
 
     override fun update(timeStep: Double) {
-        var appliedThrust: Vector2 = Vector2(0.0, 0.0)
+        var sumThrust: Vector2 = Vector2(0.0, 0.0)
+        var sumOrigin : Vector2 = Vector2(0.0, 0.0)
         var appliedTorque: Double = 0.0
         getEntityParts().filterIsInstance<Thruster>().forEach {
-            appliedThrust += it.getCurrentThrust()
-            val offsetVector = (it as EntityPart).getLocalTransform() //TODO This is awkward.
+            sumThrust += it.getCurrentThrust()
+            sumOrigin += Vector2((it as EntityPart).getLocalTransform().translation) //TODO This is awkward.
         }
+        val avgOrigin = sumOrigin/getEntityParts().filterIsInstance<Thruster>().size.toDouble()
         getEntityParts().filterIsInstance<Torquer>().forEach {
             appliedTorque += it.getTorque()
         }
-        if(appliedThrust.getMagnitude() > Double.MIN_VALUE){
-            this.accelerate(appliedThrust/getMass())
+        if(sumThrust.getMagnitude() > Double.MIN_VALUE){
+            this.applyForce(Force(sumThrust, avgOrigin))
         }
         if(abs(appliedTorque) > Double.MIN_VALUE){
-            this.rotationallyAccelerate(appliedTorque/getMass())
+            this.applyTorque(appliedTorque)
         }
     }
 

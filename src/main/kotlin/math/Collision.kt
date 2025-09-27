@@ -1,56 +1,72 @@
 package math
 
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sign
+
 //https://dyn4j.org/2010/01/sat/
-fun doCollide(p1 : List<Vector2>, p2: List<Vector2>) : Boolean {
-    val projTest1 = projectionTest(p1, p2)
-    if(!projTest1) {
-        return false
-    }
-    val projTest2 = projectionTest(p2, p1)
-    if(!projTest2) {
-        return false
-    }
-    return true
+
+//TODO
+fun getCollisionMTV(p1 : List<Vector2>, p2: List<Vector2>) : Vector2? {
+    val projTest1 = projectionTest(p1, p2) ?: return null
+    val projTest2 = projectionTest(p2, p1) ?: return null
+
+    //Important to flip one of these, as they are coming from opposing perspectives :)
+    return if (projTest1.getMagnitude() < projTest2.getMagnitude() ) projTest1 * -1.0 else projTest2
 }
 
-private fun projectionTest(p1 : List<Vector2>, p2 : List<Vector2>) : Boolean {
-    val axes = getAxes(p1)
-    for (axis in axes) {
-        val projection1 = getProjection(p1, axis)
-        val projection2 = getProjection(p2, axis)
-        if (!projection1.overlaps(projection2)) return false
+private fun projectionTest(p1 : List<Vector2>, p2 : List<Vector2>) : Vector2? {
+    val normals = getSideNormals(p1)
+    var minimumOverlap: Vector2? = null;
+    for (normal in normals) {
+        val projection1 = getProjection(p1, normal)
+        val projection2 = getProjection(p2, normal)
+        val overlap = getOverlap(projection1, projection2)
+        if(overlap == null) {
+            return null;
+        }else if(overlap > 0 && (minimumOverlap == null || overlap < minimumOverlap.getMagnitude())) {
+            minimumOverlap = normal * overlap;
+        }
+
     }
-    return true
+    return minimumOverlap
 }
 
-fun getAxes(vectors: List<Vector2>) : List<Vector2> {
-    val axes = mutableListOf<Vector2>()
-    for (i in vectors.indices) {
-        val v1 = vectors[i]
-        val v2 = if(i == vectors.lastIndex) vectors[0] else vectors[i + 1]
+fun getSideNormals(points: List<Vector2>) : List<Vector2> {
+    val normals = mutableListOf<Vector2>()
+    for (i in points.indices) {
+        val v1 = points[i]
+        val v2 = if(i == points.lastIndex) points[0] else points[i + 1]
         val edge = v2 - v1
-        val normal = edge.rightHandNormal()
-        axes.add(normal)
+        val normal = edge.leftHandNormal()
+        normals.add(normal.normalize())
     }
-    return axes
+    return normals
 }
 
 data class Projection(val min: Double, val max: Double){
-    fun overlaps(otherProjection: Projection) : Boolean {
-        if(this.max < otherProjection.min || this.min > otherProjection.max){
-            return false
-        }else{
-            return true
-        }
+    override fun toString(): String {
+        return "{$min - $max}"
     }
 }
 
-fun getProjection(p : List<Vector2>, axis: Vector2) : Projection {
-    var min = axis.dot(p[0])
+fun getOverlap(projection: Projection, otherProjection: Projection) : Double? {
+    if(projection.max < otherProjection.min){
+        return null
+    }else if(projection.min > otherProjection.max){
+        return null
+    }else{
+        return projection.max - otherProjection.min
+    }
+}
+
+fun getProjection(p : List<Vector2>, normal: Vector2) : Projection {
+    var min = normal.dot(p[0])
     var max = min
 
-    for(v in p) {
-        val projVal = axis.dot(v)
+    for(i in 1..<p.size) {
+        val v = p[i]
+        val projVal = normal.dot(v)
         if(projVal < min){
             min = projVal
         }else if(projVal > max){
