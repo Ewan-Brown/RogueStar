@@ -16,7 +16,6 @@ fun getCollisionMTV(p1 : List<Vector2>, p2: List<Vector2>) : Vector2? {
 
     //Attempt to find the point of contact, if it exists
 
-
     return mtv
 }
 
@@ -56,9 +55,9 @@ data class Projection(val min: Double, val max: Double){
 }
 
 fun getOverlap(projection: Projection, otherProjection: Projection) : Double? {
-    if(projection.max < otherProjection.min){
+    if(projection.max <= otherProjection.min){
         return null
-    }else if(projection.min > otherProjection.max){
+    }else if(projection.min >= otherProjection.max){
         return null
     }else{
         return projection.max - otherProjection.min

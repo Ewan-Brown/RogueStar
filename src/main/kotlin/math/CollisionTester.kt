@@ -51,7 +51,7 @@ fun main() {
 
                     if(mtv != null){
                         //Flip y axis to make more readable
-                        println("mtv : ${Vector2(mtv.getX(), -mtv.getY())}")
+                        println("mtv : ${Vector2(mtv.getX(), mtv.getY())}")
                         val playerPos = toUI(player.position)
                         val vecPos = playerPos + mtv
                         g.drawLine(playerPos.getX().toInt(), playerPos.getY().toInt(), vecPos.getX().toInt(), vecPos.getY().toInt())
