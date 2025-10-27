@@ -3,10 +3,9 @@ package physics
 import PhysicsLayerI
 import effects.Effect
 import graphics.Graphics
+import math.Polygon2
 import models.Model
 import math.Vector2
-import math.getCollisionMTV
-import math.extruded
 import kotlin.collections.HashMap
 
 data class PhysicsInput(val timeStep: Double)
@@ -49,7 +48,6 @@ class PhysicsLayer() : PhysicsLayerI{
             // Do physics updates
             for (entity in entities) {
                 //Calculate new positions
-                if(!entity.isImmovable()){
 
                     var velocity = entity.getVelocity()
                     var rotVelocity = entity.getRotationalVelocity()
@@ -65,46 +63,17 @@ class PhysicsLayer() : PhysicsLayerI{
                     rotVelocity *= 0.99
                     entity.setVelocity(velocity)
                     entity.setRotationalVelocity(rotVelocity)
-                }
             }
 
-            val entitiesProcessed = mutableListOf<KinematicEntityI>()
-
-            //Do collision updates
-            for (entity1 in entities) {
-                entitiesProcessed.add(entity1)
-                for(entity2 in entities){
-                    if(!entitiesProcessed.contains(entity2)) {
-                        var smallest: Vector2? = null
-                        for (p1 in entity1.getKinematicParts()) {
-                            for (p2 in entity2.getKinematicParts()) {
-                                val colliding = getCollisionMTV(p1.getPolygon(), p2.getPolygon())
-                                if(colliding != null){
-                                    println("mtv : $colliding")
-                                    if(smallest == null || colliding.getMagnitude() < smallest.getMagnitude()) {
-                                        smallest = colliding
-                                    }
-//                                    entity1.setVelocity(colliding)
-//                                    entity2.setVelocity(colliding * -1.0)
-//                                    entity1.setVelocity(Vector2(0.0, 0.0))
-//                                    entity2.setVelocity(Vector2(0.0, 0.0))
-//                                    entity1.setRotationalVelocity(0.0)
-//                                    entity2.setRotationalVelocity(0.0)
-                                }
+            for(projectile in entities.filterIsInstance<PointProjectileI>()){
+                val pointOfContactLocal = projectile.getPointOfContact()
+                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getGlobalTransform().rotation) + Vector2(projectile.getGlobalTransform().translation)
+                for(entity in entities){
+                    if(entity != projectile){
+                        for (part in entity.getKinematicParts()){
+                            if(Polygon2(part.getPolygon()).encloses(projectile.getPointOfContact())){
+                                val collidedPart = part;
                             }
-                        }
-                        if(smallest != null){
-//                            println("smallest: $smallest")
-//                            smallest *= 1.1
-//                            if(!entity1.isImmovable()){
-//                                entity1.translate(smallest)
-//                            }
-//                            if(!entity2.isImmovable()){
-//                                entity2.translate(smallest * -1.0)
-//                            }
-//                            entity1.setVelocity(entity1.getVelocity() + smallest)
-//                            entity2.setVelocity(entity2.getVelocity() + smallest * -1.0)
-//                            println()
                         }
                     }
                 }
