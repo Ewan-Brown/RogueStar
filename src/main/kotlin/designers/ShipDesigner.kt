@@ -140,7 +140,7 @@ private class ShipDesignerUI(private val spacing: Int) : JPanel(), MouseListener
             for (component in components.iterator()) {
                 val shape : Shape = transformShape(shapes[component.shape], component.position, component.rotation, component.scale)
                 val polygon = math.Polygon2((shape.points.map { it / spacing.toDouble() }))
-                if(polygon.contains(pos)){
+                if(polygon.encloses(pos)){
                     component.type = selectedType
                 }
             }

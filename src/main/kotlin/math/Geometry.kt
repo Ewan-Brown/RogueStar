@@ -127,7 +127,7 @@ data class Transformation3(var translation: Vector3, var rotation: Double, var s
 }
 
 class Polygon2(val points : List<Vector2>) {
-    fun contains(point: Vector2) : Boolean {
+    fun encloses(point: Vector2) : Boolean {
         return doesPolygonContainPoint(points, point)
     }
 }

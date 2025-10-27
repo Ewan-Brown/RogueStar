@@ -25,7 +25,6 @@ interface KinematicEntityI : EntityI{
     fun getVelocity() : Vector2
     fun getRotationalVelocity() : Double
 
-    fun isImmovable() : Boolean
     fun setVelocity(vel: Vector2)
     fun setRotationalVelocity(rotVel: Double)
 
@@ -44,8 +43,13 @@ interface KinematicEntityI : EntityI{
     fun getKinematicParts() : List<KinematicPart>
 }
 
+interface PointProjectileI : KinematicEntityI{
+    fun getPointOfContact() : Vector2
+    fun doesCollide(otherEntity: KinematicEntityI) : Boolean
+}
+
 //TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
-abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: KinematicData, val immovable: Boolean = false) : KinematicEntityI{
+abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityI{
 
     private var position = transform.translation
     private var rotation = transform.rotation
@@ -55,10 +59,6 @@ abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: Ki
 
     private var forceAccumulator = Vector2(0.0, 0.0) //TODO Case for a mutable version of Vector2...? or is that pedantic
     private var torqueAccumulator = 0.0
-
-    override fun isImmovable(): Boolean {
-        return immovable
-    }
 
     override fun getGlobalTransform(): Transformation3 {
         return Transformation3(position, rotation, scale)
@@ -159,7 +159,7 @@ abstract class KinematicEntityImpl(transform: Transformation3, kinematicData: Ki
 
 }
 
-open class DumbEntity(transform: Transformation3, kinematicData: KinematicData, immovable: Boolean = false) : KinematicEntityImpl(transform, kinematicData, immovable) {
+open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
     private val parts: List<EntityPart> = listOf(
         DumbPart(Transformation3(Vector3(0.0, 0.0, 0.0), 0.0, 1.0)),
     )

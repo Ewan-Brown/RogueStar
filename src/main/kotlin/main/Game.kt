@@ -84,7 +84,6 @@ fun main() {
         val dumbEntity = DumbEntity(
             Transformation3(Vector3(-0.9, 0.001, 0.0), 0.0, 1.0),
             PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0),
-            false
         )
         physicsLayer.addEntity(dumbEntity)
     }
