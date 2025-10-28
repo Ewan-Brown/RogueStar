@@ -71,8 +71,9 @@ class PhysicsLayer() : PhysicsLayerI{
                 for(entity in entities){
                     if(entity != projectile){
                         for (part in entity.getKinematicParts()){
-                            if(Polygon2(part.getPolygon()).encloses(projectile.getPointOfContact())){
+                            if(Polygon2(part.getPolygon()).encloses(pointOfContactWorld)){
                                 val collidedPart = part;
+                                println(collidedPart)
                             }
                         }
                     }

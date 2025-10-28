@@ -168,6 +168,16 @@ open class DumbEntity(transform: Transformation3, kinematicData: KinematicData) 
     override fun markedForRemoval(): Boolean {return false }
 }
 
+open class DumbProjectile(transform: Transformation3, kinematicData: KinematicData) : DumbEntity(transform, kinematicData), PointProjectileI{
+    override fun getPointOfContact(): Vector2 {
+        return Vector2(0.0, 0.0)
+    }
+
+    override fun doesCollide(otherEntity: KinematicEntityI): Boolean {
+        return false;
+    }
+
+}
 
 class ControllableEntity(transform: Transformation3, kinematicData: KinematicData) : KinematicEntityImpl(transform, kinematicData) {
 
