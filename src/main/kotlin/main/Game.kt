@@ -8,8 +8,6 @@ import codec.VectorSerializer
 import effects.EffectsInput
 import effects.EffectsLayer
 import graphics.Graphics
-import physics.PhysicsInput
-import physics.PhysicsLayer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.jogamp.newt.event.KeyEvent
@@ -20,14 +18,13 @@ import designers.Shape
 import math.Transformation3
 import math.Vector2
 import math.Vector3
-import physics.ControllableEntity
 import java.util.*
 import ControllerLayerI
 import controllers.Controller
 import controllers.PlayerController
 import graphics.CameraDetails
 import graphics.GraphicsI
-import physics.DumbEntity
+import physics.*
 
 fun loadModels() : Map<Int, Model> {
     val mapper = ObjectMapper()
@@ -80,13 +77,10 @@ fun main() {
 
     val playerEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
     physicsLayer.addEntity(playerEntity)
-    for (i in 0..0) {
-        val dumbEntity = DumbEntity(
-            Transformation3(Vector3(-0.9, 0.001, 0.0), 0.0, 1.0),
-            PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0),
-        )
-        physicsLayer.addEntity(dumbEntity)
-    }
+
+    val projectile = DumbProjectile(Transformation3(Vector3(2.0, 0.0, 0.0), 0.0, 0.2), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
+    physicsLayer.addEntity(projectile)
+
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
 
