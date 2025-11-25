@@ -67,13 +67,14 @@ class PhysicsLayer() : PhysicsLayerI{
 
             for(projectile in entities.filterIsInstance<PointProjectileI>()){
                 val pointOfContactLocal = projectile.getPointOfContact()
-                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getGlobalTransform().rotation) + Vector2(projectile.getGlobalTransform().translation)
+                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldTransform().rotation) + projectile.getWorldTransform().translation
                 for(entity in entities){
                     if(entity != projectile){
                         for (part in entity.getKinematicParts()){
                             if(Polygon2(part.getPolygon()).encloses(pointOfContactWorld)){
                                 val collidedPart = part;
-                                println(collidedPart)
+//                                projectile.onCollision()
+//                                println(collidedPart)
                             }
                         }
                     }

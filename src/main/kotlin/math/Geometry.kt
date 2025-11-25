@@ -8,6 +8,7 @@ operator fun List<Vector2>.times(factor: Double): List<Vector2> {return this.map
 operator fun List<Vector2>.div(factor: Double): List<Vector2> {return this.map { it.div(factor) }}
 
 class Vector2(private val x :Double, private val y :Double) {
+    constructor() : this (0.0, 0.0)
     constructor(angle: Double) : this(cos(angle), sin(angle))
     constructor(point: java.awt.Point) : this(point.x.toDouble(), point.y.toDouble())
     constructor(point: com.jogamp.nativewindow.util.Point) : this(point.x.toDouble(), point.y.toDouble())
@@ -102,8 +103,13 @@ class Vector2(private val x :Double, private val y :Double) {
 
 }
 
-/** Mutable fields!!!*/
+/**
+ * Mutable fields.
+ * Only to be used ephemerally.
+ * TODO Find a way to enforce this?
+ */
 data class Transformation2(var translation: Vector2, var rotation: Double, var scale: Double){
+    constructor() : this(Vector2(), 0.0, 1.0)
     init {
         if(scale < Double.MIN_VALUE){
             throw Exception("Attempted to create a Transformation2 with an invalid scale value: $scale")
@@ -114,8 +120,16 @@ data class Transformation2(var translation: Vector2, var rotation: Double, var s
     }
 }
 
-/** Mutable fields!!!*/
+/**
+ * Mutable fields.
+ * Only to be used ephemerally.
+ * TODO Find a way to enforce this?
+ */
 data class Transformation3(var translation: Vector3, var rotation: Double, var scale: Double){
+    constructor(transform: Transformation2) : this(Vector3(transform.translation), transform.rotation, transform.scale)
+    constructor(transform: Transformation2, z: Double) : this(Vector3(transform.translation, z), transform.rotation, transform.scale)
+
+    constructor() : this(Vector3(), 0.0, 1.0)
     init {
         if(scale < Double.MIN_VALUE){
             throw Exception("Attempted to create a Transformation2 with an invalid scale value: $scale")
@@ -175,7 +189,9 @@ fun List<Vector2>.getCentroid() : Vector2 {
 }
 
 class Vector3(private val x :Double, private val y :Double, private val z :Double){
+    constructor() : this(0.0, 0.0, 0.0)
     constructor(vector2: Vector2) : this(vector2.getX(), vector2.getY(), 0.0)
+    constructor(vector2: Vector2, z: Double) : this(vector2.getX(), vector2.getY(), z)
     fun getX(): Double {
         return x
     }
@@ -239,14 +255,13 @@ class Vector3(private val x :Double, private val y :Double, private val z :Doubl
 
 fun Vector2.extruded(z : Double) : Vector3 = Vector3(getX(), getY(), z)
 
-//TODO use this...
-class Rotation(private val rotation: Double){
-    fun getRotation(): Double {return rotation}
-    operator fun plus(r : Rotation) : Rotation {
-        return Rotation(getRotation() + r.getRotation())
-    }
-    operator fun minus(r : Rotation) : Rotation {
-        return Rotation(getRotation() - r.getRotation())
-    }
-}
+//class Rotation(private val rotation: Double){
+//    fun getRotation(): Double {return rotation}
+//    operator fun plus(r : Rotation) : Rotation {
+//        return Rotation((getRotation() + r.getRotation()))
+//    }
+//    operator fun minus(r : Rotation) : Rotation {
+//        return Rotation(getRotation() - r.getRotation())
+//    }
+//}
 

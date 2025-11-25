@@ -75,10 +75,11 @@ fun main() {
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
 
-    val playerEntity = ControllableEntity(Transformation3(Vector3(0.0, 0.0, 0.0),0.0, 1.0), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
+    val playerEntity = ControllableEntity()
     physicsLayer.addEntity(playerEntity)
 
-    val projectile = DumbProjectile(Transformation3(Vector3(2.0, 0.0, 0.0), 0.0, 0.2), PhysicsLayer.KinematicData(Vector2(0.0, 0.0), 0.0))
+    val projectile = DumbProjectile()
+    projectile.scale(0.1)
     physicsLayer.addEntity(projectile)
 
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)

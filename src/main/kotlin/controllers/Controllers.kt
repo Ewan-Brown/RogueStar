@@ -70,8 +70,8 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
     override fun update(plant: ControllableEntity) {
         val thrusters = plant.getThrusters()
         val torquers = plant.getTorquers()
-        val radars = plant.getRadars()
-        val readings = radars.map{ it.getReadings()}.flatten()
+//        val radars = plant.getRadars()
+//        val readings = radars.map{ it.getReadings()}.flatten()
 
         var thrust = Vector2(0.0, 0.0)
         for (entry in ThrustKeys.entries) {

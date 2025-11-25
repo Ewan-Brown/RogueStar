@@ -1,7 +1,11 @@
-Working on collision resolution
-- Need to find a way to approximate applied torque, which requires approximate collision point
-- Consider that all shapes are convex, and that they will generally not be containing or piercing all the way through
-- Using Collision Tester to try out a few things
+Working on a simple projectile -> part interaction resolver.
 
+A few things that can occur:
 
-- Found a bug where if two entities share an edge, the MTV is ridiculous
+- The part receives some direct detrimental effect (e.x damaged/paralyzed/on fire)
+
+- The projectile is destroyed
+- The projectile reflects
+- The projectile spawns new projectiles
+
+- Effects are spawned
