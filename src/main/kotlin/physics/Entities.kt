@@ -11,10 +11,6 @@ interface EntityI {
     fun getRenderableComponents() : List<Graphics.Renderable>
 }
 
-interface KinematicPart{
-    fun getPolygon() : List<Vector2>
-}
-
 data class Force(val vector: Vector2, val localOrigin: Vector2)
 
 interface KinematicEntityI : EntityI{
@@ -37,8 +33,10 @@ interface KinematicEntityI : EntityI{
     fun applyTorque(torque: Double)
     fun checkNetForce() : Vector2
     fun checkNetTorque() : Double
-
-    fun getKinematicParts() : List<KinematicPart>
+    
+    fun getParts(): List<EntityPartI>
+    fun addPart(part: EntityPartI)
+    fun addParts(parts: List<EntityPartImpl>)
 }
 
 //TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
@@ -53,20 +51,20 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
 
     private var forceAccumulator = Vector2(0.0, 0.0) //TODO Case for a mutable version of Vector2...? or is that pedantic
     private var torqueAccumulator = 0.0
+    
+    private var parts = mutableListOf<EntityPartI>()
 
     override fun getWorldTransform(): Transformation2 {
         return Transformation2(Vector2(position.getX(), position.getY()), rotation, scale)
     }
-
-    protected abstract fun getEntityParts() : List<EntityPartI>
-
+    
     //TODO This assumes that (0.0) of each part is also its center of mass! that is not enforced anywhere
     override fun getCenterOfMass() : Vector2{
         var massVector = Vector2(0.0, 0.0)
-        getEntityParts().forEach {
+        getParts().forEach {
             massVector += it.getLocalTransform().translation
         }
-        return massVector / getEntityParts().size.toDouble()
+        return massVector / getParts().size.toDouble()
     }
 
     private fun getFinalTransform2D(localTransform: Transformation2) : Transformation2{
@@ -77,25 +75,28 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     }
 
     override fun getRenderableComponents() : List<Graphics.Renderable> {
-        return getEntityParts().map {
+        return getParts().map {
             Graphics.Renderable(
+//                val transform = getFinalTransform2D(part.getLocalTransform())
+//                val polygon = part.getModel().asVectors().map { point ->
                 it.getModel(), Transformation3(getFinalTransform2D(it.getLocalTransform()), this.zpos + it.getLocalZPos()), it.getColor(), it.getMetadata()
             )
+//            return getEntityParts().map { part ->
+//                object : KinematicPart{
+//                    override fun getPolygon(): List<Vector2> {
+//                        val transform = getFinalTransform2D(part.getLocalTransform())
+//                        val polygon = part.getModel().asVectors().map { point ->
+//                            (point * transform.scale).rotate(transform.rotation) + transform.translation
+//                        }
+//                        return polygon
+//                    }
+//                }
+//            }
         }
     }
 
-    override fun getKinematicParts(): List<KinematicPart> {
-        return getEntityParts().map { part ->
-            object : KinematicPart{
-                override fun getPolygon(): List<Vector2> {
-                    val transform = getFinalTransform2D(part.getLocalTransform())
-                    val polygon = part.getModel().asVectors().map { point ->
-                        (point * transform.scale).rotate(transform.rotation) + transform.translation
-                    }
-                    return polygon
-                }
-            }
-        }
+    override fun getParts(): List<EntityPartI> {
+        return parts
     }
 
     abstract override fun markedForRemoval() : Boolean
@@ -159,13 +160,22 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
         this.scale *= scale
     }
 
+    override fun addPart(part: EntityPartI) {
+        parts.add(part)
+    }
+
+    override fun addParts(parts: List<EntityPartImpl>) {
+        for(part in parts){
+            addPart(part)
+        }
+    }
+
 }
 
 open class DumbEntity() : KinematicEntityImpl() {
-    private val parts: List<EntityPartI> = listOf(
-        EntityPartImpl(),
-    )
-    override fun getEntityParts(): List<EntityPartI> { return parts }
+    init {
+        addPart(EntityPartImpl())
+    }
     override fun update(timeStep: Double) {}
     override fun markedForRemoval(): Boolean {return false }
 
@@ -173,33 +183,29 @@ open class DumbEntity() : KinematicEntityImpl() {
 
 class ControllableEntity() : KinematicEntityImpl() {
 
-    private val parts: List<EntityPartI>
-
     init {
 
         val thruster = BasicThruster()
         thruster.translate(Vector2(-1.0, 0.0))
-        parts = listOf(
+        addParts(listOf(
             Cockpit(),
-            BasicThruster())
+            BasicThruster()))
     }
 
-    override fun getEntityParts(): List<EntityPartI> { return parts }
-
-    fun getThrusters() : List<Thruster> {return parts.filterIsInstance<Thruster>()}
-    fun getTorquers() : List<Torquer> {return parts.filterIsInstance<Torquer>()}
-    fun getRadars() : List<Radar> {return parts.filterIsInstance<Radar>()}
+    fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
+    fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
+    fun getRadars() : List<Radar> {return getParts().filterIsInstance<Radar>()}
 
     override fun update(timeStep: Double) {
         var sumThrust: Vector2 = Vector2(0.0, 0.0)
         var sumOrigin : Vector2 = Vector2(0.0, 0.0)
         var appliedTorque: Double = 0.0
-        getEntityParts().filterIsInstance<Thruster>().forEach {
+        getParts().filterIsInstance<Thruster>().forEach {
             sumThrust += it.getCurrentThrust()
             sumOrigin += it.getLocalTransform().translation
         }
-        val avgOrigin = sumOrigin/getEntityParts().filterIsInstance<Thruster>().size.toDouble()
-        getEntityParts().filterIsInstance<Torquer>().forEach {
+        val avgOrigin = sumOrigin/getParts().filterIsInstance<Thruster>().size.toDouble()
+        getParts().filterIsInstance<Torquer>().forEach {
             appliedTorque += it.getTorque()
         }
         if(sumThrust.getMagnitude() > Double.MIN_VALUE){

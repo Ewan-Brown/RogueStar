@@ -20,6 +20,7 @@ interface EntityPartI {
     abstract fun translate(vector: Vector2)
     abstract fun rotate(theta: Double)
     abstract fun scale(s: Double)
+    abstract fun onDamage(d: Int)
 }
 
 open class EntityPartImpl() : EntityPartI {
@@ -28,6 +29,7 @@ open class EntityPartImpl() : EntityPartI {
     private var zpos = 0.0;
     private var rotation = 0.0
     private var scale = 1.0
+    private var life = 100
 
     private var color : Graphics.ColorData =  Graphics.ColorData(1.0f, 0.0f, 1.0f, 1.0f)
 
@@ -45,10 +47,15 @@ open class EntityPartImpl() : EntityPartI {
     override fun scale(s: Double) {
         this.scale *= s
     }
+
+    override fun onDamage(d: Int) {
+        life -= d
+    }
+
     override fun getLocalZPos(): Double = zpos
 
     override fun getModel(): Model = Model.SQUARE
-    override fun getColor() = color
+    override fun getColor() = Graphics.ColorData(color.red*(life/100f), color.green*(life/100f), color.blue*(life/100f), color.alpha*(life/100f))
     override fun setColor(color: Graphics.ColorData) {
         this.color = color
     }

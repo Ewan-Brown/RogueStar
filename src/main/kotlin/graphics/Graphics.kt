@@ -359,6 +359,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
         POSITION(0, 3, Buffer.VERTEX)
     }
 
+    /**
+     * Stores RGBA, each from 0.0 - 1.0
+     */
+    //TODO generalize vector math so it can be reused here?
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
     class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
