@@ -70,12 +70,14 @@ class PhysicsLayer() : PhysicsLayerI{
                 val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldTransform().rotation) + projectile.getWorldTransform().translation
                 for(entity in entities){
                     if(entity != projectile){
-                        for (part in entity.getKinematicParts()){
-                            if(Polygon2(part.getPolygon()).encloses(pointOfContactWorld)){
-                                val collidedPart = part;
+                        //TODO Do cheap preliminary collision checking
+                        for (part in entity.getParts()){
+//                            if(Polygon2(part.getPolygon()).encloses(pointOfContactWorld)){
+//                                val collidedPart = part;
+//                                part.
 //                                projectile.onCollision()
 //                                println(collidedPart)
-                            }
+//                            }
                         }
                     }
                 }
