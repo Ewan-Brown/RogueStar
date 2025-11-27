@@ -102,7 +102,8 @@ class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val 
             effectsLayer.populateModelMap(modelDataMap)
             controllerLayer.populateModelMap(modelDataMap)
 
-            gui.updateDrawables(modelDataMap, details)
+            gui.updateDrawables(modelDataMap)
+            gui.updateCamera(details)
         }
 
         populateData(CameraDetails(Vector2(0.0) , 1.0, 0.0))

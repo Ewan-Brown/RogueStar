@@ -28,7 +28,8 @@ import kotlin.system.exitProcess
 data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
 interface GraphicsI{
     fun getMousePositionInWorldCoordinates() : Vector2
-    fun updateDrawables(data: Map<Model, List<Renderable>>, cameraDetails: CameraDetails)
+    fun updateDrawables(data: Map<Model, List<Renderable>>)
+    fun updateCamera(cameraDetails: CameraDetails)
     //TODO Genericize this!
     fun addListener(keyListener: KeyListener)
 }
@@ -46,13 +47,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         window = GLWindow.create(glCapabilities)
         window.title = "Rogue Star"
         window.setSize(width,height)
-
-
         window.isVisible = true
-
         window.addGLEventListener(this)
 
-        //        window.setAut
         val animator = Animator(window)
         animator.start()
 
@@ -99,19 +96,20 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         )
     }
 
-    override fun updateDrawables(data: Map<Model, List<Renderable>>, cameraDetails: CameraDetails) {
+    override fun updateDrawables(data: Map<Model, List<Renderable>>) {
         synchronized(modelData) {
-            //Update camera
-            val diff = cameraDetails.targetPosition - cameraPos
-            cameraVelocity = diff * 0.3
-//            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
-            // TODO Control the camera velocity, there's currently no limit - velocity should be smoothed
-            cameraPos += cameraVelocity
+
             //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
         }
+    }
+
+    override fun updateCamera(cameraDetails: CameraDetails) {
+        val diff = cameraDetails.targetPosition - cameraPos
+        cameraVelocity = diff * 0.3
+        cameraPos += cameraVelocity
     }
 
     override fun addListener(keyListener: KeyListener) {
