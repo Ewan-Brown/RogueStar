@@ -75,15 +75,11 @@ fun main() {
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
 
-    val playerEntity = ControllableEntity()
+    val playerEntity = ControllableEntity(Graphics.ColorData(Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat()))
     physicsLayer.addEntity(playerEntity)
-
-    val projectile = DumbProjectile()
-    projectile.scale(0.1)
-    physicsLayer.addEntity(projectile)
-
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
+
 
     while(true){
         game.update(timeStep)
