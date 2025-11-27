@@ -4,11 +4,16 @@ import models.Model
 import math.Transformation3
 import math.Vector2
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.WindowAdapter
+import com.jogamp.newt.event.WindowEvent
+import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
+import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import graphics.Graphics.Renderable
 import java.awt.MouseInfo
+import java.lang.Error
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.util.ArrayList
@@ -18,6 +23,7 @@ import kotlin.collections.getValue
 import kotlin.collections.indices
 import kotlin.collections.set
 import kotlin.collections.withIndex
+import kotlin.system.exitProcess
 
 data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
 interface GraphicsI{
@@ -27,7 +33,36 @@ interface GraphicsI{
     fun addListener(keyListener: KeyListener)
 }
 
-class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
+class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
+
+    val width: Int = 600
+    val height: Int = 600
+    val window: GLWindow
+
+    init {
+        val glProfile = GLProfile.get(GLProfile.GL3)
+        val glCapabilities = GLCapabilities(glProfile)
+
+        window = GLWindow.create(glCapabilities)
+        window.title = "Rogue Star"
+        window.setSize(width,height)
+
+
+        window.isVisible = true
+
+        window.addGLEventListener(this)
+
+        //        window.setAut
+        val animator = Animator(window)
+        animator.start()
+
+        window.addWindowListener(object : WindowAdapter() {
+            override fun windowDestroyed(e: WindowEvent) {
+                animator.stop()
+                exitProcess(1)
+            }
+        })
+    }
 
     private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
@@ -70,7 +105,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
             val diff = cameraDetails.targetPosition - cameraPos
             cameraVelocity = diff * 0.3
 //            cameraScale = (cameraDetails.targetScale * exp(-cameraVelocity.magnitude)).toFloat()
-            // TODO Control the camera velocity, there's currently no limit - velocity should have hysteresis
+            // TODO Control the camera velocity, there's currently no limit - velocity should be smoothed
             cameraPos += cameraVelocity
             //Update graphics buffers
             for (loadedModel in loadedModels) {
@@ -147,8 +182,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-//        gl.glBindBuffer(GL2ES3.GL_UNIFORM_BUFFER, 0)
-
         checkError(gl, "initBuffers")
     }
 
@@ -193,9 +226,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
             modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
                 .sum()
 
-        //TODO Document this
-        //For each model type
-
+        //TODO Comment this better before i forget what's going on
         val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {
             FloatArray(
                 it.size * modelCount
@@ -343,17 +374,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
         checkError(gl, "dispose() : deleting resources")
     }
 
-    inner class BackgroundProgram(gl: GL3,root: String,fragment: String) : WorldProgram(gl, root,"Game_Background", fragment){}
-
-    inner class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : WorldProgram(gl,root,vertex, fragment){}
-
-    open inner class WorldProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){
-        val velocity: Int = registerField(gl, "velocity")
-        val viewMat: Int = registerField(gl, "viewZ")
-    }
-
-    inner class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
-
     //TODO If you add to this what happens to the indices...?
     enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
         POSITION(0, 3, Buffer.VERTEX)
@@ -375,5 +395,20 @@ class Graphics(val loadedModels: List<Model>) : GraphicsBase(), GraphicsI {
         SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, Buffer.INSTANCED_SCALES),
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)
+    }
+
+    fun checkError(gl: GL, location: String) {
+        val error = gl.glGetError()
+        if (error != GL.GL_NO_ERROR) {
+            val errorString = when (error) {
+                GL.GL_INVALID_ENUM -> "GL_INVALID_ENUM"
+                GL.GL_INVALID_VALUE -> "GL_INVALID_VALUE"
+                GL.GL_INVALID_OPERATION -> "GL_INVALID_OPERATION"
+                GL.GL_INVALID_FRAMEBUFFER_OPERATION -> "GL_INVALID_FRAMEBUFFER_OPERATION"
+                GL.GL_OUT_OF_MEMORY -> "GL_OUT_OF_MEMORY"
+                else -> "UNKNOWN"
+            }
+            throw Error("OpenGL Error($errorString): $location")
+        }
     }
 }
