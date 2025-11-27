@@ -187,19 +187,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
 
-        for (attribute in GENERAL_ATTRIBUTES.entries){
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
-            gl.glEnableVertexAttribArray(attribute.index)
-            gl.glVertexAttribPointer(
-                attribute.index,
-                attribute.size,
-                GL.GL_FLOAT,
-                false,
-                attribute.size * java.lang.Float.BYTES,
-                0
-            )
-        }
-
         for (attribute in INSTANCED_ATTRIBUTE.entries) {
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
             gl.glEnableVertexAttribArray(attribute.index)
@@ -370,11 +357,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glDeleteVertexArrays(1, VAOs)
         gl.glDeleteBuffers(Buffer.MAX, VBOs)
         checkError(gl, "dispose() : deleting resources")
-    }
-
-    //TODO If you add to this what happens to the indices...?
-    enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
-        POSITION(0, 3, Buffer.VERTEX)
     }
 
     /**
