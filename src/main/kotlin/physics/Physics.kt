@@ -71,14 +71,10 @@ class PhysicsLayer() : PhysicsLayerI{
                 for(entity in entities){
                     if(entity != projectile){
                         //TODO Do cheap preliminary collision checking
-                        for (part in entity.getParts()){
-//                            if(Polygon2(part.getPolygon()).encloses(pointOfContactWorld)){
-//                                val collidedPart = part;
-//                                part.
-//                                projectile.onCollision()
-//                                println(collidedPart)
-//                            }
-                        }
+//                        for (part in entity.getParts()){
+//                            if(part.)
+//                            part.onDamage(1)
+//                        }
                     }
                 }
             }

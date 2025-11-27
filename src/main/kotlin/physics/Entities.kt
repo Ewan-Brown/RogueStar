@@ -160,7 +160,7 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
         this.scale *= scale
     }
 
-    override fun addPart(part: EntityPartI) {
+    final override fun addPart(part: EntityPartI) {
         parts.add(part)
     }
 
@@ -181,15 +181,20 @@ open class DumbEntity() : KinematicEntityImpl() {
 
 }
 
-class ControllableEntity() : KinematicEntityImpl() {
-
+class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)) : KinematicEntityImpl() {
     init {
-
         val thruster = BasicThruster()
-        thruster.translate(Vector2(-1.0, 0.0))
+        val cockpit = Cockpit()
+
+        thruster.setColor(color)
+        thruster.translate(Vector2(0.0, 0.0))
+
+        cockpit.setColor(color)
+        cockpit.translate(Vector2(-1.0, 0.0))
+
         addParts(listOf(
-            Cockpit(),
-            BasicThruster()))
+            thruster,
+            cockpit))
     }
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
