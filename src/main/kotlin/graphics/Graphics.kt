@@ -118,7 +118,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     private interface VBONames {
         companion object {
-            const val VERTEX: Int = 1
+            const val MODEL_VERTICES: Int = 1
             const val INSTANCED_POSITIONS: Int = 2
             const val INSTANCED_ROTATIONS: Int = 3
             const val INSTANCED_SCALES: Int = 4
@@ -171,7 +171,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.VERTEX])
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.MODEL_VERTICES])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
             vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
@@ -407,7 +407,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     //TODO If you add to this what happens to the indices...?
     enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
-        POSITION(0, 3, VBONames.VERTEX)
+        POSITION(0, 3, VBONames.MODEL_VERTICES)
     }
 
 }
