@@ -1,5 +1,6 @@
 package physics
 
+import DebugLineData
 import PhysicsLayerI
 import effects.Effect
 import graphics.Graphics
@@ -24,6 +25,10 @@ class PhysicsLayer() : PhysicsLayerI{
                 modelDataMap[renderableComponent.model]!!.add(renderableComponent)
             }
         }
+    }
+
+    override fun getDebugLines(): List<DebugLineData> {
+        return listOf()
     }
 
     override fun addEntity(entity: KinematicEntityImpl) {
