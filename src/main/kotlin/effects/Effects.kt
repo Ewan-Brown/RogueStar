@@ -1,5 +1,6 @@
 package effects
 
+import DebugLineData
 import EffectsLayerI
 import graphics.Graphics
 import models.Model
@@ -25,6 +26,10 @@ class EffectsLayer : EffectsLayerI{
                 modelDataMap[renderable.model]!!.add(renderable)
             }
         }
+    }
+
+    override fun getDebugLines(): List<DebugLineData> {
+        return listOf()
     }
 
     override fun addEffect(effect: Effect) {

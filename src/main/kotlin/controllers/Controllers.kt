@@ -1,6 +1,7 @@
 package controllers
 
 import ControllerLayerI
+import DebugLineData
 import graphics.Graphics
 import math.Transformation3
 import math.Vector2
@@ -27,6 +28,10 @@ class ControllerLayer : ControllerLayerI {
     }
 
     override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {}
+    override fun getDebugLines() : List<DebugLineData>{
+        return listOf()
+    }
+
     override fun <T : EntityI> addControllerEntry(controller: Controller<T>, entity: T) {
         controllerEntryList.add(ControllerEntityEntry(controller, entity))
     }
