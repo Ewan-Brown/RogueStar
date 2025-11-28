@@ -20,6 +20,7 @@ import math.Vector2
 import math.Vector3
 import java.util.*
 import ControllerLayerI
+import DebugLineData
 import controllers.Controller
 import controllers.PlayerController
 import graphics.CameraDetails
@@ -102,8 +103,15 @@ class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val 
             effectsLayer.populateModelMap(modelDataMap)
             controllerLayer.populateModelMap(modelDataMap)
 
+            val debugData = mutableListOf<DebugLineData>()
+
+            debugData.addAll(physicsLayer.getDebugLines())
+            debugData.addAll(effectsLayer.getDebugLines())
+            debugData.addAll(controllerLayer.getDebugLines())
+
             gui.updateDrawables(modelDataMap)
             gui.updateCamera(details)
+            gui.updateDebug(debugData)
         }
 
         populateData(CameraDetails(Vector2(0.0) , 1.0, 0.0))
