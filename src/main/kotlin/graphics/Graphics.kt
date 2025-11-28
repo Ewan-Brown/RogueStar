@@ -124,7 +124,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             const val INSTANCED_SCALES: Int = 4
             const val INSTANCED_COLORS: Int = 5
             const val INSTANCED_HEALTHS: Int = 6
-            const val MAX: Int = 7
+            const val DEBUG_VERTICES: Int = 7
+            const val DEBUG_COLORS: Int = 8
+            const val MAX: Int = 9
         }
     }
 
@@ -136,46 +138,23 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             modelData[preloadedModel] = ModelData()
         }
 
-        initVBOs(gl)
-
+        gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
+        populateVBOs(gl)
         updateInstanceData(gl)
-
         initVAOs(gl)
-
         initProgram(gl)
 
         gl.glEnable(GL.GL_DEPTH_TEST)
     }
 
-    private fun initVBOs(gl: GL3) {
-        //Generate vertex data and store offsets for models
-
-        val verticeList: MutableList<Float> = ArrayList()
-
-        var marker = 0
-        for (value in loadedModels) {
-            for (vertexDatum in value.vertexData) {
-                verticeList.add(vertexDatum)
-            }
-            modelData.getValue(value).verticeIndex = marker
-            marker += value.points
-        }
-
-        val verticeArray = FloatArray(verticeList.size)
-        for (i in verticeList.indices) {
-            verticeArray[i] = verticeList[i]
-        }
-
-        val vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray)
-
-        gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
-
+    private fun populateVBOs(gl: GL3) {
+        val verticeBuffer = GLBuffers.newDirectFloatBuffer(getModelVertices())
         //Bind Vertex data
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.MODEL_VERTICES])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
-            vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            vertexBuffer,
+            verticeBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            verticeBuffer,
             GL.GL_STATIC_DRAW
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -217,6 +196,26 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glBindVertexArray(0)
 
         checkError(gl, "initVao")
+    }
+
+    private fun getModelVertices() : FloatArray{
+        val verticeList: MutableList<Float> = ArrayList()
+
+        var marker = 0
+        for (value in loadedModels) {
+            for (vertexDatum in value.vertexData) {
+                verticeList.add(vertexDatum)
+            }
+            modelData.getValue(value).verticeIndex = marker
+            marker += value.points
+        }
+
+        val verticeArray = FloatArray(verticeList.size)
+        for (i in verticeList.indices) {
+            verticeArray[i] = verticeList[i]
+        }
+
+        return verticeArray
     }
 
     private fun updateInstanceData(gl: GL3) {
