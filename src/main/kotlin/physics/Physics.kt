@@ -28,7 +28,9 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 
     override fun getDebugLines(): List<DebugLineData> {
-        return listOf()
+        return listOf(
+            DebugLineData(Vector2(), Vector2(1.0, 1.0), Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)),
+        )
     }
 
     override fun addEntity(entity: KinematicEntityImpl) {

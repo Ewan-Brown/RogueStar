@@ -1,5 +1,6 @@
 package graphics
 
+import DebugLineData
 import models.Model
 import math.Transformation3
 import math.Vector2
@@ -29,6 +30,7 @@ data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, v
 interface GraphicsI{
     fun getMousePositionInWorldCoordinates() : Vector2
     fun updateDrawables(data: Map<Model, List<Renderable>>)
+    fun updateDebug(debugLines: List<DebugLineData>)
     fun updateCamera(cameraDetails: CameraDetails)
     //TODO Genericize this!
     fun addListener(keyListener: KeyListener)
@@ -66,10 +68,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     private val clearColor: FloatBuffer = GLBuffers.newDirectFloatBuffer(4)
     private val clearDepth: FloatBuffer = GLBuffers.newDirectFloatBuffer(1)
-
     private val matBuffer: FloatBuffer = GLBuffers.newDirectFloatBuffer(16)
 
     private val modelData = mutableMapOf<Model, ModelData>()
+    private val debugLines = mutableListOf<DebugLineData>()
 
     var cameraPos: Vector2 = Vector2(0.0, 0.0)
     var cameraVelocity: Vector2 = Vector2(0.0, 0.0)
@@ -98,12 +100,16 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     override fun updateDrawables(data: Map<Model, List<Renderable>>) {
         synchronized(modelData) {
-
             //Update graphics buffers
             for (loadedModel in loadedModels) {
                 modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
         }
+    }
+
+    override fun updateDebug(debugLines: List<DebugLineData>) {
+        this.debugLines.clear()
+        this.debugLines.addAll(debugLines)
     }
 
     override fun updateCamera(cameraDetails: CameraDetails) {
@@ -118,6 +124,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     private interface VBONames {
         companion object {
+            //TODO Should this just be an enum? I don't like the 'MAX'...
             const val MODEL_VERTICES: Int = 1
             const val INSTANCED_POSITIONS: Int = 2
             const val INSTANCED_ROTATIONS: Int = 3
