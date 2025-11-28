@@ -61,7 +61,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         })
     }
 
-    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(Buffer.MAX)
+    private val VBOs: IntBuffer = GLBuffers.newDirectIntBuffer(VBONames.MAX)
     private val VAOs: IntBuffer = GLBuffers.newDirectIntBuffer(1)
 
     private val clearColor: FloatBuffer = GLBuffers.newDirectFloatBuffer(4)
@@ -116,7 +116,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         window.addKeyListener(keyListener)
     }
 
-    private interface Buffer {
+    private interface VBONames {
         companion object {
             const val VERTEX: Int = 1
             const val INSTANCED_POSITIONS: Int = 2
@@ -168,10 +168,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
         val vertexBuffer = GLBuffers.newDirectFloatBuffer(verticeArray)
 
-        gl.glGenBuffers(Buffer.MAX, VBOs) // Create VBOs (n = Buffer.max)
+        gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
 
         //Bind Vertex data
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[Buffer.VERTEX])
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.VERTEX])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
             vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
@@ -186,6 +186,19 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     private fun initVAOs(gl: GL3) {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
+
+        for (attribute in GENERAL_ATTRIBUTES.entries){
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
+            gl.glEnableVertexAttribArray(attribute.index)
+            gl.glVertexAttribPointer(
+                attribute.index,
+                attribute.size,
+                GL.GL_FLOAT,
+                false,
+                attribute.size * java.lang.Float.BYTES,
+                0
+            )
+        }
 
         for (attribute in INSTANCED_ATTRIBUTE.entries) {
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
@@ -355,7 +368,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glDeleteProgram(entityProgram!!.name)
         gl.glDeleteProgram(backgroundProgram!!.name)
         gl.glDeleteVertexArrays(1, VAOs)
-        gl.glDeleteBuffers(Buffer.MAX, VBOs)
+        gl.glDeleteBuffers(VBONames.MAX, VBOs)
         checkError(gl, "dispose() : deleting resources")
     }
 
@@ -369,12 +382,12 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
         POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
-            Buffer.INSTANCED_POSITIONS
+            VBONames.INSTANCED_POSITIONS
         ),
-        ROTATION(2, 1, {listOf(it.transform.rotation.toFloat())}, Buffer.INSTANCED_ROTATIONS),
-        SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, Buffer.INSTANCED_SCALES),
-        COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, Buffer.INSTANCED_COLORS),
-        HEALTH(5, 1, {listOf(it.metaData.health)}, Buffer.INSTANCED_HEALTHS)
+        ROTATION(2, 1, {listOf(it.transform.rotation.toFloat())}, VBONames.INSTANCED_ROTATIONS),
+        SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, VBONames.INSTANCED_SCALES),
+        COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, VBONames.INSTANCED_COLORS),
+        HEALTH(5, 1, {listOf(it.metaData.health)}, VBONames.INSTANCED_HEALTHS)
     }
 
     fun checkError(gl: GL, location: String) {
@@ -391,4 +404,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             throw Error("OpenGL Error($errorString): $location")
         }
     }
+
+    //TODO If you add to this what happens to the indices...?
+    enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
+        POSITION(0, 3, VBONames.VERTEX)
+    }
+
 }
