@@ -17,7 +17,7 @@ import java.awt.MouseInfo
 import java.lang.Error
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import java.util.ArrayList
+import kotlin.collections.ArrayList
 import kotlin.collections.associateWith
 import kotlin.collections.forEach
 import kotlin.collections.getValue
@@ -146,22 +146,25 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         }
 
         gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
-        populateVBOs(gl)
-        updateInstanceData(gl)
-        initVAOs(gl)
+        populateStaticVBOs(gl)
+        populateDynamicVBOs(gl)
+        initializeVertexAttributes(gl)
         initProgram(gl)
 
         gl.glEnable(GL.GL_DEPTH_TEST)
     }
 
-    private fun populateVBOs(gl: GL3) {
-        val verticeBuffer = GLBuffers.newDirectFloatBuffer(getModelVertices())
-        //Bind Vertex data
+    /**
+     * Populate VBOs whos data never changes
+     */
+    private fun populateStaticVBOs(gl: GL3) {
+        val vertexBuffer = GLBuffers.newDirectFloatBuffer(getModelVertices())
+        //Bind Model Vertex Data
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.MODEL_VERTICES])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
-            verticeBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            verticeBuffer,
+            vertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            vertexBuffer,
             GL.GL_STATIC_DRAW
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -169,11 +172,65 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         checkError(gl, "initBuffers")
     }
 
-    private fun initVAOs(gl: GL3) {
+    /**
+     * Populate VBOs whose data may change
+     */
+    private fun populateDynamicVBOs(gl: GL3) {
+
+        val modelCount = modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }.sum()
+
+        val attributeMap : Map<InstancedAttributes, FloatArray> = InstancedAttributes.entries.associateWith {
+            FloatArray(
+                it.size * modelCount
+            )
+        }
+
+        val attributeMarkerMap : MutableMap<InstancedAttributes, Int> = mutableMapOf()
+        InstancedAttributes.entries.forEach {attributeMarkerMap[it] = 0}
+        var indexCounter = 0
+
+        for ((_, data) in modelData) {
+            //For each instance of that model
+            for (instancedDatum in data.instanceData) {
+                for(attribute in InstancedAttributes.entries){
+                    val floats = attribute.dataExtractor(instancedDatum)
+                    val floatBuffer = attributeMap[attribute]
+                    for ((index, float) in floats.withIndex()) {
+                        //TODO without this size check, intermittent outofbounds exceptions... Why?
+                        if((attributeMarkerMap[attribute]!! + index) < floatBuffer!!.size){
+                            floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
+                        }
+                    }
+                    attributeMarkerMap[attribute] = attributeMarkerMap[attribute]!! + floats.size
+                }
+            }
+            data.instanceIndex = indexCounter
+            indexCounter += data.instanceCount
+        }
+        //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
+        for (attribute in InstancedAttributes.entries) {
+            val buffer = GLBuffers.newDirectFloatBuffer(attributeMap[attribute])
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
+            gl.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                buffer.capacity().toLong() * java.lang.Float.BYTES,
+                buffer,
+                GL.GL_DYNAMIC_DRAW
+            )
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    }
+
+    /**
+     * Set the vertex attributes for each VBO.
+     * Vertex attributes tell openGL how a particular VBO's data is divided
+     */
+    private fun initializeVertexAttributes(gl: GL3) {
         gl.glGenVertexArrays(1, VAOs) // Create VAO
         gl.glBindVertexArray(VAOs[0])
 
-        for (attribute in GENERAL_ATTRIBUTES.entries){
+        for (attribute in GeneralAttributes.entries){
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
             gl.glEnableVertexAttribArray(attribute.index)
             gl.glVertexAttribPointer(
@@ -186,7 +243,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             )
         }
 
-        for (attribute in INSTANCED_ATTRIBUTE.entries) {
+        for (attribute in InstancedAttributes.entries) {
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
             gl.glEnableVertexAttribArray(attribute.index)
             gl.glVertexAttribPointer(
@@ -225,54 +282,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         return verticeArray
     }
 
-    private fun updateInstanceData(gl: GL3) {
-        val modelCount =
-            modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }
-                .sum()
-
-        //TODO Comment this better before i forget what's going on
-        val attributeMap : Map<INSTANCED_ATTRIBUTE, FloatArray> = INSTANCED_ATTRIBUTE.entries.associateWith {
-            FloatArray(
-                it.size * modelCount
-            )
-        }
-        val attributeMarkerMap : MutableMap<INSTANCED_ATTRIBUTE, Int> = mutableMapOf()
-        INSTANCED_ATTRIBUTE.entries.forEach {attributeMarkerMap[it] = 0}
-        var indexCounter = 0
-        for ((_, data) in modelData) {
-            //For each instance of that motel
-            for (instancedDatum in data.instanceData) {
-                for(attribute in INSTANCED_ATTRIBUTE.entries){
-                    val floats = attribute.dataExtractor(instancedDatum)
-                    val floatBuffer = attributeMap[attribute]
-                    for ((index, float) in floats.withIndex()) {
-                        //TODO without this, intermittent crashes. Why
-                        if((attributeMarkerMap[attribute]!! + index) < floatBuffer!!.size){
-                            floatBuffer!![attributeMarkerMap[attribute]!! + index] = float
-                        }
-
-                    }
-                    attributeMarkerMap[attribute] = attributeMarkerMap[attribute]!! + floats.size
-                }
-            }
-            data.instanceIndex = indexCounter
-            indexCounter += data.instanceCount
-        }
-        //TODO We might be able to replace some glBufferData with glBufferSubData (avoiding unnecessary re-allocation)
-        for (attribute in INSTANCED_ATTRIBUTE.entries) {
-            val buffer = GLBuffers.newDirectFloatBuffer(attributeMap[attribute])
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[attribute.VBOBuffer])
-            gl.glBufferData(
-                GL.GL_ARRAY_BUFFER,
-                buffer.capacity().toLong() * java.lang.Float.BYTES,
-                buffer,
-                GL.GL_DYNAMIC_DRAW
-            )
-        }
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-    }
-
     private fun initProgram(gl: GL3) {
 
         //TODO Figure out if uniforms can be shared across programs??
@@ -297,7 +306,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
         synchronized(modelData) {
-            updateInstanceData(gl)
+            populateDynamicVBOs(gl)
             // view matrix
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
@@ -386,7 +395,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
     class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
 
-    enum class INSTANCED_ATTRIBUTE(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
+    enum class GeneralAttributes(val index: Int, val size: Int, val VBOBuffer: Int){
+        POSITION(0, 3, VBONames.MODEL_VERTICES)
+    }
+
+    enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
         POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
             VBONames.INSTANCED_POSITIONS
         ),
@@ -409,11 +422,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             }
             throw Error("OpenGL Error($errorString): $location")
         }
-    }
-
-    //TODO If you add to this what happens to the indices...?
-    enum class GENERAL_ATTRIBUTES(val index: Int, val size: Int, val VBOBuffer: Int){
-        POSITION(0, 3, VBONames.MODEL_VERTICES)
     }
 
 }
