@@ -17,7 +17,6 @@ import java.awt.MouseInfo
 import java.lang.Error
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
-import kotlin.collections.ArrayList
 import kotlin.collections.associateWith
 import kotlin.collections.forEach
 import kotlin.collections.getValue
@@ -70,7 +69,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     private val clearDepth: FloatBuffer = GLBuffers.newDirectFloatBuffer(1)
     private val matBuffer: FloatBuffer = GLBuffers.newDirectFloatBuffer(16)
 
-    private val modelData = mutableMapOf<Model, ModelData>()
+    private val modelDataMap = mutableMapOf<Model, ModelData>()
     private val debugLines = mutableListOf<DebugLineData>()
 
     var cameraPos: Vector2 = Vector2(0.0, 0.0)
@@ -80,6 +79,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     var entityProgram: EntityProgram? = null
     var backgroundProgram: BackgroundProgram? = null
     var uiProgram: UIProgram? = null
+    var debugProgram: DebugLineProgram? = null
 
     //the time for the background
     var time: Float = 0f
@@ -99,10 +99,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     }
 
     override fun updateDrawables(data: Map<Model, List<Renderable>>) {
-        synchronized(modelData) {
+        synchronized(modelDataMap) {
             //Update graphics buffers
             for (loadedModel in loadedModels) {
-                modelData.getValue(loadedModel).instanceData = data.getValue(loadedModel)
+                modelDataMap.getValue(loadedModel).instanceData = data.getValue(loadedModel)
             }
         }
     }
@@ -122,34 +122,18 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         window.addKeyListener(keyListener)
     }
 
-    private interface VBONames {
-        companion object {
-            //TODO Should this just be an enum? I don't like the 'MAX'...
-            const val MODEL_VERTICES: Int = 1
-            const val INSTANCED_POSITIONS: Int = 2
-            const val INSTANCED_ROTATIONS: Int = 3
-            const val INSTANCED_SCALES: Int = 4
-            const val INSTANCED_COLORS: Int = 5
-            const val INSTANCED_HEALTHS: Int = 6
-            const val DEBUG_VERTICES: Int = 7
-            const val DEBUG_COLORS: Int = 8
-            const val MAX: Int = 9
-        }
-    }
-
-
     override fun init(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
         for (preloadedModel in loadedModels) {
-            modelData[preloadedModel] = ModelData()
+            modelDataMap[preloadedModel] = ModelData()
         }
 
         gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
         populateStaticVBOs(gl)
         populateDynamicVBOs(gl)
         initializeVertexAttributes(gl)
-        initProgram(gl)
+        initializePrograms(gl)
 
         gl.glEnable(GL.GL_DEPTH_TEST)
     }
@@ -158,8 +142,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
      * Populate VBOs whos data never changes
      */
     private fun populateStaticVBOs(gl: GL3) {
+        //Push Model Vertex Data
         val vertexBuffer = GLBuffers.newDirectFloatBuffer(getModelVertices())
-        //Bind Model Vertex Data
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.MODEL_VERTICES])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,
@@ -167,6 +151,30 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             vertexBuffer,
             GL.GL_STATIC_DRAW
         )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        //Push debug line vertex data
+        val debugLineVertices = floatArrayOf(0.0f, 0.0f, 100.0f, 100.0f)
+        val debugLineVertexBuffer = GLBuffers.newDirectFloatBuffer(debugLineVertices)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_VERTICES])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            debugLineVertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            debugLineVertexBuffer,
+            GL.GL_STATIC_DRAW
+        )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        //Push debug line vertex data
+//        val debugLineColors = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f)
+//        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
+//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
+//        gl.glBufferData(
+//            GL.GL_ARRAY_BUFFER,
+//            debugLineColorBuffer.capacity().toLong() * java.lang.Float.BYTES,
+//            debugLineColorBuffer,
+//            GL.GL_STATIC_DRAW
+//        )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
         checkError(gl, "initBuffers")
@@ -177,7 +185,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
      */
     private fun populateDynamicVBOs(gl: GL3) {
 
-        val modelCount = modelData.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }.sum()
+        val modelCount = modelDataMap.values.stream().mapToInt { obj: ModelData -> obj.instanceCount }.sum()
 
         val attributeMap : Map<InstancedAttributes, FloatArray> = InstancedAttributes.entries.associateWith {
             FloatArray(
@@ -189,7 +197,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         InstancedAttributes.entries.forEach {attributeMarkerMap[it] = 0}
         var indexCounter = 0
 
-        for ((_, data) in modelData) {
+        for ((_, data) in modelDataMap) {
             //For each instance of that model
             for (instancedDatum in data.instanceData) {
                 for(attribute in InstancedAttributes.entries){
@@ -270,7 +278,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             for (vertexDatum in value.vertexData) {
                 verticeList.add(vertexDatum)
             }
-            modelData.getValue(value).verticeIndex = marker
+            modelDataMap.getValue(value).verticeIndex = marker
             marker += value.points
         }
 
@@ -282,7 +290,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         return verticeArray
     }
 
-    private fun initProgram(gl: GL3) {
+    private fun initializePrograms(gl: GL3) {
 
         //TODO Figure out if uniforms can be shared across programs??
         backgroundProgram = BackgroundProgram(gl, "", "Game_Background_Custom_Stars")
@@ -293,6 +301,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
         uiProgram = UIProgram(gl, "", "Game_UI", "Game_UI")
         checkError(gl, "initProgram : uiProgram")
+
+        debugProgram = DebugLineProgram(gl, "", "Game_Debug", "Game_Debug")
+        checkError(gl, "initProgram : debugProgram")
 
     }
 
@@ -305,7 +316,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     override fun display(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
-        synchronized(modelData) {
+        synchronized(modelDataMap) {
             populateDynamicVBOs(gl)
             // view matrix
             val view = FloatArray(16)
@@ -323,14 +334,12 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
             gl.glUseProgram(backgroundProgram!!.name)
             gl.glUniformMatrix4fv(backgroundProgram!!.viewMat, 1, false, matBuffer)
-//            gl.glUniform1f(backgroundProgram!!.time, time)
-//            gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.x.toFloat(), cameraVelocity.y.toFloat())
             gl.glUniform1f(backgroundProgram!!.time, 0.0f)
             gl.glUniform2f(backgroundProgram!!.velocity, 0.0f, 0.0f)
 
             gl.glDrawArrays(
                 Model.BACKPLATE.drawMode,
-                modelData.getValue(Model.BACKPLATE).verticeIndex,
+                modelDataMap.getValue(Model.BACKPLATE).verticeIndex,
                 Model.BACKPLATE.points
             )
 
@@ -340,7 +349,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.getX().toFloat(), cameraVelocity.getY().toFloat())
             gl.glUniform1f(entityProgram!!.time, time)
 
-            for ((model, data) in modelData) {
+            for ((model, data) in modelDataMap) {
                 if (data.instanceCount > 0) {
                     gl.glDrawArraysInstancedBaseInstance(
                         model.drawMode,
@@ -351,6 +360,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
                     )
                 }
             }
+
+            gl.glUseProgram(0)
+            gl.glUseProgram(debugProgram!!.name)
+
+            gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniform1f(entityProgram!!.time, time)
+
+            gl.glDrawArrays(GL.GL_LINES, 0, 2)
         }
 
         gl.glUseProgram(0)
@@ -395,8 +412,24 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
     class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
 
+
+    //TODO Clean this up... DO we need separate VBONames and Attributes classes? Why is this not an enum? Should it start at zero?
+    private interface VBONames {
+        companion object {
+            const val MODEL_VERTICES: Int = 1
+            const val INSTANCED_POSITIONS: Int = 2
+            const val INSTANCED_ROTATIONS: Int = 3
+            const val INSTANCED_SCALES: Int = 4
+            const val INSTANCED_COLORS: Int = 5
+            const val INSTANCED_HEALTHS: Int = 6
+            const val DEBUG_VERTICES: Int = 7
+            const val MAX: Int = 8
+        }
+    }
+
     enum class GeneralAttributes(val index: Int, val size: Int, val VBOBuffer: Int){
-        POSITION(0, 3, VBONames.MODEL_VERTICES)
+        POSITION(0, 3, VBONames.MODEL_VERTICES),
+        DEBUG_POSITION(6, 2, VBONames.DEBUG_VERTICES),
     }
 
     enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){

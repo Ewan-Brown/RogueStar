@@ -42,13 +42,17 @@ open class Program(gl: GL3,root: String,vertex: String,fragment: String) {
     }
 }
 
-class BackgroundProgram(gl: GL3,root: String,fragment: String) : WorldProgram(gl, root,"Game_Background", fragment){}
-
-class EntityProgram(gl: GL3,root: String, vertex: String,fragment: String) : WorldProgram(gl,root,vertex, fragment){}
-
-open class WorldProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl,root,vertex,fragment){
+class BackgroundProgram(gl: GL3, root: String, fragment: String) : Program(gl, root,"Game_Background", fragment){
     val velocity: Int = registerField(gl, "velocity")
     val viewMat: Int = registerField(gl, "viewZ")
 }
 
-class UIProgram(gl: GL3,root: String, vertex: String,fragment: String) : Program(gl,root,vertex,fragment){}
+class EntityProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){
+    val viewMat: Int = registerField(gl, "viewZ")
+}
+
+class UIProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){}
+
+class DebugLineProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){
+    val viewMat: Int = registerField(gl, "viewZ")
+}
