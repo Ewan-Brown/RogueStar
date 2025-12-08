@@ -154,7 +154,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
         //Push debug line vertex data
-        val debugLineVertices = floatArrayOf(0.0f, 0.0f, 100.0f, 100.0f)
+        val debugLineVertices = floatArrayOf(0.0f, 0.0f, -1.0f, 10.0f, 10.0f, 1.0f)
         val debugLineVertexBuffer = GLBuffers.newDirectFloatBuffer(debugLineVertices)
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_VERTICES])
         gl.glBufferData(
@@ -429,7 +429,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     enum class GeneralAttributes(val index: Int, val size: Int, val VBOBuffer: Int){
         POSITION(0, 3, VBONames.MODEL_VERTICES),
-        DEBUG_POSITION(6, 2, VBONames.DEBUG_VERTICES),
+        DEBUG_POSITION(6, 3, VBONames.DEBUG_VERTICES),
     }
 
     enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
