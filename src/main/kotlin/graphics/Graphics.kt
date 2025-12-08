@@ -166,6 +166,18 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
         //Push debug line vertex data
+        val debugLineColors = floatArrayOf(1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f)
+        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            debugLineColorBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            debugLineColorBuffer,
+            GL.GL_STATIC_DRAW
+        )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        //Push debug line vertex data
 //        val debugLineColors = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f)
 //        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
 //        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
@@ -417,19 +429,22 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     private interface VBONames {
         companion object {
             const val MODEL_VERTICES: Int = 1
+            // TODO Could/Should these instanced VBOs be interleaved?
             const val INSTANCED_POSITIONS: Int = 2
             const val INSTANCED_ROTATIONS: Int = 3
             const val INSTANCED_SCALES: Int = 4
             const val INSTANCED_COLORS: Int = 5
             const val INSTANCED_HEALTHS: Int = 6
             const val DEBUG_VERTICES: Int = 7
-            const val MAX: Int = 8
+            const val DEBUG_COLORS: Int = 8
+            const val MAX: Int = 9
         }
     }
 
     enum class GeneralAttributes(val index: Int, val size: Int, val VBOBuffer: Int){
         POSITION(0, 3, VBONames.MODEL_VERTICES),
         DEBUG_POSITION(6, 3, VBONames.DEBUG_VERTICES),
+        DEBUG_COLOR(7, 3, VBONames.DEBUG_COLORS),
     }
 
     enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
