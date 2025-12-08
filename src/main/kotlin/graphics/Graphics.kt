@@ -334,9 +334,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             val view = FloatArray(16)
             FloatUtil.makeIdentity(view)
 
-            val viewMat = calculateViewMat()
+            val cameraViewMatrix = calculateViewMat()
             for (i in 0..15) {
-                matBuffer.put(i, viewMat[i])
+                matBuffer.put(i, cameraViewMatrix[i])
             }
 
             gl.glClearBufferfv(GL2ES3.GL_COLOR, 0, clearColor.put(0, 0f).put(1, .33f).put(2, 0.66f).put(3, 1f))
@@ -345,7 +345,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             gl.glBindVertexArray(VAOs[0])
 
             gl.glUseProgram(backgroundProgram!!.name)
-            gl.glUniformMatrix4fv(backgroundProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniformMatrix4fv(backgroundProgram!!.cameraViewMatrix, 1, false, matBuffer)
             gl.glUniform1f(backgroundProgram!!.time, 0.0f)
             gl.glUniform2f(backgroundProgram!!.velocity, 0.0f, 0.0f)
 
@@ -357,7 +357,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
             gl.glUseProgram(0)
             gl.glUseProgram(entityProgram!!.name)
-            gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniformMatrix4fv(entityProgram!!.cameraViewMatrix, 1, false, matBuffer)
             gl.glUniform2f(backgroundProgram!!.velocity, cameraVelocity.getX().toFloat(), cameraVelocity.getY().toFloat())
             gl.glUniform1f(entityProgram!!.time, time)
 
@@ -376,7 +376,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             gl.glUseProgram(0)
             gl.glUseProgram(debugProgram!!.name)
 
-            gl.glUniformMatrix4fv(entityProgram!!.viewMat, 1, false, matBuffer)
+            gl.glUniformMatrix4fv(entityProgram!!.cameraViewMatrix, 1, false, matBuffer)
             gl.glUniform1f(entityProgram!!.time, time)
 
             gl.glDrawArrays(GL.GL_LINES, 0, 2)
@@ -393,8 +393,8 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     private fun transformScreenPosToGamePos(screenPos : Vector2) : Vector2 {
         val adjustedScreenPos =
             Vector2((screenPos.getX() / width.toDouble()) * 2 - 1, -(screenPos.getY() / height.toDouble()) * 2 + 1)
-        val viewMat4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
-        val vec4 = FloatUtil.multMatrixVec(viewMat4x4Flattened, floatArrayOf(adjustedScreenPos.getX().toFloat(), adjustedScreenPos.getY().toFloat(), 0.0f, 1.0f),
+        val cameraViewMatrix4x4Flattened = FloatUtil.invertMatrix(calculateViewMat(), FloatArray(16))
+        val vec4 = FloatUtil.multMatrixVec(cameraViewMatrix4x4Flattened, floatArrayOf(adjustedScreenPos.getX().toFloat(), adjustedScreenPos.getY().toFloat(), 0.0f, 1.0f),
             FloatArray(16)
         )
         return Vector2(vec4[0].toDouble(), vec4[1].toDouble())
