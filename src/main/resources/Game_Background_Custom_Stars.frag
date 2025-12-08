@@ -1,6 +1,6 @@
 #version 330
 
-uniform mat4 viewZ;
+uniform mat4 cameraViewMatrix;
 uniform vec2 velocity;
 uniform float time;
 
@@ -65,7 +65,7 @@ float val(vec2 absPos){
 
 void main() {
     vec2 localPos = xyVarying;
-    vec4 globalPos = inverse(viewZ) * vec4(localPos,0,1);
+    vec4 globalPos = inverse(cameraViewMatrix) * vec4(localPos,0,1);
 //    vec2 scaledPos = globalPos.xy/100.0;
 //    vec3 color = voronoi( 8.0*scaledPos );
 //    vec3 col = color.x*(0.5 + 0.5*sin(64.0*color.x))*vec3(1.0);

@@ -44,15 +44,15 @@ open class Program(gl: GL3,root: String,vertex: String,fragment: String) {
 
 class BackgroundProgram(gl: GL3, root: String, fragment: String) : Program(gl, root,"Game_Background", fragment){
     val velocity: Int = registerField(gl, "velocity")
-    val viewMat: Int = registerField(gl, "viewZ")
+    val cameraViewMatrix: Int = registerField(gl, "cameraViewMatrix")
 }
 
 class EntityProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){
-    val viewMat: Int = registerField(gl, "viewZ")
+    val cameraViewMatrix: Int = registerField(gl, "cameraViewMatrix")
 }
 
 class UIProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){}
 
 class DebugLineProgram(gl: GL3, root: String, vertex: String, fragment: String) : Program(gl, root, vertex, fragment){
-    val viewMat: Int = registerField(gl, "viewZ")
+    val cameraViewMatrix: Int = registerField(gl, "cameraViewMatrix")
 }

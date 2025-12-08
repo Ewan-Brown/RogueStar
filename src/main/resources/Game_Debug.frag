@@ -7,7 +7,7 @@ in vec3 interpolatedColor;
 layout (location = 0) out vec4 outputColor;
 
 uniform float time;
-uniform mat4 viewZ;
+uniform mat4 cameraViewMatrix;
 
 void main()
 {

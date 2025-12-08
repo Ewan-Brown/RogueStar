@@ -11,7 +11,7 @@ layout (location = 5) in float instanced_health;
 //r,g,b,a
 
 uniform float time;
-uniform mat4 viewZ;
+uniform mat4 cameraViewMatrix;
 uniform vec2 velocity;
 out vec3 interpolatedColor;
 out float health_out;
@@ -27,7 +27,7 @@ void main() {
     vec3 pos = instanced_pos;
     vec3 scaledPosition = position * instanced_scale;
 
-    gl_Position = viewZ * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
+    gl_Position = cameraViewMatrix * vec4(pos + rotate(scaledPosition, instanced_rotation), 1);
     interpolatedColor = instanced_color;
     health_out = instanced_health;
     xyVarying = scaledPosition.xy;
