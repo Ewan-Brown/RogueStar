@@ -33,7 +33,9 @@ interface KinematicEntityI : EntityI{
     fun applyTorque(torque: Double)
     fun checkNetForce() : Vector2
     fun checkNetTorque() : Double
-    
+
+    fun getLastForces(): List<Force>
+
     fun getParts(): List<EntityPartI>
     fun addPart(part: EntityPartI)
     fun addParts(parts: List<EntityPartImpl>)
@@ -49,7 +51,10 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     private var vel = Vector2()
     private var rotVelocity = 0.0
 
-    private var forceAccumulator = Vector2(0.0, 0.0) //TODO Case for a mutable version of Vector2...? or is that pedantic
+    private var lastForces = listOf<Force>()
+    private var currentForces = mutableListOf<Force>()
+
+    private var forceAccumulator = Vector2()
     private var torqueAccumulator = 0.0
     
     private var parts = mutableListOf<EntityPartI>()
@@ -132,6 +137,7 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
     override fun applyForce(force: Force) {
         forceAccumulator += force.vector
+        currentForces.add(force)
         val originToForce: Vector2 = force.localOrigin - getCenterOfMass()
         val r = originToForce.getMagnitude();
         val theta = force.vector.getAngleTo(originToForce)
@@ -145,6 +151,8 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     final override fun checkNetForce(): Vector2 {
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
+        lastForces = currentForces
+        currentForces = mutableListOf<Force>()
         return netForce
     }
 
@@ -168,6 +176,10 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
         for(part in parts){
             addPart(part)
         }
+    }
+
+    override fun getLastForces(): List<Force> {
+        return lastForces
     }
 
 }

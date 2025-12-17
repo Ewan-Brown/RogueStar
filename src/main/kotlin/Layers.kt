@@ -9,7 +9,7 @@ import physics.EntityI
 import physics.PhysicsInput
 import physics.PhysicsOutput
 
-data class DebugLineData(val p1: Vector2, val p2: Vector2, val colorData: Graphics.ColorData)
+data class DebugLineData(val p1: Vector2, val p2: Vector2, val colorData1: Graphics.ColorData, val colorData2: Graphics.ColorData)
 
 interface Layer {
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>)
