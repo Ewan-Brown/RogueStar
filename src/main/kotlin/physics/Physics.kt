@@ -3,7 +3,11 @@ package physics
 import DebugLineData
 import PhysicsLayerI
 import effects.Effect
+import graphics.BLUE
+import graphics.GREEN
 import graphics.Graphics
+import graphics.RED
+import graphics.WHITE
 import math.Polygon2
 import models.Model
 import math.Vector2
@@ -28,9 +32,20 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 
     override fun getDebugLines(): List<DebugLineData> {
-        return listOf(
-            DebugLineData(Vector2(), Vector2(1.0, 1.0), Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)),
-        )
+        val lines = mutableListOf<DebugLineData>()
+
+
+        for (entity in world.getEntities()) {
+            val pos = entity.getWorldTransform().translation
+            val com = entity.getCenterOfMass() + pos
+            val velocity = entity.getVelocity()
+            for (force in entity.getLastForces()) {
+                val fOrigin = force.localOrigin.rotate(entity.getWorldTransform().rotation) + pos
+                val fEnd = force.vector*500.0 + pos
+                lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
+            }
+        }
+        return lines
     }
 
     override fun addEntity(entity: KinematicEntityImpl) {

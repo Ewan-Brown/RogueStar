@@ -12,6 +12,7 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
+import graphics.Graphics.ColorData
 import graphics.Graphics.Renderable
 import java.awt.MouseInfo
 import java.lang.Error
@@ -34,6 +35,13 @@ interface GraphicsI{
     //TODO Genericize this!
     fun addListener(keyListener: KeyListener)
 }
+
+
+val RED = ColorData(1.0f, 0.0f, 0.0f, 1.0f)
+val GREEN = ColorData(0.0f, 1.0f, 0.0f, 1.0f)
+val BLUE = ColorData(0.0f, 0.0f, 1.0f, 1.0f)
+val WHITE = ColorData(1.0f, 1.0f, 1.0f, 1.0f)
+val BLACK = ColorData(0.0f, 0.0f, 0.0f, 1.0f)
 
 class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
@@ -153,42 +161,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        //Push debug line vertex data
-        val debugLineVertices = floatArrayOf(0.0f, 0.0f, -1.0f, 10.0f, 10.0f, 1.0f)
-        val debugLineVertexBuffer = GLBuffers.newDirectFloatBuffer(debugLineVertices)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_VERTICES])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            debugLineVertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            debugLineVertexBuffer,
-            GL.GL_STATIC_DRAW
-        )
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-        //Push debug line vertex data
-        val debugLineColors = floatArrayOf(1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f)
-        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
-        gl.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            debugLineColorBuffer.capacity().toLong() * java.lang.Float.BYTES,
-            debugLineColorBuffer,
-            GL.GL_STATIC_DRAW
-        )
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-        //Push debug line vertex data
-//        val debugLineColors = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f)
-//        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
-//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
-//        gl.glBufferData(
-//            GL.GL_ARRAY_BUFFER,
-//            debugLineColorBuffer.capacity().toLong() * java.lang.Float.BYTES,
-//            debugLineColorBuffer,
-//            GL.GL_STATIC_DRAW
-//        )
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
         checkError(gl, "initBuffers")
     }
 
@@ -239,6 +211,31 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             )
         }
 
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        //Push debug line vertex data
+        val debugLineVertices = debugLines.flatMap{listOf(it.p1.getX().toFloat(), it.p1.getY().toFloat(), 0.0f, it.p2.getX().toFloat(), it.p2.getY().toFloat(), 0.0f)}.toList().toFloatArray()
+        val debugLineVertexBuffer = GLBuffers.newDirectFloatBuffer(debugLineVertices)
+        println(debugLineVertices.toList())
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_VERTICES])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            debugLineVertexBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            debugLineVertexBuffer,
+            GL.GL_STATIC_DRAW
+        )
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        //Push debug line vertex data
+        val debugLineColors = debugLines.flatMap { listOf(it.colorData1.red, it.colorData1.green, it.colorData1.blue, it.colorData2.red, it.colorData2.green, it.colorData2.blue)}.toList().toFloatArray()
+        val debugLineColorBuffer = GLBuffers.newDirectFloatBuffer(debugLineColors)
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_COLORS])
+        gl.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            debugLineColorBuffer.capacity().toLong() * java.lang.Float.BYTES,
+            debugLineColorBuffer,
+            GL.GL_STATIC_DRAW
+        )
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     }
 
@@ -379,7 +376,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
             gl.glUniformMatrix4fv(entityProgram!!.cameraViewMatrix, 1, false, matBuffer)
             gl.glUniform1f(entityProgram!!.time, time)
 
-            gl.glDrawArrays(GL.GL_LINES, 0, 2)
+            gl.glDrawArrays(GL.GL_LINES, 0, debugLines.size*2)
         }
 
         gl.glUseProgram(0)
@@ -418,9 +415,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     /**
      * Stores RGBA, each from 0.0 - 1.0
+     * TODO Alpha is currently unused
      */
     //TODO generalize vector math so it can be reused here?
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
+
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
     class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
 
