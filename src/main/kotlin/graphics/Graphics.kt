@@ -110,7 +110,9 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         synchronized(modelDataMap) {
             //Update graphics buffers
             for (loadedModel in loadedModels) {
-                modelDataMap.getValue(loadedModel).instanceData = data.getValue(loadedModel)
+                if(modelDataMap.contains(loadedModel)) {
+                    modelDataMap.getValue(loadedModel).instanceData = data.getValue(loadedModel)
+                }
             }
         }
     }
@@ -216,7 +218,6 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
         //Push debug line vertex data
         val debugLineVertices = debugLines.flatMap{listOf(it.p1.getX().toFloat(), it.p1.getY().toFloat(), 0.0f, it.p2.getX().toFloat(), it.p2.getY().toFloat(), 0.0f)}.toList().toFloatArray()
         val debugLineVertexBuffer = GLBuffers.newDirectFloatBuffer(debugLineVertices)
-        println(debugLineVertices.toList())
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, VBOs[VBONames.DEBUG_VERTICES])
         gl.glBufferData(
             GL.GL_ARRAY_BUFFER,

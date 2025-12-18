@@ -3,6 +3,7 @@ package physics
 import DebugLineData
 import PhysicsLayerI
 import effects.Effect
+import graphics.BLACK
 import graphics.BLUE
 import graphics.GREEN
 import graphics.Graphics
@@ -37,11 +38,13 @@ class PhysicsLayer() : PhysicsLayerI{
 
         for (entity in world.getEntities()) {
             val pos = entity.getWorldTransform().translation
-            val com = entity.getCenterOfMass() + pos
+            val com = entity.getCenterOfMass()
             val velocity = entity.getVelocity()
+            lines.add(DebugLineData(com, pos, RED, GREEN))
+            lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, RED, GREEN))
             for (force in entity.getLastForces()) {
-                val fOrigin = force.localOrigin.rotate(entity.getWorldTransform().rotation) + pos
-                val fEnd = force.vector*500.0 + pos
+                val fOrigin = force.origin
+                val fEnd = force.vector*500.0 + fOrigin
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
         }
