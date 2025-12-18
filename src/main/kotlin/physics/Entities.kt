@@ -1,6 +1,8 @@
 package physics
 
 import graphics.Graphics
+import graphics.RED
+import graphics.WHITE
 import math.*
 import kotlin.math.abs
 import kotlin.math.sin
@@ -11,7 +13,7 @@ interface EntityI {
     fun getRenderableComponents() : List<Graphics.Renderable>
 }
 
-data class Force(val vector: Vector2, val localOrigin: Vector2)
+data class Force(val vector: Vector2, val origin: Vector2)
 
 interface KinematicEntityI : EntityI{
     fun getVelocity() : Vector2
@@ -62,14 +64,14 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     override fun getWorldTransform(): Transformation2 {
         return Transformation2(Vector2(position.getX(), position.getY()), rotation, scale)
     }
-    
-    //TODO This assumes that (0.0) of each part is also its center of mass! that is not enforced anywhere
+
+    //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
     override fun getCenterOfMass() : Vector2{
         var massVector = Vector2(0.0, 0.0)
         getParts().forEach {
             massVector += it.getLocalTransform().translation
         }
-        return massVector / getParts().size.toDouble()
+        return (massVector / getParts().size.toDouble()).rotate(getWorldTransform().rotation) + getWorldTransform().translation
     }
 
     private fun getFinalTransform2D(localTransform: Transformation2) : Transformation2{
@@ -138,10 +140,15 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     override fun applyForce(force: Force) {
         forceAccumulator += force.vector
         currentForces.add(force)
-        val originToForce: Vector2 = force.localOrigin - getCenterOfMass()
-        val r = originToForce.getMagnitude();
-        val theta = force.vector.getAngleTo(originToForce)
-        applyTorque(r * force.vector.getMagnitude() * sin(theta))
+
+        println("adding force $force")
+        println("size of forces : ${currentForces.size}")
+
+        val comToForce: Vector2 = force.origin - getCenterOfMass()
+        val r = comToForce.getMagnitude();
+        val theta = force.vector.getAngleTo(comToForce)
+        val torque = r * force.vector.getMagnitude() * sin(theta)
+        applyTorque(torque)
     }
 
     override fun applyTorque(torque: Double) {
@@ -149,6 +156,7 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
     }
 
     final override fun checkNetForce(): Vector2 {
+        println("checking forces, resetting")
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
@@ -197,6 +205,7 @@ class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.
     init {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
+        val block = BasicThruster()
 
         thruster.setColor(color)
         thruster.translate(Vector2(0.0, 0.0))
@@ -204,9 +213,13 @@ class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.
         cockpit.setColor(color)
         cockpit.translate(Vector2(-1.0, 0.0))
 
+        block.setColor(color)
+        block.translate(Vector2(1.0, 0.0))
+
         addParts(listOf(
             thruster,
-            cockpit))
+            cockpit,
+            block))
     }
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
@@ -214,22 +227,13 @@ class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.
     fun getRadars() : List<Radar> {return getParts().filterIsInstance<Radar>()}
 
     override fun update(timeStep: Double) {
-        var sumThrust: Vector2 = Vector2(0.0, 0.0)
-        var sumOrigin : Vector2 = Vector2(0.0, 0.0)
-        var appliedTorque: Double = 0.0
         getParts().filterIsInstance<Thruster>().forEach {
-            sumThrust += it.getCurrentThrust()
-            sumOrigin += it.getLocalTransform().translation
+            if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
+                this.applyForce(Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation));
+            }
         }
-        val avgOrigin = sumOrigin/getParts().filterIsInstance<Thruster>().size.toDouble()
         getParts().filterIsInstance<Torquer>().forEach {
-            appliedTorque += it.getTorque()
-        }
-        if(sumThrust.getMagnitude() > Double.MIN_VALUE){
-            this.applyForce(Force(sumThrust, avgOrigin))
-        }
-        if(abs(appliedTorque) > Double.MIN_VALUE){
-            this.applyTorque(appliedTorque)
+            this.applyTorque(it.getTorque())
         }
     }
 

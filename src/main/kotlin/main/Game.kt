@@ -24,7 +24,9 @@ import DebugLineData
 import controllers.Controller
 import controllers.PlayerController
 import graphics.CameraDetails
+import graphics.GREEN
 import graphics.GraphicsI
+import graphics.WHITE
 import physics.*
 
 fun loadModels() : Map<Int, Model> {
@@ -76,7 +78,7 @@ fun main() {
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
 
-    val playerEntity = ControllableEntity(Graphics.ColorData(Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat()))
+    val playerEntity = ControllableEntity(GREEN)
     physicsLayer.addEntity(playerEntity)
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
