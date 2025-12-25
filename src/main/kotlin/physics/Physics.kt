@@ -63,8 +63,6 @@ class PhysicsLayer() : PhysicsLayerI{
         public fun addEntity(entity: KinematicEntityI)
     }
 
-    data class KinematicData(val velocity: Vector2, val rotationalVelocity: Double)
-
     private class FlatWorld : World {
         private val entities = mutableListOf<KinematicEntityI>()
 

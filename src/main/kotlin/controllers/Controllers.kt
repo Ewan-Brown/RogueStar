@@ -3,7 +3,6 @@ package controllers
 import ControllerLayerI
 import DebugLineData
 import graphics.Graphics
-import math.Transformation3
 import math.Vector2
 import models.Model
 import physics.ControllableEntity
@@ -95,7 +94,6 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
         }
 
         for (thruster in thrusters) {
-
             thruster.setOrientation(thrust)
             thruster.setThrottle(1.0)
         }

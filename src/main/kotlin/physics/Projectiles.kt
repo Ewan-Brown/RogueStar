@@ -1,8 +1,8 @@
 package physics
 
+import EffectsConsumer
 import math.Transformation3
 import math.Vector2
-import physics.PhysicsLayer.KinematicData
 
 interface PointProjectileI : KinematicEntityI{
     fun getPointOfContact() : Vector2
@@ -12,7 +12,7 @@ interface PointProjectileI : KinematicEntityI{
     fun getShieldDamage() : Int
 }
 
-open class DumbProjectile() : DumbEntity(), PointProjectileI{
+open class DumbProjectile(effectsConsumer: EffectsConsumer) : DumbEntity(effectsConsumer), PointProjectileI{
     override fun getPointOfContact(): Vector2 {
         return Vector2(0.0, 0.0)
     }
