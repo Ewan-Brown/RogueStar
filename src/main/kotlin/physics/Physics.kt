@@ -31,7 +31,6 @@ class PhysicsLayer() : PhysicsLayerI{
     override fun getDebugLines(): List<DebugLineData> {
         val lines = mutableListOf<DebugLineData>()
 
-
         for (entity in world.getEntities()) {
             val pos = entity.getWorldTransform().translation
             val com = entity.getCenterOfMass()

@@ -44,7 +44,6 @@ fun loadModels() : Map<Int, Model> {
 }
 
 fun main() {
-
     val timeStep = 1.0;
 
     val entityModels = loadModels().values.toMutableList();
@@ -77,12 +76,10 @@ fun main() {
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
-
     val playerEntity = ControllableEntity()
     physicsLayer.addEntity(playerEntity)
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
-
 
     while(true){
         game.update(timeStep)
