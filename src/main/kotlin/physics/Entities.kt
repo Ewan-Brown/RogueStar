@@ -3,12 +3,11 @@ package physics
 import EffectsConsumer
 import EntityConsumer
 import effects.Effect
+import effects.SimpleParticle
 import graphics.Graphics
 import math.*
+import kotlin.contracts.SimpleEffect
 import kotlin.math.sin
-
-
-data class Force(val vector: Vector2, val origin: Vector2)
 
 interface KinematicEntityI{
     fun getVelocity() : Vector2
@@ -89,7 +88,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         return Transformation2(finalTranslation, finalRotation, finalScale)
     }
 
-    fun getRenderableComponents() : List<Graphics.Renderable> {
+    fun getRenderables() : List<Graphics.Renderable> {
         return getParts().map {
             Graphics.Renderable(
                 it.getModel(), Transformation3(getFinalTransform2D(it.getLocalTransform()), this.zpos + it.getLocalZPos()), it.getColor(), it.getMetadata()
@@ -136,9 +135,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         forceAccumulator += force.vector
         currentForces.add(force)
 
-        println("adding force $force")
-        println("size of forces : ${currentForces.size}")
-
         val comToForce: Vector2 = force.origin - getCenterOfMass()
         val r = comToForce.getMagnitude();
         val theta = force.vector.getAngleTo(comToForce)
@@ -151,7 +147,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     }
 
     final override fun checkNetForce(): Vector2 {
-        println("checking forces, resetting")
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
@@ -228,6 +223,10 @@ class ControllableEntity() : AbstractKinematicEntity() {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
                 val force = Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation)
                 this.applyForce(force);
+                sendEffect(SimpleParticle(force.origin,
+                    it.getCurrentThrust() + this.getVelocity(),
+                    it.getLocalTransform().rotation + this.getWorldTransform().rotation,
+                    100))
             }
         }
         getParts().filterIsInstance<Torquer>().forEach {

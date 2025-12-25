@@ -3,10 +3,12 @@ package effects
 import DebugLineData
 import EffectsLayerI
 import graphics.Graphics
-import models.Model
+import graphics.RED
 import math.Transformation3
+import models.Model
 import math.Vector2
 import math.Vector3
+import java.awt.Color
 
 data class EffectsInput(val timeStep: Double)
 
@@ -43,18 +45,38 @@ interface Effect{
     fun markedForRemoval(): Boolean
 }
 
-//TODO What about entities that can save on resources by not needing updates, rather just calculating their transformation when called?
-private class ExhaustEntity(val velocity: Vector2, var angularVelocity : Double = 0.0)
+//TODO Consider entities that don't incrementally update, that are formulaic rather than iterative?
+class SimpleParticle(startPosition: Vector2, startVelocity: Vector2, startAngle: Double, startLife: Int)
     : Effect {
-    override fun getRenderables(): List<Graphics.Renderable> {
-        TODO("Not yet implemented")
+
+
+    var position: Vector2 = startPosition
+    var angle : Double = startAngle
+
+    var velocity: Vector2 = startVelocity
+    var angularVelocity : Double = Math.random() * 0.5 - 0.25
+
+    var life: Int = startLife
+
+    var friction = 0.01;
+
+    override fun getRenderables() : List<Graphics.Renderable> {
+        return listOf(Graphics.Renderable(
+            Model.SQUARE, Transformation3(Vector3(position), angle, 1.0 ), RED, Graphics.MetaData(1.0f)
+        ))
     }
 
     override fun update(timeStep: Double) {
-        TODO("Not yet implemented")
+        position += velocity * timeStep
+        angle += angularVelocity * timeStep
+
+        velocity *= (1.0 - friction * timeStep)
+        angularVelocity *= (1.0 - friction * timeStep)
+
+        life--
     }
 
     override fun markedForRemoval(): Boolean {
-        TODO("Not yet implemented")
+        return life <= 0;
     }
 }
