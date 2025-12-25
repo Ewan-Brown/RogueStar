@@ -3,15 +3,11 @@ package physics
 import DebugLineData
 import PhysicsLayerI
 import effects.Effect
-import graphics.BLACK
-import graphics.BLUE
 import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
-import math.Polygon2
 import models.Model
-import math.Vector2
 import kotlin.collections.HashMap
 
 data class PhysicsInput(val timeStep: Double)
@@ -51,7 +47,7 @@ class PhysicsLayer() : PhysicsLayerI{
         return lines
     }
 
-    override fun addEntity(entity: KinematicEntityImpl) {
+    override fun addEntity(entity: AbstractKinematicEntity) {
         world.addEntity(entity)
     }
 
@@ -59,45 +55,40 @@ class PhysicsLayer() : PhysicsLayerI{
 
     interface World{
         public fun update(input: PhysicsInput)
-        public fun getEntities(): List<KinematicEntityI>
-        public fun addEntity(entity: KinematicEntityI)
+        public fun getEntities(): List<AbstractKinematicEntity>
+        public fun addEntity(entity: AbstractKinematicEntity)
     }
 
     private class FlatWorld : World {
-        private val entities = mutableListOf<KinematicEntityI>()
+        private val entities = mutableListOf<AbstractKinematicEntity>()
 
         override fun update(input : PhysicsInput) {
 
             // Do physics updates
             for (entity in entities) {
                 //Calculate new positions
+                var velocity = entity.getVelocity()
+                var rotVelocity = entity.getRotationalVelocity()
+                entity.translate(velocity * input.timeStep)
+                entity.rotate(rotVelocity * input.timeStep)
 
-                    var velocity = entity.getVelocity()
-                    var rotVelocity = entity.getRotationalVelocity()
-                    entity.translate(velocity * input.timeStep)
-                    entity.rotate(rotVelocity * input.timeStep)
+                //Calculate new derivatives
+                velocity = entity.getVelocity() + entity.checkNetForce()/entity.getMass()
+                rotVelocity = entity.getRotationalVelocity() + entity.checkNetTorque()/entity.getMass()
 
-                    //Calculate new derivatives
-                    velocity = entity.getVelocity() + entity.checkNetForce()/entity.getMass()
-                    rotVelocity = entity.getRotationalVelocity() + entity.checkNetTorque()/entity.getMass()
-
-                    //Apply friction
-                    velocity *= 0.99
-                    rotVelocity *= 0.99
-                    entity.setVelocity(velocity)
-                    entity.setRotationalVelocity(rotVelocity)
+                //Apply friction
+                velocity *= 0.99
+                rotVelocity *= 0.99
+                entity.setVelocity(velocity)
+                entity.setRotationalVelocity(rotVelocity)
             }
 
-            for(projectile in entities.filterIsInstance<PointProjectileI>()){
+            for(projectile in entities.filterIsInstance<HasCollidingPoint>()){
                 val pointOfContactLocal = projectile.getPointOfContact()
                 val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldTransform().rotation) + projectile.getWorldTransform().translation
                 for(entity in entities){
                     if(entity != projectile){
                         //TODO Do cheap preliminary collision checking
-//                        for (part in entity.getParts()){
-//                            if(part.)
-//                            part.onDamage(1)
-//                        }
                     }
                 }
             }
@@ -109,11 +100,11 @@ class PhysicsLayer() : PhysicsLayerI{
             entities.removeIf{it.markedForRemoval()}
 
         }
-        override fun getEntities(): List<KinematicEntityI> {
+        override fun getEntities(): List<AbstractKinematicEntity> {
             return entities
         }
 
-        override fun addEntity(entity: KinematicEntityI) {
+        override fun addEntity(entity: AbstractKinematicEntity) {
             entities.add(entity)
         }
     }

@@ -1,23 +1,21 @@
 package physics
 
-import EffectsConsumer
-import math.Transformation3
 import math.Vector2
 
-interface PointProjectileI : KinematicEntityI{
+interface HasCollidingPoint : KinematicEntityI{
     fun getPointOfContact() : Vector2
-    fun doesCollide(otherEntity: KinematicEntityI) : Boolean
+    fun doesCollideWith(otherEntity: KinematicEntityI) : Boolean
     fun doesPenetrateShield() : Boolean
     fun getHullDamage() : Int
     fun getShieldDamage() : Int
 }
 
-open class DumbProjectile(effectsConsumer: EffectsConsumer) : DumbEntity(effectsConsumer), PointProjectileI{
+open class DumbProjectile() : DumbEntity(), HasCollidingPoint{
     override fun getPointOfContact(): Vector2 {
         return Vector2(0.0, 0.0)
     }
 
-    override fun doesCollide(otherEntity: KinematicEntityI): Boolean {
+    override fun doesCollideWith(otherEntity: KinematicEntityI): Boolean {
         return false;
     }
 

@@ -4,8 +4,7 @@ import models.Model
 import effects.EffectsInput
 import graphics.Graphics
 import math.Vector2
-import physics.KinematicEntityImpl
-import physics.EntityI
+import physics.AbstractKinematicEntity
 import physics.PhysicsInput
 import physics.PhysicsOutput
 
@@ -25,7 +24,7 @@ interface EffectsLayerI : Layer, EffectsConsumer{
 }
 
 interface EntityConsumer {
-    fun addEntity(entity: KinematicEntityImpl)
+    fun addEntity(entity: AbstractKinematicEntity)
 }
 
 interface EffectsConsumer {
@@ -34,5 +33,5 @@ interface EffectsConsumer {
 
 interface ControllerLayerI : Layer{
     fun update()
-    fun <T: EntityI> addControllerEntry(controller: Controller<T>, entity: T)
+    fun <T: AbstractKinematicEntity> addControllerEntry(controller: Controller<T>, entity: T)
 }

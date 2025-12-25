@@ -146,7 +146,7 @@ interface Radar : EntityPartI{
 interface Gun : EntityPartI{
     abstract fun getFiringPosition() : Transformation3
     abstract fun getFiringOrientation() : Double
-    abstract fun createProjectile() : KinematicEntityImpl
+    abstract fun createProjectile() : AbstractKinematicEntity
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
