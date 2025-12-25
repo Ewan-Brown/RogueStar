@@ -7,6 +7,7 @@ import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
+import math.Vector2
 import models.Model
 import kotlin.collections.HashMap
 
@@ -22,7 +23,7 @@ class PhysicsLayer() : PhysicsLayerI{
 
     override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {
         for (entity in world.getEntities()) {
-            for (renderableComponent in entity.getRenderableComponents()) {
+            for (renderableComponent in entity.getRenderables()) {
                 modelDataMap[renderableComponent.model]!!.add(renderableComponent)
             }
         }
@@ -109,5 +110,4 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 }
 
-
-
+data class Force(val vector: Vector2, val origin: Vector2)

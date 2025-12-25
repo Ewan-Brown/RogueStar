@@ -77,6 +77,8 @@ fun main() {
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
     val playerEntity = ControllableEntity()
+    playerEntity.setEffectsConsumer(effectsLayer)
+    playerEntity.setEntityConsumer(physicsLayer)
     physicsLayer.addEntity(playerEntity)
     val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
