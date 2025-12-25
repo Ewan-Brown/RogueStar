@@ -47,7 +47,7 @@ interface Effect{
 private class ExhaustEntity(val velocity: Vector2, var angularVelocity : Double = 0.0)
     : Effect {
 
-//    private val MAX_LIFE: Int = 100
+    //    private val MAX_LIFE: Int = 100
 //    private var lifetime: Int = MAX_LIFE
 //    private var isDead = false
 //
@@ -78,4 +78,15 @@ private class ExhaustEntity(val velocity: Vector2, var angularVelocity : Double 
 //    override fun markedForRemoval(): Boolean {
 //        return lifetime < 0 || isDead
 //    }
+    override fun getRenderables(): List<Graphics.Renderable> {
+        TODO("Not yet implemented")
+    }
+
+    override fun update(timeStep: Double) {
+        TODO("Not yet implemented")
+    }
+
+    override fun markedForRemoval(): Boolean {
+        TODO("Not yet implemented")
+    }
 }

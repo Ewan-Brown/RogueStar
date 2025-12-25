@@ -5,14 +5,14 @@ import DebugLineData
 import graphics.Graphics
 import math.Vector2
 import models.Model
+import physics.AbstractKinematicEntity
 import physics.ControllableEntity
-import physics.EntityI
 import java.awt.event.KeyEvent
 import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<T: EntityI>(val controller : Controller<T>, val entity: T){
+    private class ControllerEntityEntry<T: AbstractKinematicEntity>(val controller : Controller<T>, val entity: T){
         fun update(){
             controller.update(entity)
         }
@@ -31,12 +31,12 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T : EntityI> addControllerEntry(controller: Controller<T>, entity: T) {
+    override fun <T : AbstractKinematicEntity> addControllerEntry(controller: Controller<T>, entity: T) {
         controllerEntryList.add(ControllerEntityEntry(controller, entity))
     }
 }
 
-abstract class Controller<T : EntityI>(){
+abstract class Controller<T : AbstractKinematicEntity>(){
     abstract fun update(plant: T)
 }
 

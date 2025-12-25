@@ -1,22 +1,16 @@
 package physics
 
 import EffectsConsumer
+import EntityConsumer
+import effects.Effect
 import graphics.Graphics
-import graphics.RED
-import graphics.WHITE
 import math.*
-import kotlin.math.abs
 import kotlin.math.sin
 
-interface EntityI {
-    fun getWorldTransform() : Transformation2
-    fun markedForRemoval() : Boolean
-    fun getRenderableComponents() : List<Graphics.Renderable>
-}
 
 data class Force(val vector: Vector2, val origin: Vector2)
 
-interface KinematicEntityI : EntityI{
+interface KinematicEntityI{
     fun getVelocity() : Vector2
     fun getRotationalVelocity() : Double
 
@@ -25,6 +19,8 @@ interface KinematicEntityI : EntityI{
 
     fun translate(translation: Vector2)
     fun rotate(rotation: Double)
+
+    fun getWorldTransform() : Transformation2
 
     fun scale(scale: Double)
 
@@ -44,9 +40,20 @@ interface KinematicEntityI : EntityI{
     fun addParts(parts: List<EntityPartImpl>)
 }
 
-//TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
-abstract class KinematicEntityImpl(private val effectsConsumer: EffectsConsumer) : KinematicEntityI{
+abstract class AbstractKinematicEntity() : KinematicEntityI{
 
+    private var effectsConsumer: EffectsConsumer? = null
+    private var entityConsumer: EntityConsumer? = null
+
+    fun setEffectsConsumer(effectsConsumer: EffectsConsumer){this.effectsConsumer = effectsConsumer}
+    fun setEntityConsumer(entityConsumer: EntityConsumer){this.entityConsumer = entityConsumer}
+
+    protected fun sendEffect(effect: Effect){
+        if(effectsConsumer != null){effectsConsumer!!.addEffect(effect)}
+    }
+    protected fun sendEntity(entity: AbstractKinematicEntity){
+        if(entityConsumer != null){entityConsumer!!.addEntity(entity)}
+    }
     private var position = Vector2()
     private var zpos = 0.0;
     private var rotation = 0.0
@@ -82,24 +89,11 @@ abstract class KinematicEntityImpl(private val effectsConsumer: EffectsConsumer)
         return Transformation2(finalTranslation, finalRotation, finalScale)
     }
 
-    override fun getRenderableComponents() : List<Graphics.Renderable> {
+    fun getRenderableComponents() : List<Graphics.Renderable> {
         return getParts().map {
             Graphics.Renderable(
-//                val transform = getFinalTransform2D(part.getLocalTransform())
-//                val polygon = part.getModel().asVectors().map { point ->
                 it.getModel(), Transformation3(getFinalTransform2D(it.getLocalTransform()), this.zpos + it.getLocalZPos()), it.getColor(), it.getMetadata()
             )
-//            return getEntityParts().map { part ->
-//                object : KinematicPart{
-//                    override fun getPolygon(): List<Vector2> {
-//                        val transform = getFinalTransform2D(part.getLocalTransform())
-//                        val polygon = part.getModel().asVectors().map { point ->
-//                            (point * transform.scale).rotate(transform.rotation) + transform.translation
-//                        }
-//                        return polygon
-//                    }
-//                }
-//            }
         }
     }
 
@@ -107,7 +101,7 @@ abstract class KinematicEntityImpl(private val effectsConsumer: EffectsConsumer)
         return parts
     }
 
-    abstract override fun markedForRemoval() : Boolean
+    abstract fun markedForRemoval() : Boolean
     override fun getRotationalVelocity(): Double {
         return rotVelocity
     }
@@ -193,7 +187,7 @@ abstract class KinematicEntityImpl(private val effectsConsumer: EffectsConsumer)
 
 }
 
-open class DumbEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl(effectsConsumer) {
+open class DumbEntity() : AbstractKinematicEntity() {
     init {
         addPart(EntityPartImpl())
     }
@@ -202,7 +196,7 @@ open class DumbEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl(ef
 
 }
 
-class ControllableEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl(effectsConsumer) {
+class ControllableEntity() : AbstractKinematicEntity() {
     init {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
@@ -234,9 +228,6 @@ class ControllableEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
                 val force = Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation)
                 this.applyForce(force);
-
-                val effect = Effe
-
             }
         }
         getParts().filterIsInstance<Torquer>().forEach {
