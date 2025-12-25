@@ -16,13 +16,19 @@ interface Layer {
     fun getDebugLines() : List<DebugLineData>
 }
 
-interface PhysicsLayerI : Layer{
+interface PhysicsLayerI : Layer, EntityConsumer{
     fun update(input: PhysicsInput) : PhysicsOutput
+}
+
+interface EffectsLayerI : Layer, EffectsConsumer{
+    fun update(input: EffectsInput)
+}
+
+interface EntityConsumer {
     fun addEntity(entity: KinematicEntityImpl)
 }
 
-interface EffectsLayerI : Layer{
-    fun update(input: EffectsInput)
+interface EffectsConsumer {
     fun addEffect(effect: Effect)
 }
 

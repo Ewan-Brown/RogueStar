@@ -1,5 +1,6 @@
 package physics
 
+import EffectsConsumer
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
@@ -44,7 +45,7 @@ interface KinematicEntityI : EntityI{
 }
 
 //TODO Add a way for entity to reference PhysicsLayerI to add new entities or create effects etc.
-abstract class KinematicEntityImpl() : KinematicEntityI{
+abstract class KinematicEntityImpl(private val effectsConsumer: EffectsConsumer) : KinematicEntityI{
 
     private var position = Vector2()
     private var zpos = 0.0;
@@ -192,7 +193,7 @@ abstract class KinematicEntityImpl() : KinematicEntityI{
 
 }
 
-open class DumbEntity() : KinematicEntityImpl() {
+open class DumbEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl(effectsConsumer) {
     init {
         addPart(EntityPartImpl())
     }
@@ -201,17 +202,19 @@ open class DumbEntity() : KinematicEntityImpl() {
 
 }
 
-class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)) : KinematicEntityImpl() {
+class ControllableEntity(effectsConsumer: EffectsConsumer) : KinematicEntityImpl(effectsConsumer) {
     init {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
         val block = BasicThruster()
 
-        thruster.setColor(color)
-        thruster.translate(Vector2(0.0, 0.0))
+        val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 
         cockpit.setColor(color)
-        cockpit.translate(Vector2(-1.0, 0.0))
+        cockpit.translate(Vector2(0.0, 0.0))
+
+        thruster.setColor(color)
+        thruster.translate(Vector2(-1.0, 0.0))
 
         block.setColor(color)
         block.translate(Vector2(1.0, 0.0))
@@ -229,7 +232,11 @@ class ControllableEntity(color: Graphics.ColorData = Graphics.ColorData(1.0f, 1.
     override fun update(timeStep: Double) {
         getParts().filterIsInstance<Thruster>().forEach {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
-                this.applyForce(Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation));
+                val force = Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation)
+                this.applyForce(force);
+
+                val effect = Effe
+
             }
         }
         getParts().filterIsInstance<Torquer>().forEach {
