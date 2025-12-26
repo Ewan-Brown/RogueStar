@@ -19,11 +19,9 @@ interface KinematicEntityI{
     fun translate(translation: Vector2)
     fun rotate(rotation: Double)
 
-    fun getWorldTransform() : Transformation2
-
     fun scale(scale: Double)
 
-    fun getCenterOfMass() : Vector2
+    fun getCenterOfMass() : Coordinate<ShipSpace>
     fun getMass() : Double
     fun update(timeStep: Double)
 
@@ -37,6 +35,10 @@ interface KinematicEntityI{
     fun getParts(): List<EntityPartI>
     fun addPart(part: EntityPartI)
     fun addParts(parts: List<EntityPartImpl>)
+
+    fun getTransform() : Transform<ShipSpace, WorldSpace>
+    fun getOrientation() : Orientation<WorldSpace>
+    fun getCoordinate() : Coordinate<WorldSpace>
 }
 
 abstract class AbstractKinematicEntity() : KinematicEntityI{
@@ -68,31 +70,48 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     
     private var parts = mutableListOf<EntityPartI>()
 
-    override fun getWorldTransform(): Transformation2 {
-        return Transformation2(Vector2(position.getX(), position.getY()), rotation, scale)
-    }
-
     //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
-    override fun getCenterOfMass() : Vector2{
-        var massVector = Vector2(0.0, 0.0)
+    override fun getCenterOfMass() : Coordinate<ShipSpace>{
+        var cumulativeMassVector = Vector2()
+        var cumulativeMassValue = 0.0
         getParts().forEach {
-            massVector += it.getLocalTransform().translation
+            cumulativeMassVector += it.getCenterOfMass().applyTransform(it.getTransform()).getVector()
+            cumulativeMassValue += it.getMass()
         }
-        return (massVector / getParts().size.toDouble()).rotate(getWorldTransform().rotation) + getWorldTransform().translation
+
+        val dividedMass = cumulativeMassVector / cumulativeMassValue
+
+        return Coordinate(dividedMass)
     }
 
-    private fun getFinalTransform2D(localTransform: Transformation2) : Transformation2{
-        val finalTranslation = getWorldTransform().translation + (localTransform.translation * getWorldTransform().scale).rotate(getWorldTransform().rotation)
-        val finalRotation = getWorldTransform().rotation + localTransform.rotation
-        val finalScale = getWorldTransform().scale * localTransform.scale
-        return Transformation2(finalTranslation, finalRotation, finalScale)
-    }
+//    private fun getFinalTransform2D(localTransform: Transformation2) : Transformation2{
+//        val finalTranslation = getWorldTransform().translation + (localTransform.translation * getWorldTransform().scale).rotate(getWorldTransform().rotation)
+//        val finalRotation = getWorldTransform().rotation + localTransform.rotation
+//        val finalScale = getWorldTransform().scale * localTransform.scale
+//        return Transformation2(finalTranslation, finalRotation, finalScale)
+//    }
 
     fun getRenderables() : List<Graphics.Renderable> {
-        return getParts().map {
-            Graphics.Renderable(
-                it.getModel(), Transformation3(getFinalTransform2D(it.getLocalTransform()), this.zpos + it.getLocalZPos()), it.getColor(), it.getMetadata()
-            )
+        println("AbstractKinematicEntity.getRenderables")
+        return getParts().map { part ->
+            val partToWorldTransform = combineTransforms(part.getTransform(), this.getTransform())
+
+            //TODO Can we clean this up? This needs to be reused, and these magic '0.0' origins should maybe be derived somewhere...
+            // Maybe we can package this data nicely
+            val partCoordInWorldSpace = Coordinate<PartSpace>(Vector2()).applyTransform(partToWorldTransform)
+            val partOrientationInWorldSpace = Orientation<PartSpace>(0.0).applyTransform(partToWorldTransform)
+            val partZHeightInWorldSpace = ZHeight<PartSpace>(0.0).applyTransform(partToWorldTransform)
+
+            println("partCoordInWorldSpace = ${partCoordInWorldSpace.getVector()}")
+            println("partOrientationInWorldSpace = ${partOrientationInWorldSpace.getAngle()}")
+            println("partZHeightInWorldSpace = ${partZHeightInWorldSpace.getZ()}")
+
+            Graphics.Renderable(part.getModel(),
+                partCoordInWorldSpace,
+                partOrientationInWorldSpace,
+                partZHeightInWorldSpace,
+                part.getScale() * scale,
+                part.getColor(), part.getMetadata())
         }
     }
 
@@ -180,6 +199,17 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         return lastForces
     }
 
+    final override fun getOrientation(): Orientation<WorldSpace> {
+        return Orientation(rotation)
+    }
+
+    final override fun getTransform(): Transform<ShipSpace, WorldSpace> {
+        return Transform(position, rotation, zpos)
+    }
+
+    final override fun getCoordinate(): Coordinate<WorldSpace> {
+        return Coordinate(position)
+    }
 }
 
 open class DumbEntity() : AbstractKinematicEntity() {
@@ -232,13 +262,16 @@ class ControllableEntity() : AbstractKinematicEntity() {
     override fun update(timeStep: Double) {
         getParts().filterIsInstance<Thruster>().forEach {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
-                val partCenterLocationInWorldCoords = it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation
-                val force = Force(it.getCurrentThrust(), partCenterLocationInWorldCoords)
+                val partCoordsLocal: Coordinate<ShipSpace> = it.getCoordinate()
+                val partCoordsWorld: Coordinate<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
+                val partOrientation : Orientation<WorldSpace> = it.getOrientation().applyTransform(this.getTransform())
+
+                val force = Force(it.getCurrentThrust(), partCoordsLocal)
                 this.applyForce(force);
                 for(i in 0 until 100){
-                    sendEffect(SimpleParticle(force.origin,
+                    sendEffect(SimpleParticle(partCoordsWorld,
                         (it.getCurrentThrust() + this.getVelocity()).rotate(Math.random() * 0.1 * getRandomSign()) * (0.8 + Math.random()*0.2),
-                        it.getLocalTransform().rotation + this.getWorldTransform().rotation,
+                        partOrientation,
                         Math.random() * 0.2 + 0.2,
                         100))
                 }
@@ -249,13 +282,15 @@ class ControllableEntity() : AbstractKinematicEntity() {
             this.applyTorque(it.getTorque())
         }
         getParts().filterIsInstance<Gun>().forEach {
-            val partCenterLocationInWorldCoords = it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation
-            val partRotationInWorldCoords = it.getLocalTransform().rotation + this.getWorldTransform().rotation + it.getFiringOrientation()
+            val partCoordsLocal: Coordinate<ShipSpace> = it.getCoordinate()
+            val partCoordsWorld: Coordinate<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
+            val partOrientation : Orientation<WorldSpace> = it.getOrientation().applyTransform(this.getTransform())
             if(it.isFiring()){
                 val projectile = it.createProjectile()
-                projectile.translate(partCenterLocationInWorldCoords)
-                projectile.rotate(partRotationInWorldCoords)
-                projectile.setVelocity(this.getVelocity() + Vector2(partRotationInWorldCoords) * 0.3)
+                //TODO introduce 'setPosition, setRotation etc that use SpacialConcepts instead of untyped vector2/double)
+                projectile.translate(partCoordsWorld.getVector())
+                projectile.rotate(partOrientation.getAngle())
+                projectile.setVelocity(this.getVelocity() + Vector2(partOrientation.getAngle()) * 0.3)
                 sendEntity(projectile)
             }
         }

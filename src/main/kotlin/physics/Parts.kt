@@ -1,26 +1,28 @@
 package physics
 
 import graphics.Graphics
-import math.Transformation2
-import math.Transformation3
-import math.Vector2
+import math.*
 import models.Model
 import java.util.*
 
 
 interface EntityPartI {
-    abstract fun getModel() : Model
-    abstract fun getColor() : Graphics.ColorData
-    abstract fun setColor(color: Graphics.ColorData)
-    abstract fun getMetadata() : Graphics.MetaData
-    abstract fun isCollideable() : Boolean
-    abstract fun getLocalTransform() : Transformation2
-    abstract fun getLocalZPos() : Double
-    abstract fun getDensity() : Double
-    abstract fun translate(vector: Vector2)
-    abstract fun rotate(theta: Double)
-    abstract fun scale(s: Double)
-    abstract fun onDamage(d: Int)
+    fun getModel() : Model
+    fun getScale() : Double
+    fun getColor() : Graphics.ColorData
+    fun setColor(color: Graphics.ColorData)
+    fun getMetadata() : Graphics.MetaData
+    fun isCollideable() : Boolean
+    fun getCenterOfMass() : Coordinate<PartSpace>
+    fun getZHeight() : ZHeight<ShipSpace>
+    fun getMass(): Double
+    fun translate(vector: Vector2)
+    fun rotate(theta: Double)
+    fun scale(s: Double)
+    fun onDamage(d: Int)
+    fun getTransform() : Transform<PartSpace, ShipSpace>
+    fun getCoordinate() : Coordinate<ShipSpace>
+    fun getOrientation() : Orientation<ShipSpace>
 }
 
 open class EntityPartImpl() : EntityPartI {
@@ -35,7 +37,6 @@ open class EntityPartImpl() : EntityPartI {
 
 
     //TODO We can deduplicate this stuff between this and Ship
-    override fun getLocalTransform(): Transformation2 {return Transformation2(position, rotation, scale) }
     override fun translate(vector: Vector2) {
         this.position += vector
     }
@@ -52,9 +53,16 @@ open class EntityPartImpl() : EntityPartI {
         life -= d
     }
 
-    override fun getLocalZPos(): Double = zpos
+    override fun getZHeight(): ZHeight<ShipSpace> = ZHeight(zpos)
+    override fun getMass(): Double {
+        return 1.0
+    }
 
     override fun getModel(): Model = Model.SQUARE
+    override fun getScale(): Double {
+        return scale;
+    }
+
     override fun getColor() = Graphics.ColorData(color.red*(life/100f), color.green*(life/100f), color.blue*(life/100f), color.alpha*(life/100f))
     override fun setColor(color: Graphics.ColorData) {
         this.color = color
@@ -66,8 +74,20 @@ open class EntityPartImpl() : EntityPartI {
         return true
     }
 
-    override fun getDensity(): Double {
-        return 1.0
+    override fun getCenterOfMass(): Coordinate<PartSpace> {
+        return Coordinate(Vector2())
+    }
+
+    final override fun getTransform(): Transform<PartSpace, ShipSpace> {
+        return Transform(position, rotation, zpos)
+    }
+
+    override fun getCoordinate(): Coordinate<ShipSpace> {
+        return Coordinate(position)
+    }
+
+    override fun getOrientation(): Orientation<ShipSpace> {
+        return Orientation(rotation)
     }
 }
 
@@ -121,12 +141,12 @@ class BasicGun() : EntityPartImpl(), Gun {
 
     var firing = false;
 
-    override fun getFiringPosition(): Vector2 {
+    override fun getFiringPosition(): Coordinate<PartSpace> {
         TODO("Not yet implemented")
     }
 
-    override fun getFiringOrientation(): Double {
-        return Math.PI/2.0
+    override fun getFiringOrientation(): Orientation<PartSpace> {
+        return Orientation(Math.PI/2.0)
     }
 
     override fun createProjectile(): AbstractKinematicEntity {
@@ -170,12 +190,12 @@ interface Radar : EntityPartI{
 
 //Generates projectiles
 interface Gun : EntityPartI{
-    fun getFiringPosition() : Vector2
-    fun getFiringOrientation() : Double
+    fun getFiringPosition() : Coordinate<PartSpace>
+    fun getFiringOrientation() : Orientation<PartSpace>
     fun createProjectile() : AbstractKinematicEntity
     fun isFiring() : Boolean
     fun toggleFiring(firing: Boolean)
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
-data class RadarReading(val uuid: UUID, val position: Vector2, val velocity: Double, val affiliation: Affiliation)
+data class RadarReading(val uuid: UUID, val position: Coordinate<WorldSpace>, val velocity: Double, val affiliation: Affiliation)
