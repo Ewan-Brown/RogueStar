@@ -2,12 +2,15 @@ package math
 
 sealed interface Space
 
+//"Label" types for the 3 different coordinate systems in the game's hierarchy.
 object PartSpace : Space
 object ShipSpace : Space
 object WorldSpace : Space
 
 interface SpacialConcept<S: Space>
 
+// Note - as awesome and cool as this is, this isn't perfect.
+// The child class must override this function with a return type equal to the type of the child class, hence the 'self'
 interface Transformable<S1: Space, Self : SpacialConcept<S1>>{
     fun <S2 : Space> applyTransform(transform: Transform<S1, S2>) : SpacialConcept<S2>
 }

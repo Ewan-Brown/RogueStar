@@ -1,11 +1,4 @@
-Working on a simple projectile -> part interaction resolver.
-
-A few things that can occur:
-
-- The part receives some direct detrimental effect (e.x damaged/paralyzed/on fire)
-
-- The projectile is destroyed
-- The projectile reflects
-- The projectile spawns new projectiles
-
-- Effects are spawned
+Keep extending the 'Space' code to entity fields - those should not just be raw Vector2 unless it make sense.
+Write proper density calculations...
+Reincorporate point projectile intersection
+Add projectile 'death' (timeout/collision)
