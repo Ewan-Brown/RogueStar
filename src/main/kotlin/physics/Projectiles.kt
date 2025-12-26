@@ -10,7 +10,16 @@ interface HasCollidingPoint : KinematicEntityI{
     fun getShieldDamage() : Int
 }
 
-open class DumbProjectile() : DumbEntity(), HasCollidingPoint{
+open class DumbProjectile() : AbstractKinematicEntity(), HasCollidingPoint{
+
+    init {
+        val body = EntityPartImpl()
+        body.scale(0.1)
+        addPart(body)
+    }
+    override fun update(timeStep: Double) {}
+    override fun markedForRemoval(): Boolean {return false }
+
     override fun getPointOfContact(): Vector2 {
         return Vector2(0.0, 0.0)
     }
