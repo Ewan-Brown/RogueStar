@@ -18,7 +18,6 @@ interface EntityPartI {
     fun getMass(): Double
     fun translate(vector: Vector2)
     fun rotate(theta: Double)
-    fun scale(s: Double)
     fun onDamage(d: Int)
     fun getTransform() : Transform<PartSpace, ShipSpace>
     fun getCoordinate() : Coordinate<ShipSpace>
@@ -30,13 +29,12 @@ open class EntityPartImpl() : EntityPartI {
     private var position = Vector2()
     private var zpos = 0.0;
     private var rotation = 0.0
-    private var scale = 1.0
+    private val scale = 1.0
     private var life = 100
 
     private var color : Graphics.ColorData =  Graphics.ColorData(1.0f, 0.0f, 1.0f, 1.0f)
 
-
-    //TODO We can deduplicate this stuff between this and Ship
+    //TODO We can deduplicate this stuff between this and Ship?
     override fun translate(vector: Vector2) {
         this.position += vector
     }
@@ -45,15 +43,12 @@ open class EntityPartImpl() : EntityPartI {
         this.rotation += theta
     }
 
-    override fun scale(s: Double) {
-        this.scale *= s
-    }
-
     override fun onDamage(d: Int) {
         life -= d
     }
 
     override fun getZHeight(): ZHeight<ShipSpace> = ZHeight(zpos)
+    //TODO Implement this correctly
     override fun getMass(): Double {
         return 1.0
     }
