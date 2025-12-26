@@ -1,11 +1,11 @@
 package physics
 
-import math.Coordinate
+import math.Coordinates
 import math.ShipSpace
 import math.Vector2
 
 interface HasCollidingPoint : KinematicEntityI{
-    fun getPointOfContact() : Coordinate<ShipSpace>
+    fun getPointOfContact() : Coordinates<ShipSpace>
     fun doesCollideWith(otherEntity: KinematicEntityI) : Boolean
     fun doesPenetrateShield() : Boolean
     fun getHullDamage() : Int
@@ -21,8 +21,8 @@ open class DumbProjectile() : AbstractKinematicEntity(), HasCollidingPoint{
     override fun update(timeStep: Double) {}
     override fun markedForRemoval(): Boolean {return false }
 
-    override fun getPointOfContact(): Coordinate<ShipSpace> {
-        return Coordinate(Vector2(0.0, 0.0))
+    override fun getPointOfContact(): Coordinates<ShipSpace> {
+        return Coordinates(Vector2(0.0, 0.0))
     }
 
     override fun doesCollideWith(otherEntity: KinematicEntityI): Boolean {

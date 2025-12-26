@@ -20,7 +20,7 @@ interface KinematicEntityI{
     fun translate(translation: Vector2)
     fun rotate(rotation: Double)
 
-    fun getCenterOfMass() : Coordinate<ShipSpace>
+    fun getCenterOfMass() : Coordinates<ShipSpace>
     fun getMass() : Double
     fun update(timeStep: Double)
 
@@ -37,7 +37,11 @@ interface KinematicEntityI{
 
     fun getTransform() : Transform<ShipSpace, WorldSpace>
     fun getOrientation() : Orientation<WorldSpace>
-    fun getCoordinate() : Coordinate<WorldSpace>
+
+    /**
+     * Implicitly local center is always (0, 0)
+     */
+    fun getCoordinates() : Coordinates<WorldSpace>
 }
 
 abstract class AbstractKinematicEntity() : KinematicEntityI{
@@ -45,26 +49,10 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     private var effectsConsumer: EffectsConsumer? = null
     private var entityConsumer: EntityConsumer? = null
 
-    fun setEffectsConsumer(effectsConsumer: EffectsConsumer){this.effectsConsumer = effectsConsumer}
-    fun setEntityConsumer(entityConsumer: EntityConsumer){this.entityConsumer = entityConsumer}
+    private var position: Coordinates<WorldSpace> = Coordinates(Vector2())
+    private var zpos: ZHeight<WorldSpace> = ZHeight(0.0)
+    private var rotation: Orientation<WorldSpace> = Orientation(0.0)
 
-    protected fun sendEffect(effect: Effect){
-        if(effectsConsumer != null){
-            effectsConsumer!!.addEffect(effect)
-        }else{
-            throw NullPointerException("EffectsConsumer not set!")
-        }
-    }
-    protected fun sendEntity(entity: AbstractKinematicEntity){
-        if(entityConsumer != null){
-            entityConsumer!!.addEntity(entity)
-        }else{
-            throw NullPointerException("EntityConsumer not set!")
-        }
-    }
-    private var position = Vector2()
-    private var zpos = 0.0;
-    private var rotation = 0.0
     private var vel = Vector2()
     private var rotVelocity = 0.0
 
@@ -77,7 +65,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     private var parts = mutableListOf<EntityPartI>()
 
     //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
-    override fun getCenterOfMass() : Coordinate<ShipSpace>{
+    override fun getCenterOfMass() : Coordinates<ShipSpace>{
         var cumulativeMassVector = Vector2()
         var cumulativeMassValue = 0.0
         getParts().forEach {
@@ -87,7 +75,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
 
         val dividedMass = cumulativeMassVector / cumulativeMassValue
 
-        return Coordinate(dividedMass)
+        return Coordinates(dividedMass)
     }
 
     fun getRenderables() : List<Graphics.Renderable> {
@@ -97,7 +85,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
 
             //TODO Can we clean this up? This needs to be reused, and these magic '0.0' origins should maybe be derived somewhere...
             // Maybe we can package this data nicely
-            val partCoordInWorldSpace = Coordinate<PartSpace>(Vector2()).applyTransform(partToWorldTransform)
+            val partCoordInWorldSpace = Coordinates<PartSpace>(Vector2()).applyTransform(partToWorldTransform)
             val partOrientationInWorldSpace = Orientation<PartSpace>(0.0).applyTransform(partToWorldTransform)
             val partZHeightInWorldSpace = ZHeight<PartSpace>(0.0).applyTransform(partToWorldTransform)
 
@@ -193,16 +181,35 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     }
 
     final override fun getOrientation(): Orientation<WorldSpace> {
-        return Orientation(rotation)
+        return rotation
     }
 
     final override fun getTransform(): Transform<ShipSpace, WorldSpace> {
-        return Transform(position, rotation, zpos)
+        return Transform(position.getVector(), rotation.getAngle(), zpos.getZ())
     }
 
-    final override fun getCoordinate(): Coordinate<WorldSpace> {
-        return Coordinate(position)
+    final override fun getCoordinates(): Coordinates<WorldSpace> {
+        return position
     }
+
+    fun setEffectsConsumer(effectsConsumer: EffectsConsumer){this.effectsConsumer = effectsConsumer}
+    fun setEntityConsumer(entityConsumer: EntityConsumer){this.entityConsumer = entityConsumer}
+
+    protected fun sendEffect(effect: Effect){
+        if(effectsConsumer != null){
+            effectsConsumer!!.addEffect(effect)
+        }else{
+            throw NullPointerException("EffectsConsumer not set!")
+        }
+    }
+    protected fun sendEntity(entity: AbstractKinematicEntity){
+        if(entityConsumer != null){
+            entityConsumer!!.addEntity(entity)
+        }else{
+            throw NullPointerException("EntityConsumer not set!")
+        }
+    }
+
 }
 
 open class DumbEntity() : AbstractKinematicEntity() {
@@ -255,8 +262,8 @@ class ControllableEntity() : AbstractKinematicEntity() {
     override fun update(timeStep: Double) {
         getParts().filterIsInstance<Thruster>().forEach {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
-                val partCoordsLocal: Coordinate<ShipSpace> = it.getCoordinate()
-                val partCoordsWorld: Coordinate<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
+                val partCoordsLocal: Coordinates<ShipSpace> = it.getCoordinates()
+                val partCoordsWorld: Coordinates<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
                 val partOrientation : Orientation<WorldSpace> = it.getOrientation().applyTransform(this.getTransform())
 
                 val force = Force(it.getCurrentThrust(), partCoordsLocal)
@@ -275,8 +282,8 @@ class ControllableEntity() : AbstractKinematicEntity() {
             this.applyTorque(it.getTorque())
         }
         getParts().filterIsInstance<Gun>().forEach {
-            val partCoordsLocal: Coordinate<ShipSpace> = it.getCoordinate()
-            val partCoordsWorld: Coordinate<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
+            val partCoordsLocal: Coordinates<ShipSpace> = it.getCoordinates()
+            val partCoordsWorld: Coordinates<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
 
             val gunOrientation = it.getFiringOrientation().applyTransform(it.getTransform()).applyTransform(this.getTransform())
             if(it.isFiring()){
