@@ -8,23 +8,26 @@ import math.Transformation3
 import models.Model
 import math.Vector2
 import math.Vector3
-import math.getRandomSign
-import java.awt.Color
 
 data class EffectsInput(val timeStep: Double)
 
 class EffectsLayer : EffectsLayerI{
-    private val entities = mutableListOf<Effect>()
+    private val effects = mutableListOf<Effect>()
+    private val effectsBuffer = mutableListOf<Effect>()
 
     override fun update(input: EffectsInput) {
-        for (entity in entities) {
-            entity.update(input.timeStep)
+        synchronized(effectsBuffer){
+            effects.addAll(effectsBuffer)
+            effectsBuffer.clear()
         }
-        entities.removeIf(Effect::markedForRemoval)
+        for (effect in effects) {
+            effect.update(input.timeStep)
+        }
+        effects.removeIf(Effect::markedForRemoval)
     }
 
     override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {
-        for (entity in entities) {
+        for (entity in effects) {
             for (renderable in entity.getRenderables()) {
                 modelDataMap[renderable.model]!!.add(renderable)
             }
@@ -36,7 +39,9 @@ class EffectsLayer : EffectsLayerI{
     }
 
     override fun addEffect(effect: Effect) {
-        entities.add(effect)
+        synchronized(effectsBuffer){
+            effectsBuffer.add(effect)
+        }
     }
 }
 

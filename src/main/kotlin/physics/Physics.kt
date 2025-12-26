@@ -61,8 +61,14 @@ class PhysicsLayer() : PhysicsLayerI{
 
     private class FlatWorld : World {
         private val entities = mutableListOf<AbstractKinematicEntity>()
+        private val entityBuffer = mutableListOf<AbstractKinematicEntity>()
 
         override fun update(input : PhysicsInput) {
+
+            synchronized(entityBuffer){
+                entities.addAll(entityBuffer)
+                entityBuffer.clear()
+            }
 
             // Do physics updates
             for (entity in entities) {
@@ -105,7 +111,9 @@ class PhysicsLayer() : PhysicsLayerI{
         }
 
         override fun addEntity(entity: AbstractKinematicEntity) {
-            entities.add(entity)
+            synchronized(entityBuffer){
+                entityBuffer.add(entity)
+            }
         }
     }
 }
