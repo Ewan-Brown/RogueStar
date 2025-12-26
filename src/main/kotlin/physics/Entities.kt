@@ -84,13 +84,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         return Coordinate(dividedMass)
     }
 
-//    private fun getFinalTransform2D(localTransform: Transformation2) : Transformation2{
-//        val finalTranslation = getWorldTransform().translation + (localTransform.translation * getWorldTransform().scale).rotate(getWorldTransform().rotation)
-//        val finalRotation = getWorldTransform().rotation + localTransform.rotation
-//        val finalScale = getWorldTransform().scale * localTransform.scale
-//        return Transformation2(finalTranslation, finalRotation, finalScale)
-//    }
-
     fun getRenderables() : List<Graphics.Renderable> {
         println("AbstractKinematicEntity.getRenderables")
         return getParts().map { part ->
