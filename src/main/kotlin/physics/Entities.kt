@@ -19,8 +19,6 @@ interface KinematicEntityI{
     fun translate(translation: Vector2)
     fun rotate(rotation: Double)
 
-    fun scale(scale: Double)
-
     fun getCenterOfMass() : Coordinate<ShipSpace>
     fun getMass() : Double
     fun update(timeStep: Double)
@@ -58,7 +56,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     private var position = Vector2()
     private var zpos = 0.0;
     private var rotation = 0.0
-    private var scale = 1.0
     private var vel = Vector2()
     private var rotVelocity = 0.0
 
@@ -103,7 +100,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
                 partCoordInWorldSpace,
                 partOrientationInWorldSpace,
                 partZHeightInWorldSpace,
-                part.getScale() * scale,
+                part.getScale(),
                 part.getColor(), part.getMetadata())
         }
     }
@@ -170,12 +167,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         val netTorque = torqueAccumulator
         torqueAccumulator = 0.0;
         return netTorque
-    }
-    override fun scale(scale: Double) {
-        if(scale < Double.MIN_VALUE){
-            throw IllegalArgumentException("scale must be above Double.MIN_VALUE, value provided is $scale")
-        }
-        this.scale *= scale
     }
 
     final override fun addPart(part: EntityPartI) {
@@ -277,13 +268,14 @@ class ControllableEntity() : AbstractKinematicEntity() {
         getParts().filterIsInstance<Gun>().forEach {
             val partCoordsLocal: Coordinate<ShipSpace> = it.getCoordinate()
             val partCoordsWorld: Coordinate<WorldSpace> = partCoordsLocal.applyTransform(this.getTransform())
-            val partOrientation : Orientation<WorldSpace> = it.getOrientation().applyTransform(this.getTransform())
+
+            val gunOrientation = it.getFiringOrientation().applyTransform(it.getTransform()).applyTransform(this.getTransform())
             if(it.isFiring()){
                 val projectile = it.createProjectile()
                 //TODO introduce 'setPosition, setRotation etc that use SpacialConcepts instead of untyped vector2/double)
                 projectile.translate(partCoordsWorld.getVector())
-                projectile.rotate(partOrientation.getAngle())
-                projectile.setVelocity(this.getVelocity() + Vector2(partOrientation.getAngle()) * 0.3)
+                projectile.rotate(gunOrientation.getAngle())
+                projectile.setVelocity(this.getVelocity() + Vector2(gunOrientation.getAngle()) * 0.3)
                 sendEntity(projectile)
             }
         }

@@ -107,9 +107,9 @@ class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val 
             val debugData = mutableListOf<DebugLineData>()
 
             //Enable when necessary :)
-//            debugData.addAll(physicsLayer.getDebugLines())
-//            debugData.addAll(effectsLayer.getDebugLines())
-//            debugData.addAll(controllerLayer.getDebugLines())
+            debugData.addAll(physicsLayer.getDebugLines())
+            debugData.addAll(effectsLayer.getDebugLines())
+            debugData.addAll(controllerLayer.getDebugLines())
 
             gui.updateDrawables(modelDataMap)
             gui.updateCamera(details)

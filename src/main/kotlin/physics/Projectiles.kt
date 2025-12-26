@@ -16,7 +16,6 @@ open class DumbProjectile() : AbstractKinematicEntity(), HasCollidingPoint{
 
     init {
         val body = EntityPartImpl()
-        body.scale(0.1)
         addPart(body)
     }
     override fun update(timeStep: Double) {}
