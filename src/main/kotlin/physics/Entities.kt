@@ -6,9 +6,7 @@ import effects.Effect
 import effects.SimpleParticle
 import graphics.GREEN
 import graphics.Graphics
-import graphics.RED
 import math.*
-import kotlin.contracts.SimpleEffect
 import kotlin.math.sin
 
 interface KinematicEntityI{
@@ -198,6 +196,7 @@ class ControllableEntity() : AbstractKinematicEntity() {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
         val block = BasicThruster()
+        val block2 = EntityPartImpl()
         val gun = BasicGun()
 
         val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
@@ -211,6 +210,9 @@ class ControllableEntity() : AbstractKinematicEntity() {
         block.setColor(color)
         block.translate(Vector2(1.0, 0.0))
 
+        block2.setColor(color)
+        block2.translate(Vector2(0.0, -1.0))
+
         gun.setColor(GREEN)
         gun.translate(Vector2(0.0, 1.0))
 
@@ -218,12 +220,14 @@ class ControllableEntity() : AbstractKinematicEntity() {
             thruster,
             cockpit,
             block,
+            block2,
             gun))
     }
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
     fun getRadars() : List<Radar> {return getParts().filterIsInstance<Radar>()}
+    fun getGuns() : List<Gun> {return getParts().filterIsInstance<Gun>()}
 
     override fun update(timeStep: Double) {
         getParts().filterIsInstance<Thruster>().forEach {
@@ -246,9 +250,12 @@ class ControllableEntity() : AbstractKinematicEntity() {
         }
         getParts().filterIsInstance<Gun>().forEach {
             val partCenterLocationInWorldCoords = it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation
+            val partRotationInWorldCoords = it.getLocalTransform().rotation + this.getWorldTransform().rotation + it.getFiringOrientation()
             if(it.isFiring()){
                 val projectile = it.createProjectile()
                 projectile.translate(partCenterLocationInWorldCoords)
+                projectile.rotate(partRotationInWorldCoords)
+                projectile.setVelocity(this.getVelocity() + Vector2(partRotationInWorldCoords) * 0.3)
                 sendEntity(projectile)
             }
         }

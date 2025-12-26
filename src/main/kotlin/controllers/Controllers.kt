@@ -74,6 +74,7 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
     override fun update(plant: ControllableEntity) {
         val thrusters = plant.getThrusters()
         val torquers = plant.getTorquers()
+        val guns = plant.getGuns()
 //        val radars = plant.getRadars()
 //        val readings = radars.map{ it.getReadings()}.flatten()
 
@@ -84,7 +85,7 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
             }
         }
         
-        thrust = thrust.normalize()
+        thrust = thrust.normalize().rotate(plant.getWorldTransform().rotation)
 
         var torque = 0.0
         for (entry in TorqueKeys.entries){
@@ -100,6 +101,10 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
 
         for(torquer in torquers){
             torquer.setTorque(torque/100)
+        }
+
+        for(gun in guns){
+            gun.toggleFiring((bitSet[KeyEvent.VK_SPACE]))
         }
     }
 

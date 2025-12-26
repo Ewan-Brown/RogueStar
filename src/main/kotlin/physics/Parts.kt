@@ -118,12 +118,15 @@ class BasicThruster() : EntityPartImpl(), Thruster {
 }
 
 class BasicGun() : EntityPartImpl(), Gun {
+
+    var firing = false;
+
     override fun getFiringPosition(): Vector2 {
         TODO("Not yet implemented")
     }
 
     override fun getFiringOrientation(): Double {
-        TODO("Not yet implemented")
+        return Math.PI/2.0
     }
 
     override fun createProjectile(): AbstractKinematicEntity {
@@ -131,7 +134,11 @@ class BasicGun() : EntityPartImpl(), Gun {
     }
 
     override fun isFiring(): Boolean {
-        return true
+        return firing
+    }
+
+    override fun toggleFiring(firing: Boolean) {
+        this.firing = firing
     }
 
 }
@@ -167,6 +174,7 @@ interface Gun : EntityPartI{
     fun getFiringOrientation() : Double
     fun createProjectile() : AbstractKinematicEntity
     fun isFiring() : Boolean
+    fun toggleFiring(firing: Boolean)
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
