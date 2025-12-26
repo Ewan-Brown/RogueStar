@@ -84,14 +84,9 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
             val partToWorldTransform = combineTransforms(part.getTransform(), this.getTransform())
 
             //TODO Can we clean this up? This needs to be reused, and these magic '0.0' origins should maybe be derived somewhere...
-            // Maybe we can package this data nicely
             val partCoordInWorldSpace = Coordinates<PartSpace>(Vector2()).applyTransform(partToWorldTransform)
             val partOrientationInWorldSpace = Orientation<PartSpace>(0.0).applyTransform(partToWorldTransform)
             val partZHeightInWorldSpace = ZHeight<PartSpace>(0.0).applyTransform(partToWorldTransform)
-
-            println("partCoordInWorldSpace = ${partCoordInWorldSpace.getVector()}")
-            println("partOrientationInWorldSpace = ${partOrientationInWorldSpace.getAngle()}")
-            println("partZHeightInWorldSpace = ${partZHeightInWorldSpace.getZ()}")
 
             Graphics.Renderable(part.getModel(),
                 partCoordInWorldSpace,
