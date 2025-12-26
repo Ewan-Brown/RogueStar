@@ -13,22 +13,25 @@ interface EntityPartI {
     fun setColor(color: Graphics.ColorData)
     fun getMetadata() : Graphics.MetaData
     fun isCollideable() : Boolean
-    fun getCenterOfMass() : Coordinate<PartSpace>
+    fun getCenterOfMass() : Coordinates<PartSpace>
     fun getZHeight() : ZHeight<ShipSpace>
     fun getMass(): Double
     fun translate(vector: Vector2)
     fun rotate(theta: Double)
     fun onDamage(d: Int)
     fun getTransform() : Transform<PartSpace, ShipSpace>
-    fun getCoordinate() : Coordinate<ShipSpace>
+    /**
+     * Implicitly local center is always (0, 0)
+     */
+    fun getCoordinates() : Coordinates<ShipSpace>
     fun getOrientation() : Orientation<ShipSpace>
 }
 
 open class EntityPartImpl() : EntityPartI {
 
-    private var position = Vector2()
-    private var zpos = 0.0;
-    private var rotation = 0.0
+    private var position: Coordinates<ShipSpace> = Coordinates(Vector2())
+    private var zpos: ZHeight<ShipSpace> = ZHeight(0.0)
+    private var rotation: Orientation<ShipSpace> = Orientation(0.0)
     private val scale = 1.0
     private var life = 100
 
@@ -47,7 +50,7 @@ open class EntityPartImpl() : EntityPartI {
         life -= d
     }
 
-    override fun getZHeight(): ZHeight<ShipSpace> = ZHeight(zpos)
+    override fun getZHeight(): ZHeight<ShipSpace> = zpos
     //TODO Implement this correctly
     override fun getMass(): Double {
         return 1.0
@@ -58,7 +61,7 @@ open class EntityPartImpl() : EntityPartI {
         return scale;
     }
 
-    override fun getColor() = Graphics.ColorData(color.red*(life/100f), color.green*(life/100f), color.blue*(life/100f), color.alpha*(life/100f))
+    override fun getColor() = color
     override fun setColor(color: Graphics.ColorData) {
         this.color = color
     }
@@ -69,20 +72,20 @@ open class EntityPartImpl() : EntityPartI {
         return true
     }
 
-    override fun getCenterOfMass(): Coordinate<PartSpace> {
-        return Coordinate(Vector2())
+    override fun getCenterOfMass(): Coordinates<PartSpace> {
+        return Coordinates(Vector2())
     }
 
     final override fun getTransform(): Transform<PartSpace, ShipSpace> {
-        return Transform(position, rotation, zpos)
+        return Transform(position.getVector(), rotation.getAngle(), zpos.getZ())
     }
 
-    override fun getCoordinate(): Coordinate<ShipSpace> {
-        return Coordinate(position)
+    override fun getCoordinates(): Coordinates<ShipSpace> {
+        return position
     }
 
     override fun getOrientation(): Orientation<ShipSpace> {
-        return Orientation(rotation)
+        return rotation
     }
 }
 
@@ -136,7 +139,7 @@ class BasicGun() : EntityPartImpl(), Gun {
 
     var firing = false;
 
-    override fun getFiringPosition(): Coordinate<PartSpace> {
+    override fun getFiringPosition(): Coordinates<PartSpace> {
         TODO("Not yet implemented")
     }
 
@@ -185,7 +188,7 @@ interface Radar : EntityPartI{
 
 //Generates projectiles
 interface Gun : EntityPartI{
-    fun getFiringPosition() : Coordinate<PartSpace>
+    fun getFiringPosition() : Coordinates<PartSpace>
     fun getFiringOrientation() : Orientation<PartSpace>
     fun createProjectile() : AbstractKinematicEntity
     fun isFiring() : Boolean
@@ -193,4 +196,4 @@ interface Gun : EntityPartI{
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
-data class RadarReading(val uuid: UUID, val position: Coordinate<WorldSpace>, val velocity: Double, val affiliation: Affiliation)
+data class RadarReading(val uuid: UUID, val position: Coordinates<WorldSpace>, val velocity: Double, val affiliation: Affiliation)

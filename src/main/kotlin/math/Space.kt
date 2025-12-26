@@ -7,6 +7,7 @@ object PartSpace : Space
 object ShipSpace : Space
 object WorldSpace : Space
 
+//TODO rename this...
 interface SpacialConcept<S: Space>
 
 // Note - as awesome and cool as this is, this isn't perfect.
@@ -16,11 +17,11 @@ interface Transformable<S1: Space, Self : SpacialConcept<S1>>{
 }
 
 @JvmInline
-value class Coordinate<S: Space>(private val value: Vector2) : SpacialConcept<S>, Transformable<S, Coordinate<S>>{
-    fun rotate(theta: Double) : Coordinate<S> = Coordinate(value.rotate(theta))
-    operator fun plus(vec: Vector2) : Coordinate<S> = Coordinate(this.value + vec)
-    operator fun minus(vec: Vector2) : Coordinate<S> = Coordinate(this.value - vec)
-    operator fun minus(coordinate: Coordinate<S>) : Vector2 = this.value - coordinate.value
+value class Coordinates<S: Space>(private val value: Vector2) : SpacialConcept<S>, Transformable<S, Coordinates<S>>{
+    fun rotate(theta: Double) : Coordinates<S> = Coordinates(value.rotate(theta))
+    operator fun plus(vec: Vector2) : Coordinates<S> = Coordinates(this.value + vec)
+    operator fun minus(vec: Vector2) : Coordinates<S> = Coordinates(this.value - vec)
+    operator fun minus(coordinates: Coordinates<S>) : Vector2 = this.value - coordinates.value
 
     fun getX() : Double = value.getX()
     fun getY() : Double = value.getY()
@@ -28,8 +29,8 @@ value class Coordinate<S: Space>(private val value: Vector2) : SpacialConcept<S>
     //TODO Should this ever be used...?
     fun getVector() : Vector2 = value
 
-    override fun <S2 : Space> applyTransform(transform: Transform<S, S2>): Coordinate<S2> {
-        return Coordinate(value.rotate(transform.rotation) + transform.translation)
+    override fun <S2 : Space> applyTransform(transform: Transform<S, S2>): Coordinates<S2> {
+        return Coordinates(value.rotate(transform.rotation) + transform.translation)
     }
 }
 

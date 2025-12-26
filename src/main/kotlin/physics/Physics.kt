@@ -7,7 +7,7 @@ import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
-import math.Coordinate
+import math.Coordinates
 import math.ShipSpace
 import math.Vector2
 import models.Model
@@ -34,7 +34,7 @@ class PhysicsLayer() : PhysicsLayerI{
         val lines = mutableListOf<DebugLineData>()
 
         for (entity in world.getEntities()) {
-            val pos = entity.getCoordinate()
+            val pos = entity.getCoordinates()
             val com = entity.getCenterOfMass().applyTransform(entity.getTransform())
             val velocity = entity.getVelocity()
             lines.add(DebugLineData(com, pos, RED, GREEN))
@@ -119,4 +119,4 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 }
 
-data class Force(val vector: Vector2, val origin: Coordinate<ShipSpace>)
+data class Force(val vector: Vector2, val origin: Coordinates<ShipSpace>)
