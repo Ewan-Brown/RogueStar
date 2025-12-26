@@ -7,6 +7,8 @@ import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
+import math.Coordinate
+import math.ShipSpace
 import math.Vector2
 import models.Model
 import kotlin.collections.HashMap
@@ -15,7 +17,6 @@ data class PhysicsInput(val timeStep: Double)
 data class PhysicsOutput(val effects: List<Effect>)
 
 class PhysicsLayer() : PhysicsLayerI{
-
     override fun update(input: PhysicsInput): PhysicsOutput {
         world.update(input)
         return PhysicsOutput(listOf())
@@ -33,14 +34,14 @@ class PhysicsLayer() : PhysicsLayerI{
         val lines = mutableListOf<DebugLineData>()
 
         for (entity in world.getEntities()) {
-            val pos = entity.getWorldTransform().translation
-            val com = entity.getCenterOfMass()
+            val pos = entity.getCoordinate()
+            val com = entity.getCenterOfMass().applyTransform(entity.getTransform())
             val velocity = entity.getVelocity()
             lines.add(DebugLineData(com, pos, RED, GREEN))
             lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, RED, GREEN))
             for (force in entity.getLastForces()) {
-                val fOrigin = force.origin
-                val fEnd = force.vector*500.0 + fOrigin
+                val fOrigin = force.origin.applyTransform(entity.getTransform())
+                val fEnd = fOrigin + force.vector * 500.0
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
         }
@@ -91,7 +92,7 @@ class PhysicsLayer() : PhysicsLayerI{
 
             for(projectile in entities.filterIsInstance<HasCollidingPoint>()){
                 val pointOfContactLocal = projectile.getPointOfContact()
-                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldTransform().rotation) + projectile.getWorldTransform().translation
+//                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldOrientation().value) + projectile.getWorldTransform().translation
                 for(entity in entities){
                     if(entity != projectile){
                         //TODO Do cheap preliminary collision checking
@@ -118,4 +119,4 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 }
 
-data class Force(val vector: Vector2, val origin: Vector2)
+data class Force(val vector: Vector2, val origin: Coordinate<ShipSpace>)

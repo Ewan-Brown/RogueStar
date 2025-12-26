@@ -4,10 +4,14 @@ import DebugLineData
 import EffectsLayerI
 import graphics.Graphics
 import graphics.RED
+import math.Coordinate
+import math.Orientation
 import math.Transformation3
 import models.Model
 import math.Vector2
 import math.Vector3
+import math.WorldSpace
+import math.ZHeight
 
 data class EffectsInput(val timeStep: Double)
 
@@ -52,11 +56,11 @@ interface Effect{
 }
 
 //TODO Consider entities that don't incrementally update, that are formulaic rather than iterative?
-class SimpleParticle(startPosition: Vector2, startVelocity: Vector2, startAngle: Double, startingAngularVelocity: Double, startLife: Int)
+class SimpleParticle(startPosition: Coordinate<WorldSpace>, startVelocity: Vector2, startAngle: Orientation<WorldSpace>, startingAngularVelocity: Double, startLife: Int)
     : Effect {
 
-    var position: Vector2 = startPosition
-    var angle : Double = startAngle
+    var position: Vector2 = startPosition.getVector()
+    var angle : Double = startAngle.getAngle()
 
     var velocity: Vector2 = startVelocity
     var angularVelocity : Double = startingAngularVelocity
@@ -66,8 +70,13 @@ class SimpleParticle(startPosition: Vector2, startVelocity: Vector2, startAngle:
 
     override fun getRenderables() : List<Graphics.Renderable> {
         return listOf(Graphics.Renderable(
-            Model.SQUARE, Transformation3(Vector3(position, 10.0), angle, 0.3 ), RED, Graphics.MetaData(1.0f)
-        ))
+            Model.SQUARE,
+            Coordinate(position),
+            Orientation(angle),
+            ZHeight(10.0),
+            1.0,
+            RED,
+            Graphics.MetaData(1.0f)))
     }
 
     override fun update(timeStep: Double) {

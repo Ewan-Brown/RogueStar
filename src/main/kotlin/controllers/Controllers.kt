@@ -85,7 +85,7 @@ class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
             }
         }
         
-        thrust = thrust.normalize().rotate(plant.getWorldTransform().rotation)
+        thrust = thrust.normalize().rotate(plant.getOrientation().getAngle())
 
         var torque = 0.0
         for (entry in TorqueKeys.entries){

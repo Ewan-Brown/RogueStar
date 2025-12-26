@@ -14,6 +14,7 @@ import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import graphics.Graphics.ColorData
 import graphics.Graphics.Renderable
+import math.*
 import java.awt.MouseInfo
 import java.lang.Error
 import java.nio.FloatBuffer
@@ -422,8 +423,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
 
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
-    class Renderable(val model: Model, val transform: Transformation3, val colorData: ColorData, val metaData: MetaData)
-
+    class Renderable(val model: Model, val coordinate: Coordinate<WorldSpace>, val orientation: Orientation<WorldSpace>, val zHeight: ZHeight<WorldSpace>, val scale : Double, val colorData: ColorData, val metaData: MetaData)
 
     //TODO Clean this up... DO we need separate VBONames and Attributes classes? Why is this not an enum? Should it start at zero?
     private interface VBONames {
@@ -448,11 +448,11 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     }
 
     enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
-        POSITION(1, 3, {listOf(it.transform.translation.getX().toFloat(), it.transform.translation.getY().toFloat(), it.transform.translation.getZ().toFloat())},
+        POSITION(1, 3, {listOf(it.coordinate.getX().toFloat(), it.coordinate.getY().toFloat(), it.zHeight.getZ().toFloat())},
             VBONames.INSTANCED_POSITIONS
         ),
-        ROTATION(2, 1, {listOf(it.transform.rotation.toFloat())}, VBONames.INSTANCED_ROTATIONS),
-        SCALE(3, 1, {listOf(it.transform.scale.toFloat())}, VBONames.INSTANCED_SCALES),
+        ROTATION(2, 1, {listOf(it.orientation.getAngle().toFloat())}, VBONames.INSTANCED_ROTATIONS),
+        SCALE(3, 1, {listOf(it.scale.toFloat())}, VBONames.INSTANCED_SCALES),
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, VBONames.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, VBONames.INSTANCED_HEALTHS)
     }
