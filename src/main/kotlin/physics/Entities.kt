@@ -4,7 +4,9 @@ import EffectsConsumer
 import EntityConsumer
 import effects.Effect
 import effects.SimpleParticle
+import graphics.GREEN
 import graphics.Graphics
+import graphics.RED
 import math.*
 import kotlin.contracts.SimpleEffect
 import kotlin.math.sin
@@ -196,6 +198,7 @@ class ControllableEntity() : AbstractKinematicEntity() {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
         val block = BasicThruster()
+        val gun = BasicGun()
 
         val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 
@@ -208,10 +211,14 @@ class ControllableEntity() : AbstractKinematicEntity() {
         block.setColor(color)
         block.translate(Vector2(1.0, 0.0))
 
+        gun.setColor(GREEN)
+        gun.translate(Vector2(0.0, 1.0))
+
         addParts(listOf(
             thruster,
             cockpit,
-            block))
+            block,
+            gun))
     }
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
@@ -221,7 +228,8 @@ class ControllableEntity() : AbstractKinematicEntity() {
     override fun update(timeStep: Double) {
         getParts().filterIsInstance<Thruster>().forEach {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
-                val force = Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation)
+                val partCenterLocationInWorldCoords = it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation
+                val force = Force(it.getCurrentThrust(), partCenterLocationInWorldCoords)
                 this.applyForce(force);
                 for(i in 0 until 100){
                     sendEffect(SimpleParticle(force.origin,
@@ -235,6 +243,14 @@ class ControllableEntity() : AbstractKinematicEntity() {
         }
         getParts().filterIsInstance<Torquer>().forEach {
             this.applyTorque(it.getTorque())
+        }
+        getParts().filterIsInstance<Gun>().forEach {
+            val partCenterLocationInWorldCoords = it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation
+            if(it.isFiring()){
+                val projectile = it.createProjectile()
+                projectile.translate(partCenterLocationInWorldCoords)
+                sendEntity(projectile)
+            }
         }
     }
 

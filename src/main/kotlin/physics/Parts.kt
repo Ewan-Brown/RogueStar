@@ -117,6 +117,25 @@ class BasicThruster() : EntityPartImpl(), Thruster {
 
 }
 
+class BasicGun() : EntityPartImpl(), Gun {
+    override fun getFiringPosition(): Vector2 {
+        TODO("Not yet implemented")
+    }
+
+    override fun getFiringOrientation(): Double {
+        TODO("Not yet implemented")
+    }
+
+    override fun createProjectile(): AbstractKinematicEntity {
+        return DumbProjectile()
+    }
+
+    override fun isFiring(): Boolean {
+        return true
+    }
+
+}
+
 //Center of command/control
 interface Control : EntityPartI{}
 
@@ -144,9 +163,10 @@ interface Radar : EntityPartI{
 
 //Generates projectiles
 interface Gun : EntityPartI{
-    abstract fun getFiringPosition() : Transformation3
-    abstract fun getFiringOrientation() : Double
-    abstract fun createProjectile() : AbstractKinematicEntity
+    fun getFiringPosition() : Vector2
+    fun getFiringOrientation() : Double
+    fun createProjectile() : AbstractKinematicEntity
+    fun isFiring() : Boolean
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
