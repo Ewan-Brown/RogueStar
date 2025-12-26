@@ -7,6 +7,7 @@ import effects.SimpleParticle
 import graphics.GREEN
 import graphics.Graphics
 import math.*
+import math.Orientation
 import kotlin.math.sin
 
 interface KinematicEntityI{
@@ -48,10 +49,18 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     fun setEntityConsumer(entityConsumer: EntityConsumer){this.entityConsumer = entityConsumer}
 
     protected fun sendEffect(effect: Effect){
-        if(effectsConsumer != null){effectsConsumer!!.addEffect(effect)}
+        if(effectsConsumer != null){
+            effectsConsumer!!.addEffect(effect)
+        }else{
+            throw NullPointerException("EffectsConsumer not set!")
+        }
     }
     protected fun sendEntity(entity: AbstractKinematicEntity){
-        if(entityConsumer != null){entityConsumer!!.addEntity(entity)}
+        if(entityConsumer != null){
+            entityConsumer!!.addEntity(entity)
+        }else{
+            throw NullPointerException("EntityConsumer not set!")
+        }
     }
     private var position = Vector2()
     private var zpos = 0.0;
