@@ -255,6 +255,14 @@ class Vector3(private val x :Double, private val y :Double, private val z :Doubl
 
 fun Vector2.extruded(z : Double) : Vector3 = Vector3(getX(), getY(), z)
 
+fun getRandomSign(): Double{
+    if(Math.random() < 0.5){
+        return -1.0
+    }else{
+        return 1.0
+    }
+}
+
 //class Rotation(private val rotation: Double){
 //    fun getRotation(): Double {return rotation}
 //    operator fun plus(r : Rotation) : Rotation {

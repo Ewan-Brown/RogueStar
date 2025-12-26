@@ -8,6 +8,7 @@ import math.Transformation3
 import models.Model
 import math.Vector2
 import math.Vector3
+import math.getRandomSign
 import java.awt.Color
 
 data class EffectsInput(val timeStep: Double)
@@ -46,23 +47,21 @@ interface Effect{
 }
 
 //TODO Consider entities that don't incrementally update, that are formulaic rather than iterative?
-class SimpleParticle(startPosition: Vector2, startVelocity: Vector2, startAngle: Double, startLife: Int)
+class SimpleParticle(startPosition: Vector2, startVelocity: Vector2, startAngle: Double, startingAngularVelocity: Double, startLife: Int)
     : Effect {
-
 
     var position: Vector2 = startPosition
     var angle : Double = startAngle
 
     var velocity: Vector2 = startVelocity
-    var angularVelocity : Double = Math.random() * 0.5 - 0.25
+    var angularVelocity : Double = startingAngularVelocity
 
     var life: Int = startLife
-
     var friction = 0.01;
 
     override fun getRenderables() : List<Graphics.Renderable> {
         return listOf(Graphics.Renderable(
-            Model.SQUARE, Transformation3(Vector3(position), angle, 1.0 ), RED, Graphics.MetaData(1.0f)
+            Model.SQUARE, Transformation3(Vector3(position, 10.0), angle, 0.3 ), RED, Graphics.MetaData(1.0f)
         ))
     }
 
