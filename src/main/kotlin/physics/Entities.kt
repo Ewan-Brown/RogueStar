@@ -223,10 +223,14 @@ class ControllableEntity() : AbstractKinematicEntity() {
             if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
                 val force = Force(it.getCurrentThrust(), it.getLocalTransform().translation.rotate(this.getWorldTransform().rotation) + this.getWorldTransform().translation)
                 this.applyForce(force);
-                sendEffect(SimpleParticle(force.origin,
-                    it.getCurrentThrust() + this.getVelocity(),
-                    it.getLocalTransform().rotation + this.getWorldTransform().rotation,
-                    100))
+                for(i in 0 until 100){
+                    sendEffect(SimpleParticle(force.origin,
+                        (it.getCurrentThrust() + this.getVelocity()).rotate(Math.random() * 0.1 * getRandomSign()) * (0.8 + Math.random()*0.2),
+                        it.getLocalTransform().rotation + this.getWorldTransform().rotation,
+                        Math.random() * 0.2 + 0.2,
+                        100))
+                }
+
             }
         }
         getParts().filterIsInstance<Torquer>().forEach {
