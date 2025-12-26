@@ -1,4 +1,3 @@
-Keep extending the 'Space' code to entity fields - those should not just be raw Vector2 unless it make sense.
 Write proper density calculations...
 Reincorporate point projectile intersection
 Add projectile 'death' (timeout/collision)
