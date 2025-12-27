@@ -76,7 +76,7 @@ fun main() {
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
-    val playerEntity = ControllableEntity()
+    val playerEntity = SimpleShip()
     playerEntity.setEffectsConsumer(effectsLayer)
     playerEntity.setEntityConsumer(physicsLayer)
     physicsLayer.addEntity(playerEntity)

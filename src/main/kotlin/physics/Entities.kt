@@ -4,8 +4,10 @@ import EffectsConsumer
 import EntityConsumer
 import effects.Effect
 import effects.SimpleParticle
+import graphics.BLUE
 import graphics.GREEN
 import graphics.Graphics
+import graphics.RED
 import math.*
 import math.Orientation
 import kotlin.math.sin
@@ -79,7 +81,6 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     }
 
     fun getRenderables() : List<Graphics.Renderable> {
-        println("AbstractKinematicEntity.getRenderables")
         return getParts().map { part ->
             val partToWorldTransform = combineTransforms(part.getTransform(), this.getTransform())
 
@@ -216,7 +217,7 @@ open class DumbEntity() : AbstractKinematicEntity() {
 
 }
 
-class ControllableEntity() : AbstractKinematicEntity() {
+class SimpleShip() : ControllableEntity(){
     init {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
@@ -229,10 +230,10 @@ class ControllableEntity() : AbstractKinematicEntity() {
         cockpit.setColor(color)
         cockpit.translate(Vector2(0.0, 0.0))
 
-        thruster.setColor(color)
+        thruster.setColor(BLUE)
         thruster.translate(Vector2(-1.0, 0.0))
 
-        block.setColor(color)
+        block.setColor(BLUE)
         block.translate(Vector2(1.0, 0.0))
 
         block2.setColor(color)
@@ -248,6 +249,9 @@ class ControllableEntity() : AbstractKinematicEntity() {
             block2,
             gun))
     }
+}
+
+open class ControllableEntity() : AbstractKinematicEntity() {
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}

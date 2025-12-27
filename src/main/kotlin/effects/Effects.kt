@@ -72,7 +72,7 @@ class SimpleParticle(startPosition: Coordinates<WorldSpace>, startVelocity: Vect
             Coordinates(position),
             Orientation(angle),
             ZHeight(10.0),
-            1.0,
+            0.3,
             RED,
             Graphics.MetaData(1.0f)))
     }

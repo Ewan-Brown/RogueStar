@@ -3,6 +3,7 @@ package math
 sealed interface Space
 
 //"Label" types for the 3 different coordinate systems in the game's hierarchy.
+
 object PartSpace : Space
 object ShipSpace : Space
 object WorldSpace : Space
@@ -67,8 +68,3 @@ fun <S1: Space, S2: Space, S3: Space> combineTransforms(transform1: Transform<S1
     val newZHeight = transform1.zHeight + transform2.zHeight
     return Transform(newTranslation, newRotation, newZHeight)
 }
-
-
-
-
-
