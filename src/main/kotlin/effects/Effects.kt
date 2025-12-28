@@ -5,10 +5,11 @@ import EffectsLayerI
 import graphics.Graphics
 import graphics.RED
 import math.Coordinates
+import math.InReferenceFrame
 import math.Orientation
 import models.Model
 import math.Vector2
-import math.WorldSpace
+import math.WorldReferenceFrame
 import math.ZHeight
 
 data class EffectsInput(val timeStep: Double)
@@ -47,18 +48,15 @@ class EffectsLayer : EffectsLayerI{
     }
 }
 
-interface Effect{
+interface Effect : InReferenceFrame<WorldReferenceFrame>{
     fun getRenderables(): List<Graphics.Renderable>
     fun update(timeStep: Double): Unit
     fun markedForRemoval(): Boolean
 }
 
 //TODO Consider entities that don't incrementally update, that are formulaic rather than iterative?
-class SimpleParticle(startPosition: Coordinates<WorldSpace>, startVelocity: Vector2, startAngle: Orientation<WorldSpace>, startingAngularVelocity: Double, startLife: Int)
+class SimpleParticle(var position: Coordinates<WorldReferenceFrame>, startVelocity: Vector2, var angle: Orientation<WorldReferenceFrame>, startingAngularVelocity: Double, startLife: Int)
     : Effect {
-
-    var position: Vector2 = startPosition.getVector()
-    var angle : Double = startAngle.getAngle()
 
     var velocity: Vector2 = startVelocity
     var angularVelocity : Double = startingAngularVelocity
@@ -69,8 +67,8 @@ class SimpleParticle(startPosition: Coordinates<WorldSpace>, startVelocity: Vect
     override fun getRenderables() : List<Graphics.Renderable> {
         return listOf(Graphics.Renderable(
             Model.SQUARE,
-            Coordinates(position),
-            Orientation(angle),
+            position,
+            angle,
             ZHeight(10.0),
             0.3,
             RED,
@@ -89,5 +87,17 @@ class SimpleParticle(startPosition: Coordinates<WorldSpace>, startVelocity: Vect
 
     override fun markedForRemoval(): Boolean {
         return life <= 0;
+    }
+
+    override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
+        return position
+    }
+
+    override fun getOrientation(): Orientation<WorldReferenceFrame> {
+        return angle
+    }
+
+    override fun getZHeight(): ZHeight<WorldReferenceFrame> {
+        return getZHeight()
     }
 }

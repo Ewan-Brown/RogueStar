@@ -4,12 +4,12 @@ import models.Model
 import effects.EffectsInput
 import graphics.Graphics
 import math.Coordinates
-import math.WorldSpace
+import math.WorldReferenceFrame
 import physics.AbstractKinematicEntity
 import physics.PhysicsInput
 import physics.PhysicsOutput
 
-data class DebugLineData(val p1: Coordinates<WorldSpace>, val p2: Coordinates<WorldSpace>, val colorData1: Graphics.ColorData, val colorData2: Graphics.ColorData)
+data class DebugLineData(val p1: Coordinates<WorldReferenceFrame>, val p2: Coordinates<WorldReferenceFrame>, val colorData1: Graphics.ColorData, val colorData2: Graphics.ColorData)
 
 interface Layer {
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>)

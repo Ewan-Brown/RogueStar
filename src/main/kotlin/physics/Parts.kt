@@ -6,32 +6,25 @@ import models.Model
 import java.util.*
 
 
-interface EntityPartI {
+interface EntityPartI : InReferenceFrame<EntityReferenceFrame>, HasReferenceFrame<PartReferenceFrame> {
     fun getModel() : Model
     fun getScale() : Double
     fun getColor() : Graphics.ColorData
     fun setColor(color: Graphics.ColorData)
     fun getMetadata() : Graphics.MetaData
     fun isCollideable() : Boolean
-    fun getCenterOfMass() : Coordinates<PartSpace>
-    fun getZHeight() : ZHeight<ShipSpace>
+    fun getCenterOfMass() : Coordinates<PartReferenceFrame>
     fun getMass(): Double
     fun translate(vector: Vector2)
     fun rotate(theta: Double)
     fun onDamage(d: Int)
-    fun getTransform() : Transform<PartSpace, ShipSpace>
-    /**
-     * Implicitly local center is always (0, 0)
-     */
-    fun getCoordinates() : Coordinates<ShipSpace>
-    fun getOrientation() : Orientation<ShipSpace>
 }
 
 open class EntityPartImpl() : EntityPartI {
 
-    private var position: Coordinates<ShipSpace> = Coordinates(Vector2())
-    private var zpos: ZHeight<ShipSpace> = ZHeight(0.0)
-    private var rotation: Orientation<ShipSpace> = Orientation(0.0)
+    private var position: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
+    private var zpos: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+    private var rotation: Orientation<EntityReferenceFrame> = Orientation(0.0)
     private val scale = 1.0
     private var life = 100
 
@@ -50,7 +43,7 @@ open class EntityPartImpl() : EntityPartI {
         life -= d
     }
 
-    override fun getZHeight(): ZHeight<ShipSpace> = zpos
+    override fun getZHeight(): ZHeight<EntityReferenceFrame> = zpos
     //TODO Implement this correctly
     override fun getMass(): Double {
         return 1.0
@@ -72,19 +65,15 @@ open class EntityPartImpl() : EntityPartI {
         return true
     }
 
-    override fun getCenterOfMass(): Coordinates<PartSpace> {
+    override fun getCenterOfMass(): Coordinates<PartReferenceFrame> {
         return Coordinates(Vector2())
     }
 
-    final override fun getTransform(): Transform<PartSpace, ShipSpace> {
-        return Transform(position.getVector(), rotation.getAngle(), zpos.getZ())
-    }
-
-    override fun getCoordinates(): Coordinates<ShipSpace> {
+    override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
         return position
     }
 
-    override fun getOrientation(): Orientation<ShipSpace> {
+    override fun getOrientation(): Orientation<EntityReferenceFrame> {
         return rotation
     }
 }
@@ -139,11 +128,11 @@ class BasicGun() : EntityPartImpl(), Gun {
 
     var firing = false;
 
-    override fun getFiringPosition(): Coordinates<PartSpace> {
+    override fun getFiringPosition(): Coordinates<PartReferenceFrame> {
         TODO("Not yet implemented")
     }
 
-    override fun getFiringOrientation(): Orientation<PartSpace> {
+    override fun getFiringOrientation(): Orientation<PartReferenceFrame> {
         return Orientation(Math.PI/2.0)
     }
 
@@ -188,12 +177,12 @@ interface Radar : EntityPartI{
 
 //Generates projectiles
 interface Gun : EntityPartI{
-    fun getFiringPosition() : Coordinates<PartSpace>
-    fun getFiringOrientation() : Orientation<PartSpace>
+    fun getFiringPosition() : Coordinates<PartReferenceFrame>
+    fun getFiringOrientation() : Orientation<PartReferenceFrame>
     fun createProjectile() : AbstractKinematicEntity
     fun isFiring() : Boolean
     fun toggleFiring(firing: Boolean)
 }
 
 enum class Affiliation {ALLY, NEUTRAL, FOE, UNKNOWN, NEUTRALIZED}
-data class RadarReading(val uuid: UUID, val position: Coordinates<WorldSpace>, val velocity: Double, val affiliation: Affiliation)
+data class RadarReading(val uuid: UUID, val position: Coordinates<WorldReferenceFrame>, val velocity: Double, val affiliation: Affiliation)
