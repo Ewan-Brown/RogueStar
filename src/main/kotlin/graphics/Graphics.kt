@@ -422,7 +422,7 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
 
     class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
-    class Renderable(val model: Model, val coordinates: Coordinates<WorldSpace>, val orientation: Orientation<WorldSpace>, val zHeight: ZHeight<WorldSpace>, val scale : Double, val colorData: ColorData, val metaData: MetaData)
+    class Renderable(val model: Model, val coordinates: Coordinates<WorldReferenceFrame>, val orientation: Orientation<WorldReferenceFrame>, val zHeight: ZHeight<WorldReferenceFrame>, val scale : Double, val colorData: ColorData, val metaData: MetaData)
 
     //TODO Clean this up... DO we need separate VBONames and Attributes classes? Why is this not an enum? Should it start at zero?
     private interface VBONames {

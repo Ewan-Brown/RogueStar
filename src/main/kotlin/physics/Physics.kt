@@ -8,8 +8,11 @@ import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
 import math.Coordinates
-import math.ShipSpace
+import math.HasReferenceFrame
+import math.EntityReferenceFrame
 import math.Vector2
+import math.WorldReferenceFrame
+import math.getTransformToParentFrame
 import models.Model
 import kotlin.collections.HashMap
 
@@ -35,12 +38,12 @@ class PhysicsLayer() : PhysicsLayerI{
 
         for (entity in world.getEntities()) {
             val pos = entity.getCoordinates()
-            val com = entity.getCenterOfMass().applyTransform(entity.getTransform())
+            val com = entity.getCenterOfMass().applyTransform(getTransformToParentFrame(entity))
             val velocity = entity.getVelocity()
             lines.add(DebugLineData(com, pos, RED, GREEN))
             lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, RED, GREEN))
             for (force in entity.getLastForces()) {
-                val fOrigin = force.origin.applyTransform(entity.getTransform())
+                val fOrigin = force.origin.applyTransform(getTransformToParentFrame(entity))
                 val fEnd = fOrigin + force.vector * 500.0
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
@@ -54,7 +57,7 @@ class PhysicsLayer() : PhysicsLayerI{
 
     val world: World = FlatWorld()
 
-    interface World{
+    interface World : HasReferenceFrame<WorldReferenceFrame>{
         public fun update(input: PhysicsInput)
         public fun getEntities(): List<AbstractKinematicEntity>
         public fun addEntity(entity: AbstractKinematicEntity)
@@ -119,4 +122,4 @@ class PhysicsLayer() : PhysicsLayerI{
     }
 }
 
-data class Force(val vector: Vector2, val origin: Coordinates<ShipSpace>)
+data class Force(val vector: Vector2, val origin: Coordinates<EntityReferenceFrame>)
