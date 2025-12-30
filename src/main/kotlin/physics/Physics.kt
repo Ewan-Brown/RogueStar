@@ -12,7 +12,7 @@ import math.HasReferenceFrame
 import math.EntityReferenceFrame
 import math.Vector2
 import math.WorldReferenceFrame
-import math.getTransformToParentFrame
+import math.getTransformLocalToParentFrame
 import models.Model
 import kotlin.collections.HashMap
 
@@ -38,12 +38,12 @@ class PhysicsLayer() : PhysicsLayerI{
 
         for (entity in world.getEntities()) {
             val pos = entity.getCoordinates()
-            val com = entity.getCenterOfMass().applyTransform(getTransformToParentFrame(entity))
+            val com = entity.getCenterOfMass().applyTransform(getTransformLocalToParentFrame(entity))
             val velocity = entity.getVelocity()
             lines.add(DebugLineData(com, pos, RED, GREEN))
             lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, RED, GREEN))
             for (force in entity.getLastForces()) {
-                val fOrigin = force.origin.applyTransform(getTransformToParentFrame(entity))
+                val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
                 val fEnd = fOrigin + force.vector * 500.0
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }

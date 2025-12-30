@@ -135,9 +135,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     override fun init(drawable: GLAutoDrawable) {
         val gl = drawable.gl.gL3
 
-        for (preloadedModel in loadedModels) {
-            modelDataMap[preloadedModel] = ModelData()
+        try{
+            for (preloadedModel in loadedModels) {
+                modelDataMap[preloadedModel] = ModelData()
+            }
+        }catch (e: NullPointerException){
+            System.err.println("modelDataMap was not correctly initialized before being referenced")
         }
+
 
         gl.glGenBuffers(VBONames.MAX, VBOs) // Create VBOs (n = Buffer.max)
         populateStaticVBOs(gl)
