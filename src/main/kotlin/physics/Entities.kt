@@ -31,7 +31,7 @@ interface KinematicEntityI: InReferenceFrame<WorldReferenceFrame>, HasReferenceF
     fun checkNetTorque() : Double
 
     fun getLastForces(): List<Force>
-    fun getPawnsInside() : List<AbstractPawn<EntityReferenceFrame>>
+    fun getPawnsInside() : List<AbstractPawn>
 }
 
 abstract class AbstractKinematicEntity() : KinematicEntityI{
@@ -53,7 +53,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     private var torqueAccumulator = 0.0
     
     private var parts = mutableListOf<EntityPartI>()
-    private var pawns = mutableListOf<AbstractPawn<EntityReferenceFrame>>()
+    private var pawns = mutableListOf<AbstractPawn>()
 
     //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
     override fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
@@ -69,15 +69,21 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         return Coordinates(dividedMass)
     }
 
+    //TODO This feels messy.
     fun getRenderables() : List<Graphics.Renderable> {
-        return getParts().map { part ->
+
+        val shipToWorld = getTransformLocalToParentFrame(this)
+
+        val partRenderables : List<Graphics.Renderable> = getParts().map { part ->
 
             val partToShip = getTransformLocalToParentFrame(part)
-            val shipToWorld = getTransformLocalToParentFrame(this)
 
             val partToWorldTransform = combineTransforms(partToShip, shipToWorld)
 
             //TODO Can we clean this up? This needs to be reused, and these magic '0.0' origins should maybe be derived somewhere...
+            // Come to think of it, each part may or may not have multiple renderables... think of a cannon with hull and barrel components, separate
+            // What we see below is the implicit single renderable who's coordinates are 0/0/0...
+            // See Pawn implementation for good example! Lots of duplicated code here
             val partCoordInWorldSpace = Coordinates<PartReferenceFrame>(Vector2()).applyTransform(partToWorldTransform)
             val partOrientationInWorldSpace = Orientation<PartReferenceFrame>(0.0).applyTransform(partToWorldTransform)
             val partZHeightInWorldSpace = ZHeight<PartReferenceFrame>(0.0).applyTransform(partToWorldTransform)
@@ -89,6 +95,28 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
                 part.getScale(),
                 part.getColor(), part.getMetadata())
         }
+
+        val pawnRenderables : List<Graphics.Renderable> = getPawnsInside().flatMap { pawn ->
+
+            val pawnToShip = getTransformLocalToParentFrame(pawn)
+            val pawnToWorldTransform: Transform<PawnReferenceFrame, WorldReferenceFrame> = combineTransforms(pawnToShip, shipToWorld)
+
+            pawn.getRenderables().map { pawnRenderable ->
+
+                val pawnRenderableCoordInWorldSpace = pawnRenderable.getCoordinates().applyTransform(pawnToWorldTransform)
+                val pawnRenderableOrientationInWorldSpace = pawnRenderable.getOrientation().applyTransform(pawnToWorldTransform)
+                val pawnRenderableZHeightInWorldSpace = pawnRenderable.getZHeight().applyTransform(pawnToWorldTransform)
+
+                Graphics.Renderable(pawnRenderable.getModel(),
+
+                    pawnRenderableCoordInWorldSpace,
+                    pawnRenderableOrientationInWorldSpace,
+                    pawnRenderableZHeightInWorldSpace,
+                    pawnRenderable.getScale(),
+                    pawnRenderable.getColor(), pawnRenderable.getMetadata())
+            }        }
+
+        return partRenderables + pawnRenderables
     }
 
     fun getParts(): List<EntityPartI> {
@@ -165,7 +193,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         }
     }
 
-    fun addPawn(pawn: AbstractPawn<EntityReferenceFrame>) {
+    fun addPawn(pawn: AbstractPawn) {
         pawns.add(pawn)
     }
 
@@ -203,7 +231,7 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
         return position
     }
 
-    override fun getPawnsInside(): List<AbstractPawn<EntityReferenceFrame>> {
+    override fun getPawnsInside(): List<AbstractPawn> {
         return pawns
     }
 }
@@ -250,6 +278,8 @@ class SimpleShip() : ControllableEntity(){
             block,
             block2,
             gun))
+
+        addPawn(pawn)
     }
 }
 
