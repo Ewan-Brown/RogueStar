@@ -23,7 +23,7 @@ interface EntityPartI : InReferenceFrame<EntityReferenceFrame>, HasReferenceFram
 open class EntityPartImpl() : EntityPartI {
 
     private var position: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
-    private var zpos: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+    private var zpos: ZHeight<EntityReferenceFrame> = ZHeight(5.0)
     private var rotation: Orientation<EntityReferenceFrame> = Orientation(0.0)
     private val scale = 1.0
     private var life = 100

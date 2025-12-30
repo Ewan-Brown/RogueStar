@@ -1,6 +1,7 @@
 package physics
 
 import graphics.Graphics
+import graphics.RED
 import graphics.WHITE
 import math.Coordinates
 import math.InReferenceFrame
@@ -23,7 +24,7 @@ abstract class AbstractPawn : HasReferenceFrame<PawnReferenceFrame>, InReference
 
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
     private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
-    private var zHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+    private var zHeight: ZHeight<EntityReferenceFrame> = ZHeight(1.0)
 
     override fun getCoordinates() = coordinates
     override fun getOrientation() = orientation
@@ -49,11 +50,11 @@ class DumbPawn() : AbstractPawn(){
             }
 
             override fun getScale(): Double {
-                return 1.0
+                return 0.2
             }
 
             override fun getColor(): Graphics.ColorData {
-                return WHITE
+                return RED
             }
 
             override fun getMetadata(): Graphics.MetaData {
