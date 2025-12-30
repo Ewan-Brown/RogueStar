@@ -1,3 +1,12 @@
+Complete Pawn implementation.
+- Write skeleton for Pawn AI
+- Write pawns with many sub-renderables
+- Check that pawn geometry is right
+- Rewrite Part renderable stuff to follow the Pawn pattern
+- Reuse 'Renderable' code
+- Write utility functions for Pawns - pathing, getting current part etc.
+
+Check TODOs!
 Write proper density calculations...
 Reincorporate point projectile intersection
 Add projectile 'death' (timeout/collision)
