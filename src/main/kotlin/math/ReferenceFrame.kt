@@ -28,8 +28,16 @@ interface InReferenceFrame<S: ReferenceFrame>{
 
 interface HasReferenceFrame<S: ReferenceFrame>
 
-fun <From: ReferenceFrame, To: ReferenceFrame, T> getTransformToParentFrame(a: T) : Transform<From, To> where T : InReferenceFrame<To>, T: HasReferenceFrame<From> {
+fun <Local: ReferenceFrame, Parent: ReferenceFrame, T> getTransformLocalToParentFrame(a: T) : Transform<Local, Parent> where T : InReferenceFrame<Parent>, T: HasReferenceFrame<Local>
+{
     return Transform(a.getCoordinates().getVector(), a.getOrientation().getAngle(), a.getZHeight().getZ())
+}
+
+fun <Local: ReferenceFrame, Parent: ReferenceFrame, T> getTransformParentToLocalFrame(a: T) : Transform<Parent, Local> where T : InReferenceFrame<Parent>, T: HasReferenceFrame<Local> {
+    return Transform(
+        a.getCoordinates().getVector().rotate(a.getOrientation().getAngle() * -1.0) * -1.0,
+        a.getOrientation().getAngle() * -1.0,
+        a.getZHeight().getZ() * -1.0)
 }
 
 @JvmInline

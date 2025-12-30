@@ -15,12 +15,19 @@ import math.WorldReferenceFrame
 import math.ZHeight
 import models.Model
 
-/**
- * Represents the info associated with a npc - agnostic to its placement in the world!
- */
-abstract class AbstractPawn {
+
+// TODO It might be neat if pawns could be agnostic to their frame of reference?
+abstract class AbstractPawn : HasReferenceFrame<PawnReferenceFrame>, InReferenceFrame<EntityReferenceFrame>{
     abstract fun getPawnInfo()
     abstract fun getRenderables() : List<PawnRenderablePart>
+
+    private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
+    private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
+    private var zHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+
+    override fun getCoordinates() = coordinates
+    override fun getOrientation() = orientation
+    override fun getZHeight() = zHeight
 }
 
 abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
@@ -29,25 +36,6 @@ abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
     abstract fun getColor() : Graphics.ColorData
     abstract fun getMetadata() : Graphics.MetaData
 }
-
-/**
- * Collection of wrapper classes that associate a pawn with its coordinate system
- */
-
-abstract class PawnWrapper<P: AbstractPawn, S: ReferenceFrame>(val pawn: P) : InReferenceFrame<S>,
-    HasReferenceFrame<PawnReferenceFrame> {
-    private var coordinates: Coordinates<S> = Coordinates(Vector2())
-    private var orientation: Orientation<S> = Orientation(0.0)
-    private var zHeight: ZHeight<S> = ZHeight(0.0)
-
-    override fun getCoordinates() = coordinates
-    override fun getOrientation() = orientation
-    override fun getZHeight() = zHeight
-}
-
-class PawnInPart<S : AbstractPawn>(pawn: S) : PawnWrapper<S, PartReferenceFrame>(pawn){}
-class PawnInShip<S : AbstractPawn>(pawn: S) : PawnWrapper<S, EntityReferenceFrame>(pawn){}
-class PawnInSpace<S : AbstractPawn>(pawn: S) : PawnWrapper<S, WorldReferenceFrame>(pawn){}
 
 class DumbPawn() : AbstractPawn(){
     override fun getPawnInfo() {
