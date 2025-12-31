@@ -1,18 +1,15 @@
 package physics
 
+import controllers.ControllerTarget
 import graphics.Graphics
 import graphics.RED
-import graphics.WHITE
 import math.Coordinates
 import math.InReferenceFrame
 import math.Orientation
-import math.PartReferenceFrame
 import math.PawnReferenceFrame
 import math.EntityReferenceFrame
 import math.HasReferenceFrame
-import math.ReferenceFrame
 import math.Vector2
-import math.WorldReferenceFrame
 import math.ZHeight
 import models.Model
 
@@ -37,8 +34,7 @@ abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
     abstract fun getMetadata() : Graphics.MetaData
 }
 
-class DumbPawn() : AbstractPawn(){
-
+class SimplePawn() : AbstractPawn(), ControllerTarget{
     override fun getRenderables(): List<PawnRenderablePart> {
         return listOf(object : PawnRenderablePart() {
             override fun getModel(): Model {
@@ -72,4 +68,7 @@ class DumbPawn() : AbstractPawn(){
         })
     }
 
+    override fun markedForControllerRemoval(): Boolean {
+        TODO("Not yet implemented")
+    }
 }

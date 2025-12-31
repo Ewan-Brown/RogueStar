@@ -2,6 +2,7 @@ package physics
 
 import EffectsConsumer
 import EntityConsumer
+import controllers.ControllerTarget
 import effects.Effect
 import effects.SimpleParticle
 import graphics.BLUE
@@ -253,7 +254,7 @@ class SimpleShip() : ControllableEntity(){
         val block2 = EntityPartImpl()
         val gun = BasicGun()
 
-        val pawn = DumbPawn()
+        val pawn = SimplePawn()
 
         val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 
@@ -283,7 +284,7 @@ class SimpleShip() : ControllableEntity(){
     }
 }
 
-open class ControllableEntity() : AbstractKinematicEntity() {
+open class ControllableEntity() : AbstractKinematicEntity(), ControllerTarget {
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
@@ -331,4 +332,7 @@ open class ControllableEntity() : AbstractKinematicEntity() {
     }
 
     override fun markedForRemoval(): Boolean {return false }
+    override fun markedForControllerRemoval(): Boolean {
+        return markedForRemoval()
+    }
 }

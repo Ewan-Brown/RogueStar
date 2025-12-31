@@ -15,18 +15,14 @@ import com.jogamp.newt.event.KeyListener
 import com.jogamp.opengl.GL
 import controllers.ControllerLayer
 import designers.Shape
-import math.Transformation3
 import math.Vector2
-import math.Vector3
 import java.util.*
 import ControllerLayerI
 import DebugLineData
-import controllers.Controller
-import controllers.PlayerController
+import controllers.ShipController
+import controllers.PlayerShipController
 import graphics.CameraDetails
-import graphics.GREEN
 import graphics.GraphicsI
-import graphics.WHITE
 import physics.*
 
 fun loadModels() : Map<Int, Model> {
@@ -80,7 +76,7 @@ fun main() {
     playerEntity.setEffectsConsumer(effectsLayer)
     playerEntity.setEntityConsumer(physicsLayer)
     physicsLayer.addEntity(playerEntity)
-    val playerController : Controller<ControllableEntity> = PlayerController(bitSet)
+    val playerController : ShipController<ControllableEntity> = PlayerShipController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
 
     while(true){

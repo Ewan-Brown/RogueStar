@@ -12,15 +12,15 @@ import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<T: AbstractKinematicEntity>(val controller : Controller<T>, val entity: T){
+    private class ControllerEntityEntry<T : ControllerTarget, C: Controller<T>>(val controller : C, val entity: T){
         fun update(){
             controller.update(entity)
         }
     }
-    private val controllerEntryList = mutableListOf<ControllerEntityEntry<*>>()
+    private val controllerEntryList = mutableListOf<ControllerEntityEntry<*, *>>()
 
     override fun update() {
-        controllerEntryList.removeIf{it.entity.markedForRemoval()}
+        controllerEntryList.removeIf{it.entity.markedForControllerRemoval()}
         for (controllerEntityEntry in controllerEntryList) {
            controllerEntityEntry.update()
         }
@@ -31,16 +31,22 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T : AbstractKinematicEntity> addControllerEntry(controller: Controller<T>, entity: T) {
+    override fun <T: ControllerTarget, C: Controller<T>> addControllerEntry(controller: C, entity: T) {
         controllerEntryList.add(ControllerEntityEntry(controller, entity))
     }
 }
 
-abstract class Controller<T : AbstractKinematicEntity>(){
-    abstract fun update(plant: T)
+interface Controller<T>{
+    fun update(plant: T)
 }
 
-class SpinAI() : Controller<ControllableEntity>(){
+interface ControllerTarget{
+    fun markedForControllerRemoval() : Boolean
+}
+
+abstract class ShipController<T : AbstractKinematicEntity>() : Controller<T> {}
+
+class SpinAI() : ShipController<ControllableEntity>(){
     override fun update(plant: ControllableEntity) {
         val thrusters = plant.getThrusters()
         val torquers = plant.getTorquers()
@@ -70,7 +76,7 @@ enum class TorqueKeys(val keyValue: Int, val torque: Double){
 }
 
 //TODO Maybe abstract this some more. Like send commands instead of coupling this to keylistener-bitset
-class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
+class PlayerShipController(val bitSet: BitSet) : ShipController<ControllableEntity>(){
     override fun update(plant: ControllableEntity) {
         val thrusters = plant.getThrusters()
         val torquers = plant.getTorquers()
