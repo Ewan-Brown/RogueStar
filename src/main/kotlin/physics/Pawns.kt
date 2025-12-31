@@ -17,9 +17,8 @@ import math.ZHeight
 import models.Model
 
 
-// TODO It might be neat if pawns could be agnostic to their frame of reference?
+// TODO It might be neat if pawns could be agnostic to their frame of reference? (InReferenceFrame<F : ReferenceFrame>)
 abstract class AbstractPawn : HasReferenceFrame<PawnReferenceFrame>, InReferenceFrame<EntityReferenceFrame>{
-    abstract fun getPawnInfo()
     abstract fun getRenderables() : List<PawnRenderablePart>
 
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
@@ -39,9 +38,6 @@ abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
 }
 
 class DumbPawn() : AbstractPawn(){
-    override fun getPawnInfo() {
-
-    }
 
     override fun getRenderables(): List<PawnRenderablePart> {
         return listOf(object : PawnRenderablePart() {
