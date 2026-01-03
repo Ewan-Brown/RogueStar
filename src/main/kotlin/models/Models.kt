@@ -1,6 +1,8 @@
 package models
 
 import com.jogamp.opengl.GL
+import math.Coordinates
+import math.PartReferenceFrame
 import math.Vector2
 
 public class Model internal constructor(val vertexData: FloatArray, dMode: Int) {

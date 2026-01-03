@@ -93,6 +93,13 @@ class PhysicsLayer() : PhysicsLayerI{
                 entity.setRotationalVelocity(rotVelocity)
             }
 
+            // Do pawn updates
+            for(entity in entities) {
+                for (pawn in entity.getPawnsInside()){
+//                    pawn.tra
+                }
+            }
+
             for(projectile in entities.filterIsInstance<HasCollidingPoint>()){
                 val pointOfContactLocal = projectile.getPointOfContact()
 //                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldOrientation().value) + projectile.getWorldTransform().translation

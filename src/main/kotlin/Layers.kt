@@ -1,6 +1,5 @@
 import controllers.Controller
 import controllers.ControllerTarget
-import controllers.ShipController
 import effects.Effect
 import models.Model
 import effects.EffectsInput
@@ -34,7 +33,10 @@ interface EffectsConsumer {
     fun addEffect(effect: Effect)
 }
 
-interface ControllerLayerI : Layer{
+interface ControllerConsumer {
+    fun <T: ControllerTarget> addControllerEntry(controller: Controller<T>, target: T)
+}
+
+interface ControllerLayerI : Layer, ControllerConsumer{
     fun update()
-    fun <T : ControllerTarget, C: Controller<T>> addControllerEntry(controller: C, entity: T)
 }

@@ -18,6 +18,7 @@ interface EntityPartI : InReferenceFrame<EntityReferenceFrame>, HasReferenceFram
     fun translate(vector: Vector2)
     fun rotate(theta: Double)
     fun onDamage(d: Int)
+    fun isEnterableByPawn() : Boolean
 }
 
 open class EntityPartImpl() : EntityPartI {
@@ -41,6 +42,10 @@ open class EntityPartImpl() : EntityPartI {
 
     override fun onDamage(d: Int) {
         life -= d
+    }
+
+    override fun isEnterableByPawn(): Boolean {
+        return true
     }
 
     override fun getZHeight(): ZHeight<EntityReferenceFrame> = zpos

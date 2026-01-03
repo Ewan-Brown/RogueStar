@@ -6,18 +6,30 @@ import graphics.Graphics
 import math.Vector2
 import models.Model
 import physics.AbstractKinematicEntity
+import physics.AbstractPawn
 import physics.ControllableEntity
+import physics.SimplePawn
 import java.awt.event.KeyEvent
 import java.util.BitSet
 
+// World <-> Plant <-> Controller
+// World updates plant, plant stores relevant information about its surroundings
+// Controller interprets stored information, and interacts with the plant accordingly
+
+// Ship example:
+// World.update() -> plant.sensor -> controller.update(plant) -> Engines/Guns/etc -> World.update()
+
+// Pawn example : ?
+// Maybe pawns should store a map
+
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<T : ControllerTarget, C: Controller<T>>(val controller : C, val entity: T){
+    private class ControllerEntityEntry<T : ControllerTarget>(val controller : Controller<T>, val entity: T){
         fun update(){
             controller.update(entity)
         }
     }
-    private val controllerEntryList = mutableListOf<ControllerEntityEntry<*, *>>()
+    private val controllerEntryList = mutableListOf<ControllerEntityEntry<*>>()
 
     override fun update() {
         controllerEntryList.removeIf{it.entity.markedForControllerRemoval()}
@@ -31,37 +43,21 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T: ControllerTarget, C: Controller<T>> addControllerEntry(controller: C, entity: T) {
-        controllerEntryList.add(ControllerEntityEntry(controller, entity))
+    override fun <T : ControllerTarget> addControllerEntry(controller: Controller<T>, target: T) {
+        controllerEntryList.add(ControllerEntityEntry(controller, target))
     }
 }
 
-interface Controller<T>{
-    fun update(plant: T)
+interface Controller<in P>{
+    fun update(plant: P)
 }
 
 interface ControllerTarget{
     fun markedForControllerRemoval() : Boolean
 }
 
+abstract class PawnController<P: AbstractPawn> : Controller<P> {}
 abstract class ShipController<T : AbstractKinematicEntity>() : Controller<T> {}
-
-class SpinAI() : ShipController<ControllableEntity>(){
-    override fun update(plant: ControllableEntity) {
-        val thrusters = plant.getThrusters()
-        val torquers = plant.getTorquers()
-        val radars = plant.getRadars()
-
-        val readings = radars.map{ it.getReadings()}.flatten()
-
-        for(thruster in thrusters){
-            thruster.setThrottle(0.5)
-        }
-        for (torquer in torquers){
-            torquer.setTorque(1.0)
-        }
-    }
-}
 
 enum class ThrustKeys(val keyValue: Int, val vector: Vector2){
     UP(KeyEvent.VK_W, Vector2(0.0, 1.0)),
@@ -115,5 +111,3 @@ class PlayerShipController(val bitSet: BitSet) : ShipController<ControllableEnti
     }
 
 }
-
-

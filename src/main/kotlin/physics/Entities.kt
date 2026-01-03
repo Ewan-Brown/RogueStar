@@ -12,6 +12,7 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
+//TODO Why is this an interface? is-a vs has-a...
 interface KinematicEntityI: InReferenceFrame<WorldReferenceFrame>, HasReferenceFrame<EntityReferenceFrame>{
     fun getVelocity() : Vector2
     fun getRotationalVelocity() : Double
@@ -33,6 +34,8 @@ interface KinematicEntityI: InReferenceFrame<WorldReferenceFrame>, HasReferenceF
 
     fun getLastForces(): List<Force>
     fun getPawnsInside() : List<AbstractPawn>
+
+    fun getPartContainedBy(coordinate : Coordinates<EntityReferenceFrame>) : EntityPartI?
 }
 
 abstract class AbstractKinematicEntity() : KinematicEntityI{
@@ -235,6 +238,20 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     override fun getPawnsInside(): List<AbstractPawn> {
         return pawns
     }
+
+    override fun getPartContainedBy(coordinate: Coordinates<EntityReferenceFrame>): EntityPartI? {
+        return getParts().firstOrNull { part ->
+            val modelVectors = part.getModel().asVectors()
+            val transformedVectors = modelVectors.map { vector ->
+                var transformedVector = (vector * part.getScale())
+                val transformedCoordinatesInPartFrame = Coordinates<PartReferenceFrame>(transformedVector)
+                val partToShip = getTransformLocalToParentFrame(part)
+                val transformedCoordinatesInEntityFrame = transformedCoordinatesInPartFrame.applyTransform(partToShip)
+                transformedCoordinatesInEntityFrame.getVector()
+            }
+            doesPolygonContainPoint(transformedVectors, coordinate.getVector())
+        }
+    }
 }
 
 open class DumbEntity() : AbstractKinematicEntity() {
@@ -284,7 +301,7 @@ class SimpleShip() : ControllableEntity(){
     }
 }
 
-open class ControllableEntity() : AbstractKinematicEntity(), ControllerTarget {
+abstract class ControllableEntity() : AbstractKinematicEntity(), ControllerTarget {
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
@@ -332,7 +349,5 @@ open class ControllableEntity() : AbstractKinematicEntity(), ControllerTarget {
     }
 
     override fun markedForRemoval(): Boolean {return false }
-    override fun markedForControllerRemoval(): Boolean {
-        return markedForRemoval()
-    }
+    override fun markedForControllerRemoval(): Boolean {return markedForRemoval()}
 }

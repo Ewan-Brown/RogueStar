@@ -79,6 +79,8 @@ fun main() {
     val playerController : ShipController<ControllableEntity> = PlayerShipController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
 
+    println(playerEntity.getPartContainedBy(playerEntity.getPawnsInside().first().getCoordinates()))
+
     while(true){
         game.update(timeStep)
     }

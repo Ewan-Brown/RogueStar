@@ -22,9 +22,24 @@ abstract class AbstractPawn : HasReferenceFrame<PawnReferenceFrame>, InReference
     private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
     private var zHeight: ZHeight<EntityReferenceFrame> = ZHeight(1.0)
 
+    private var velocity: Vector2 = Vector2()
+
+    //Temporary variable...? Currently used to make sure graphics aligns with boundary checks
+    val size: Double = 0.2
+
+    fun getVelocity() : Vector2 {return velocity}
+    fun setVelocity(vel: Vector2) {
+        this.velocity = vel
+    }
+    fun translate(translation: Vector2) {
+        this.coordinates += translation
+    }
+
     override fun getCoordinates() = coordinates
     override fun getOrientation() = orientation
     override fun getZHeight() = zHeight
+
+    abstract fun markedForRemoval(): Boolean
 }
 
 abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
@@ -34,7 +49,7 @@ abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
     abstract fun getMetadata() : Graphics.MetaData
 }
 
-class SimplePawn() : AbstractPawn(), ControllerTarget{
+class SimplePawn() : AbstractPawn(){
     override fun getRenderables(): List<PawnRenderablePart> {
         return listOf(object : PawnRenderablePart() {
             override fun getModel(): Model {
@@ -42,7 +57,7 @@ class SimplePawn() : AbstractPawn(), ControllerTarget{
             }
 
             override fun getScale(): Double {
-                return 0.2
+                return size
             }
 
             override fun getColor(): Graphics.ColorData {
@@ -68,7 +83,7 @@ class SimplePawn() : AbstractPawn(), ControllerTarget{
         })
     }
 
-    override fun markedForControllerRemoval(): Boolean {
-        TODO("Not yet implemented")
+    override fun markedForRemoval(): Boolean {
+        return false;
     }
 }
