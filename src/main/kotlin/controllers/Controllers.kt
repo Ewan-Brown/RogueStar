@@ -52,38 +52,25 @@ enum class TorqueKeys(val keyValue: Int, val torque: Double){
 
 class PlayerController(val bitSet: BitSet) : Controller<DummyControllerInterface>(){
     override fun update(plant: DummyControllerInterface) {
-//        val thrusters = plant.getThrusters()
-//        val torquers = plant.getTorquers()
-//        val guns = plant.getGuns()
-//
-//        var thrust = Vector2(0.0, 0.0)
-//        for (entry in ThrustKeys.entries) {
-//            if(bitSet[entry.keyValue]) {
-//                thrust += entry.vector
-//            }
-//        }
-//
-//        thrust = thrust.normalize().rotate(plant.getOrientation().getAngle())
-//
-//        var torque = 0.0
-//        for (entry in TorqueKeys.entries){
-//            if(bitSet[entry.keyValue]){
-//                torque += entry.torque
-//            }
-//        }
-//
-//        for (thruster in thrusters) {
-//            thruster.setOrientation(thrust)
-//            thruster.setThrottle(1.0)
-//        }
-//
-//        for(torquer in torquers){
-//            torquer.setTorque(torque/100)
-//        }
-//
-//        for(gun in guns){
-//            gun.toggleFiring((bitSet[KeyEvent.VK_SPACE]))
-//        }
+        var thrust = Vector2(0.0, 0.0)
+        for (entry in ThrustKeys.entries) {
+            if(bitSet[entry.keyValue]) {
+                thrust += entry.vector
+            }
+        }
+
+        var torque = 0.0
+        for (entry in TorqueKeys.entries){
+            if(bitSet[entry.keyValue]){
+                torque += entry.torque
+            }
+        }
+
+        val firing = bitSet[KeyEvent.VK_SPACE]
+
+        plant.setDesiredThrust(thrust)
+        plant.setDesiredTorque(torque/100.0)
+        plant.setFiring(firing)
     }
 }
 
@@ -98,6 +85,8 @@ abstract class Controller<S: ControllerInterface>(){
 }
 
 interface DummyControllerInterface : ControllerInterface{
-
+    fun setDesiredThrust(thrust: Vector2)
+    fun setDesiredTorque(t: Double)
+    fun setFiring(f: Boolean)
 }
 
