@@ -1,4 +1,5 @@
 import controllers.Controller
+import controllers.ControllerInterface
 import effects.Effect
 import models.Model
 import effects.EffectsInput
@@ -34,5 +35,5 @@ interface EffectsConsumer {
 
 interface ControllerLayerI : Layer{
     fun update()
-    fun <T: AbstractKinematicEntity> addControllerEntry(controller: Controller<T>, entity: T)
+    fun <T: ControllerInterface> addControllerEntry(controller: Controller<T>, plant: T)
 }
