@@ -5,22 +5,20 @@ import DebugLineData
 import graphics.Graphics
 import math.Vector2
 import models.Model
-import physics.AbstractKinematicEntity
-import physics.ControllableEntity
 import java.awt.event.KeyEvent
 import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<T: AbstractKinematicEntity>(val controller : Controller<T>, val entity: T){
+    private class ControllerEntityEntry<S: ControllerInterface>(val controller : Controller<S>, val plant: S){
         fun update(){
-            controller.update(entity)
+            controller.update(plant)
         }
     }
     private val controllerEntryList = mutableListOf<ControllerEntityEntry<*>>()
 
     override fun update() {
-        controllerEntryList.removeIf{it.entity.markedForRemoval()}
+        controllerEntryList.removeIf{it.plant.isMarkedForRemoval()}
         for (controllerEntityEntry in controllerEntryList) {
            controllerEntityEntry.update()
         }
@@ -31,31 +29,14 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T : AbstractKinematicEntity> addControllerEntry(controller: Controller<T>, entity: T) {
-        controllerEntryList.add(ControllerEntityEntry(controller, entity))
+    override fun <T : ControllerInterface> addControllerEntry(controller: Controller<T>, plant: T) {
+        controllerEntryList.add(ControllerEntityEntry(controller, plant))
     }
 }
-
-abstract class Controller<T : AbstractKinematicEntity>(){
-    abstract fun update(plant: T)
-}
-
-class SpinAI() : Controller<ControllableEntity>(){
-    override fun update(plant: ControllableEntity) {
-        val thrusters = plant.getThrusters()
-        val torquers = plant.getTorquers()
-        val radars = plant.getRadars()
-
-        val readings = radars.map{ it.getReadings()}.flatten()
-
-        for(thruster in thrusters){
-            thruster.setThrottle(0.5)
-        }
-        for (torquer in torquers){
-            torquer.setTorque(1.0)
-        }
-    }
-}
+//
+//abstract class DirectController<T : AbstractKinematicEntity>(){
+//    abstract fun update(plant: T)
+//}
 
 enum class ThrustKeys(val keyValue: Int, val vector: Vector2){
     UP(KeyEvent.VK_W, Vector2(0.0, 1.0)),
@@ -69,45 +50,54 @@ enum class TorqueKeys(val keyValue: Int, val torque: Double){
     RIGHT(KeyEvent.VK_E, -1.0)
 }
 
-//TODO Maybe abstract this some more. Like send commands instead of coupling this to keylistener-bitset
-class PlayerController(val bitSet: BitSet) : Controller<ControllableEntity>(){
-    override fun update(plant: ControllableEntity) {
-        val thrusters = plant.getThrusters()
-        val torquers = plant.getTorquers()
-        val guns = plant.getGuns()
-//        val radars = plant.getRadars()
-//        val readings = radars.map{ it.getReadings()}.flatten()
-
-        var thrust = Vector2(0.0, 0.0)
-        for (entry in ThrustKeys.entries) {
-            if(bitSet[entry.keyValue]) {
-                thrust += entry.vector
-            }
-        }
-        
-        thrust = thrust.normalize().rotate(plant.getOrientation().getAngle())
-
-        var torque = 0.0
-        for (entry in TorqueKeys.entries){
-            if(bitSet[entry.keyValue]){
-                torque += entry.torque
-            }
-        }
-
-        for (thruster in thrusters) {
-            thruster.setOrientation(thrust)
-            thruster.setThrottle(1.0)
-        }
-
-        for(torquer in torquers){
-            torquer.setTorque(torque/100)
-        }
-
-        for(gun in guns){
-            gun.toggleFiring((bitSet[KeyEvent.VK_SPACE]))
-        }
+class PlayerController(val bitSet: BitSet) : Controller<DummyControllerInterface>(){
+    override fun update(plant: DummyControllerInterface) {
+//        val thrusters = plant.getThrusters()
+//        val torquers = plant.getTorquers()
+//        val guns = plant.getGuns()
+//
+//        var thrust = Vector2(0.0, 0.0)
+//        for (entry in ThrustKeys.entries) {
+//            if(bitSet[entry.keyValue]) {
+//                thrust += entry.vector
+//            }
+//        }
+//
+//        thrust = thrust.normalize().rotate(plant.getOrientation().getAngle())
+//
+//        var torque = 0.0
+//        for (entry in TorqueKeys.entries){
+//            if(bitSet[entry.keyValue]){
+//                torque += entry.torque
+//            }
+//        }
+//
+//        for (thruster in thrusters) {
+//            thruster.setOrientation(thrust)
+//            thruster.setThrottle(1.0)
+//        }
+//
+//        for(torquer in torquers){
+//            torquer.setTorque(torque/100)
+//        }
+//
+//        for(gun in guns){
+//            gun.toggleFiring((bitSet[KeyEvent.VK_SPACE]))
+//        }
     }
-
 }
 
+abstract class Station
+
+interface ControllerInterface{
+    abstract fun isMarkedForRemoval() : Boolean
+}
+
+abstract class Controller<S: ControllerInterface>(){
+    abstract fun update(plant: S)
+}
+
+interface DummyControllerInterface : ControllerInterface{
+
+}
 
