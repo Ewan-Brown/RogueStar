@@ -81,6 +81,25 @@ fun main() {
         override fun isMarkedForRemoval(): Boolean {
             return false
         }
+
+        override fun setDesiredThrust(thrust: Vector2) {
+            playerEntity.getThrusters().forEach {
+                it.setOrientation(thrust)
+                it.setThrottle(thrust.getMagnitude())
+            }
+        }
+
+        override fun setDesiredTorque(t: Double) {
+            playerEntity.getTorquers().forEach {
+                it.setTorque(t)
+            }
+        }
+
+        override fun setFiring(f: Boolean) {
+            playerEntity.getGuns().forEach {
+                it.toggleFiring(f)
+            }
+        }
     })
 
     while(true){
