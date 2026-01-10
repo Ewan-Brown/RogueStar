@@ -1,5 +1,5 @@
 import controllers.Controller
-import controllers.ControllerInterface
+import controllers.PlantInterface
 import effects.Effect
 import models.Model
 import effects.EffectsInput
@@ -35,5 +35,5 @@ interface EffectsConsumer {
 
 interface ControllerLayerI : Layer{
     fun update()
-    fun <T: ControllerInterface> addControllerEntry(controller: Controller<T>, plant: T)
+    fun <T: PlantInterface> addControllerEntry(controller: Controller<T>, plant: T)
 }

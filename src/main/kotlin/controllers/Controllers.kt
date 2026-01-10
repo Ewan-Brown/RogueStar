@@ -10,7 +10,7 @@ import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<S: ControllerInterface>(val controller : Controller<S>, val plant: S){
+    private class ControllerEntityEntry<S: PlantInterface>(val controller : Controller<S>, val plant: S){
         fun update(){
             controller.update(plant)
         }
@@ -29,14 +29,10 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T : ControllerInterface> addControllerEntry(controller: Controller<T>, plant: T) {
+    override fun <T : PlantInterface> addControllerEntry(controller: Controller<T>, plant: T) {
         controllerEntryList.add(ControllerEntityEntry(controller, plant))
     }
 }
-//
-//abstract class DirectController<T : AbstractKinematicEntity>(){
-//    abstract fun update(plant: T)
-//}
 
 enum class ThrustKeys(val keyValue: Int, val vector: Vector2){
     UP(KeyEvent.VK_W, Vector2(0.0, 1.0)),
@@ -76,15 +72,16 @@ class PlayerController(val bitSet: BitSet) : Controller<DummyControllerInterface
 
 abstract class Station
 
-interface ControllerInterface{
+//This should hold no state... only serves to separate the 'world' from the 'controller' layer.
+interface PlantInterface{
     abstract fun isMarkedForRemoval() : Boolean
 }
 
-abstract class Controller<S: ControllerInterface>(){
+abstract class Controller<S: PlantInterface>(){
     abstract fun update(plant: S)
 }
 
-interface DummyControllerInterface : ControllerInterface{
+interface DummyControllerInterface : PlantInterface{
     fun setDesiredThrust(thrust: Vector2)
     fun setDesiredTorque(t: Double)
     fun setFiring(f: Boolean)

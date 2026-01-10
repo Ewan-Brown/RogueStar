@@ -82,8 +82,10 @@ class PhysicsLayer() : PhysicsLayerI{
                 entity.translate(velocity * input.timeStep)
                 entity.rotate(rotVelocity * input.timeStep)
 
+                val entityAngle = entity.getOrientation().getAngle()
+
                 //Calculate new derivatives
-                velocity = entity.getVelocity() + entity.checkNetForce()/entity.getMass()
+                velocity = entity.getVelocity() + entity.checkNetForce().rotate(entityAngle)/entity.getMass()
                 rotVelocity = entity.getRotationalVelocity() + entity.checkNetTorque()/entity.getMass()
 
                 //Apply friction
