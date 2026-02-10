@@ -1,8 +1,5 @@
 Complete Pawn implementation.
-- Write skeleton for Pawn AI
-- Write pawns with many sub-renderables
-- Check that pawn geometry is right
-- Rewrite Part renderable stuff to follow the Pawn pattern
+- Figure out Station<->Pawn relationship (Maybe just managed by jobs/job manager? minimize awkward references. Pawns should not reference stations?)
 - Reuse 'Renderable' code
 - Write utility functions for Pawns - pathing, getting current part etc.
 

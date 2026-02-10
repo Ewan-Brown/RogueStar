@@ -19,8 +19,8 @@ import math.Vector2
 import java.util.*
 import ControllerLayerI
 import DebugLineData
-import controllers.DummyControllerInterface
 import controllers.PlayerController
+import controllers.SimplePawnedInterface
 import graphics.CameraDetails
 import graphics.GraphicsI
 import physics.*
@@ -77,30 +77,7 @@ fun main() {
     playerEntity.setEntityConsumer(physicsLayer)
     physicsLayer.addEntity(playerEntity)
     val playerController = PlayerController(bitSet)
-    controllerLayer.addControllerEntry(playerController, object : DummyControllerInterface {
-        override fun isMarkedForRemoval(): Boolean {
-            return false
-        }
-
-        override fun setDesiredThrust(thrust: Vector2) {
-            playerEntity.getThrusters().forEach {
-                it.setOrientation(thrust)
-                it.setThrottle(thrust.getMagnitude())
-            }
-        }
-
-        override fun setDesiredTorque(t: Double) {
-            playerEntity.getTorquers().forEach {
-                it.setTorque(t)
-            }
-        }
-
-        override fun setFiring(f: Boolean) {
-            playerEntity.getGuns().forEach {
-                it.toggleFiring(f)
-            }
-        }
-    })
+    controllerLayer.addControllerEntry(playerController, SimplePawnedInterface(playerEntity))
 
     while(true){
         game.update(timeStep)

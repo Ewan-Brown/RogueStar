@@ -4,8 +4,7 @@ import EffectsConsumer
 import EntityConsumer
 import effects.Effect
 import effects.SimpleParticle
-import graphics.BLUE
-import graphics.GREEN
+import graphics.*
 import graphics.Graphics
 import math.*
 import math.Orientation
@@ -124,6 +123,9 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     }
 
     abstract fun markedForRemoval() : Boolean
+
+    //TODO Make this stuff reusable, for things like pawns etc.
+
     override fun getRotationalVelocity(): Double {
         return rotVelocity
     }
@@ -246,49 +248,61 @@ open class DumbEntity() : AbstractKinematicEntity() {
 }
 
 class SimpleShip() : ControllableEntity(){
+
+    private val navStation: Station
+    private val weaponStation: Station
+
     init {
         val thruster = BasicThruster()
         val cockpit = Cockpit()
-        val block = BasicThruster()
-        val block2 = EntityPartImpl()
+        val thruster2 = BasicThruster()
+        val hull = EntityPartImpl()
         val gun = BasicGun()
-
         val pawn = DumbPawn()
 
         val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 
-        cockpit.setColor(color)
+        cockpit.setColor(PURPLE)
         cockpit.translate(Vector2(0.0, 0.0))
 
         thruster.setColor(BLUE)
         thruster.translate(Vector2(-1.0, 0.0))
 
-        block.setColor(BLUE)
-        block.translate(Vector2(1.0, 0.0))
+        thruster2.setColor(BLUE)
+        thruster2.translate(Vector2(1.0, 0.0))
 
-        block2.setColor(color)
-        block2.translate(Vector2(0.0, -1.0))
+        hull.setColor(color)
+        hull.translate(Vector2(0.0, -1.0))
 
         gun.setColor(GREEN)
         gun.translate(Vector2(0.0, 1.0))
 
+        navStation = Station(Coordinates(Vector2(0.0, 0.0)), Orientation(0.0), ZHeight(0.0))
+        weaponStation = Station(Coordinates(Vector2(0.0, 0.0)), Orientation(0.0), ZHeight(0.0))
+
         addParts(listOf(
             thruster,
             cockpit,
-            block,
-            block2,
+            thruster2,
+            hull,
             gun))
 
-        addPawn(pawn)
-    }
-}
+        pawn.translate(Vector2(0.0, -1.0))
 
-open class ControllableEntity() : AbstractKinematicEntity() {
+        addPawn(pawn)
+
+    }
+
+    fun getNavigationalStation() : Station = navStation
+    fun getWeaponStation() : Station = weaponStation
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
     fun getRadars() : List<Radar> {return getParts().filterIsInstance<Radar>()}
     fun getGuns() : List<Gun> {return getParts().filterIsInstance<Gun>()}
+}
+
+open class ControllableEntity() : AbstractKinematicEntity() {
 
     override fun update(timeStep: Double) {
 
@@ -321,7 +335,6 @@ open class ControllableEntity() : AbstractKinematicEntity() {
             val gunOrientation = it.getFiringOrientation().applyTransform(getTransformLocalToParentFrame(it)).applyTransform(getTransformLocalToParentFrame(this))
             if(it.isFiring()){
                 val projectile = it.createProjectile()
-                //TODO introduce 'setPosition, setRotation etc that use SpacialConcepts instead of untyped vector2/double)
                 projectile.translate(partCoordsWorld.getVector())
                 projectile.rotate(gunOrientation.getAngle())
                 projectile.setVelocity(this.getVelocity() + Vector2(gunOrientation.getAngle()) * 0.3)
@@ -331,4 +344,18 @@ open class ControllableEntity() : AbstractKinematicEntity() {
     }
 
     override fun markedForRemoval(): Boolean {return false }
+}
+
+public class Station(private val coords: Coordinates<EntityReferenceFrame>, private val orientation: Orientation<EntityReferenceFrame>, private val zHeight: ZHeight<EntityReferenceFrame>) : InReferenceFrame<EntityReferenceFrame> {
+    override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
+        return coords
+    }
+
+    override fun getOrientation(): Orientation<EntityReferenceFrame> {
+        return orientation
+    }
+
+    override fun getZHeight(): ZHeight<EntityReferenceFrame> {
+        return zHeight
+    }
 }

@@ -15,19 +15,46 @@ import math.Vector2
 import math.WorldReferenceFrame
 import math.ZHeight
 import models.Model
+import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 // TODO It might be neat if pawns could be agnostic to their frame of reference? (InReferenceFrame<F : ReferenceFrame>)
-abstract class AbstractPawn : HasReferenceFrame<PawnReferenceFrame>, InReferenceFrame<EntityReferenceFrame>{
+abstract class AbstractPawn() : HasReferenceFrame<PawnReferenceFrame>, InReferenceFrame<EntityReferenceFrame>{
     abstract fun getRenderables() : List<PawnRenderablePart>
+    @OptIn(ExperimentalUuidApi::class)
+    val UUID = Uuid.random()
 
-    private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
-    private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
+    private var position: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
+    private var rotation: Orientation<EntityReferenceFrame> = Orientation(0.0)
     private var zHeight: ZHeight<EntityReferenceFrame> = ZHeight(1.0)
 
-    override fun getCoordinates() = coordinates
-    override fun getOrientation() = orientation
+    private var vel = Vector2()
+
+    override fun getCoordinates() = position
+    override fun getOrientation() = rotation
     override fun getZHeight() = zHeight
+
+    //TODO this class should be *state* only?
+    public var desiredCoordinates: Coordinates<EntityReferenceFrame>? = null
+
+    fun getVelocity(): Vector2 {
+        return vel
+    }
+
+    fun setVelocity(vel: Vector2) {
+        this.vel = vel
+    }
+
+    fun rotate(rotation: Double) {
+        this.rotation += rotation
+    }
+
+    fun translate(translation: Vector2) {
+        this.position += translation
+    }
+
 }
 
 abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
