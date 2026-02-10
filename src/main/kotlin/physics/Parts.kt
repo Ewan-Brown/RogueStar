@@ -5,7 +5,6 @@ import math.*
 import models.Model
 import java.util.*
 
-
 interface EntityPartI : InReferenceFrame<EntityReferenceFrame>, HasReferenceFrame<PartReferenceFrame> {
     fun getModel() : Model
     fun getScale() : Double
@@ -51,7 +50,7 @@ open class EntityPartImpl() : EntityPartI {
 
     override fun getModel(): Model = Model.SQUARE
     override fun getScale(): Double {
-        return scale;
+        return scale
     }
 
     override fun getColor() = color
@@ -88,7 +87,7 @@ class Cockpit() : EntityPartImpl(), Control, Torquer, Radar {
         this.torque = torque
     }
 
-    override fun updateReadings(world: PhysicsLayer.World) {
+    override fun updateReadings(world: World) {
         TODO("Not yet implemented")
     }
 
@@ -150,33 +149,36 @@ class BasicGun() : EntityPartImpl(), Gun {
 
 }
 
+interface HasModule : EntityPartI
+
 //Center of command/control
-interface Control : EntityPartI{}
+interface Control : HasModule{
+}
 
 //Generate Torque
-interface Torquer : EntityPartI{
+interface Torquer : HasModule{
     fun getTorque() : Double
     fun setTorque(torque: Double)
 }
 
 //Generates Thrust
-interface Thruster : EntityPartI{
+interface Thruster : HasModule{
     fun getOrientationUnitVector() : Vector2
     fun getMaxPower() : Double
     fun getThrottle() : Double
-    fun setThrottle(thrust: Double)
+    fun setThrottle(t: Double)
     fun setOrientation(orientation: Vector2)
     fun getCurrentThrust() : Vector2 = getOrientationUnitVector() * (getMaxPower() * getThrottle())
 }
 
 //Generates radar readings
-interface Radar : EntityPartI{
-    fun updateReadings(world: PhysicsLayer.World)
+interface Radar : HasModule{
+    fun updateReadings(world: World)
     fun getReadings() : List<RadarReading>
 }
 
 //Generates projectiles
-interface Gun : EntityPartI{
+interface Gun : HasModule{
     fun getFiringPosition() : Coordinates<PartReferenceFrame>
     fun getFiringOrientation() : Orientation<PartReferenceFrame>
     fun createProjectile() : AbstractKinematicEntity

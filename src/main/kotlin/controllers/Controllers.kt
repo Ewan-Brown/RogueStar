@@ -5,20 +5,24 @@ import DebugLineData
 import graphics.Graphics
 import math.Vector2
 import models.Model
+import physics.ControllableEntity
+import physics.SimpleShip
 import java.awt.event.KeyEvent
 import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<S: PlantInterface>(val controller : Controller<S>, val plant: S){
+    private class ControllerEntityEntry<S: PlantInterface>(val controller : Controller<S>, val plantInterface: S){
         fun update(){
-            controller.update(plant)
+            controller.update(plantInterface)
+            plantInterface.update()
         }
     }
+
     private val controllerEntryList = mutableListOf<ControllerEntityEntry<*>>()
 
     override fun update() {
-        controllerEntryList.removeIf{it.plant.isMarkedForRemoval()}
+        controllerEntryList.removeIf{it.controller.isMarkedForRemoval()}
         for (controllerEntityEntry in controllerEntryList) {
            controllerEntityEntry.update()
         }
@@ -29,8 +33,8 @@ class ControllerLayer : ControllerLayerI {
         return listOf()
     }
 
-    override fun <T : PlantInterface> addControllerEntry(controller: Controller<T>, plant: T) {
-        controllerEntryList.add(ControllerEntityEntry(controller, plant))
+    override fun <T : PlantInterface> addControllerEntry(controller: Controller<T>, `interface`: T) {
+        controllerEntryList.add(ControllerEntityEntry(controller, `interface`))
     }
 }
 
@@ -46,8 +50,13 @@ enum class TorqueKeys(val keyValue: Int, val torque: Double){
     RIGHT(KeyEvent.VK_E, -1.0)
 }
 
-class PlayerController(val bitSet: BitSet) : Controller<DummyControllerInterface>(){
-    override fun update(plant: DummyControllerInterface) {
+sealed class Controller<in S: PlantInterface>{
+    abstract fun update(plant: S)
+    abstract fun isMarkedForRemoval() : Boolean
+}
+
+class PlayerController(val bitSet: BitSet) : Controller<SimpleInterface>(){
+    override fun update(plant: SimpleInterface) {
         var thrust = Vector2(0.0, 0.0)
         for (entry in ThrustKeys.entries) {
             if(bitSet[entry.keyValue]) {
@@ -68,22 +77,8 @@ class PlayerController(val bitSet: BitSet) : Controller<DummyControllerInterface
         plant.setDesiredTorque(torque/100.0)
         plant.setFiring(firing)
     }
+
+    override fun isMarkedForRemoval(): Boolean {
+        return false
+    }
 }
-
-abstract class Station
-
-//This should hold no state... only serves to separate the 'world' from the 'controller' layer.
-interface PlantInterface{
-    abstract fun isMarkedForRemoval() : Boolean
-}
-
-abstract class Controller<S: PlantInterface>(){
-    abstract fun update(plant: S)
-}
-
-interface DummyControllerInterface : PlantInterface{
-    fun setDesiredThrust(thrust: Vector2)
-    fun setDesiredTorque(t: Double)
-    fun setFiring(f: Boolean)
-}
-

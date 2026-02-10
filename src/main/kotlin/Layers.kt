@@ -35,5 +35,5 @@ interface EffectsConsumer {
 
 interface ControllerLayerI : Layer{
     fun update()
-    fun <T: PlantInterface> addControllerEntry(controller: Controller<T>, plant: T)
+    fun <T: PlantInterface> addControllerEntry(controller: Controller<T>, `interface`: T)
 }

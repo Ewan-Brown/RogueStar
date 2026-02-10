@@ -42,6 +42,8 @@ val GREEN = ColorData(0.0f, 1.0f, 0.0f, 1.0f)
 val BLUE = ColorData(0.0f, 0.0f, 1.0f, 1.0f)
 val WHITE = ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 val BLACK = ColorData(0.0f, 0.0f, 0.0f, 1.0f)
+val CYAN = ColorData(0.0f, 1.0f, 1.0f, 1.0f)
+val PURPLE = ColorData(0.5f, 0.0f, 0.5f, 1.0f)
 
 class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
