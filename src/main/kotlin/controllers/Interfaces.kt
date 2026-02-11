@@ -71,15 +71,16 @@ abstract class PawnedControllerInterface<S: ControllableEntity>(protected val ta
                     is ManStationJob -> {
                         val pawnLoc = pawn.getCoordinates()
                         val stationLoc = job.station.getCoordinates()
-                        val pawnToStation = stationLoc - pawnLoc
+                        var pawnToStation = stationLoc - pawnLoc
                         if(pawnToStation.getMagnitude() < 0.01){
                             job.isFulfilled = true
+                            pawnToStation = Vector2()
                         }else{
                             job.isFulfilled = false
                             var magnitude = pawnToStation.getMagnitude()
-                            if(magnitude > 1) pawnToStation.normalize();
-                            pawn.setVelocity(pawnToStation * 0.01)
+                            if(magnitude > pawn.getMaxMovementSpeed()) pawnToStation = pawnToStation.normalize();
                         }
+                        pawn.setVelocity(pawnToStation * pawn.getMaxMovementSpeed())
                     }
                 }
 
@@ -130,7 +131,7 @@ class SimpleDirectInterface(target: SimpleShip) : DirectControllerInterface<Simp
     }
 
     override fun update() {
-        TODO("Not yet implemented")
+        //Nothing to do!
     }
 
 }
@@ -138,12 +139,11 @@ class SimpleDirectInterface(target: SimpleShip) : DirectControllerInterface<Simp
 @OptIn(ExperimentalUuidApi::class)
 class SimplePawnedInterface(target: SimpleShip) : PawnedControllerInterface<SimpleShip>(target), SimpleInterface{
 
-    val pilotJob = ManStationJob(target.getNavigationalStation())
+    val pilotJob = ManStationJob(target.navStation)
 
     init{
         addJob(pilotJob)
     }
-
 
     override fun setDesiredThrust(thrust: Vector2) {
         if(pilotJob.assignedPawnUUID != null){
