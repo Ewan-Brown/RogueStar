@@ -249,8 +249,8 @@ open class DumbEntity() : AbstractKinematicEntity() {
 
 class SimpleShip() : ControllableEntity(){
 
-    private val navStation: Station
-    private val weaponStation: Station
+    val navStation: Station
+    val weaponStation: Station
 
     init {
         val thruster = BasicThruster()
@@ -292,9 +292,6 @@ class SimpleShip() : ControllableEntity(){
         addPawn(pawn)
 
     }
-
-    fun getNavigationalStation() : Station = navStation
-    fun getWeaponStation() : Station = weaponStation
 
     fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
     fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}

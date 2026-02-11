@@ -36,8 +36,7 @@ abstract class AbstractPawn() : HasReferenceFrame<PawnReferenceFrame>, InReferen
     override fun getOrientation() = rotation
     override fun getZHeight() = zHeight
 
-    //TODO this class should be *state* only?
-    public var desiredCoordinates: Coordinates<EntityReferenceFrame>? = null
+    abstract fun getMaxMovementSpeed() : Double
 
     fun getVelocity(): Vector2 {
         return vel
@@ -97,6 +96,10 @@ class DumbPawn() : AbstractPawn(){
             }
 
         })
+    }
+
+    override fun getMaxMovementSpeed(): Double {
+        return 0.03
     }
 
 }
