@@ -98,6 +98,7 @@ abstract class PawnedControllerInterface<S: ControllableEntity>(protected val ta
             val p = idlePawnList.first()
             print("assigning pawn $p to job $j")
             j.assignedPawnUUID = p
+            idlePawnList.remove(p)
         }
     }
 
@@ -140,9 +141,11 @@ class SimpleDirectInterface(target: SimpleShip) : DirectControllerInterface<Simp
 class SimplePawnedInterface(target: SimpleShip) : PawnedControllerInterface<SimpleShip>(target), SimpleInterface{
 
     val pilotJob = ManStationJob(target.navStation)
+    val gunnerJob = ManStationJob(target.weaponStation)
 
     init{
         addJob(pilotJob)
+        addJob(gunnerJob)
     }
 
     override fun setDesiredThrust(thrust: Vector2) {
@@ -171,6 +174,14 @@ class SimplePawnedInterface(target: SimpleShip) : PawnedControllerInterface<Simp
     }
 
     override fun setFiring(f: Boolean) {
-//        jobManager.setFiring(f)
+        if(gunnerJob.assignedPawnUUID != null){
+            if(gunnerJob.isFulfilled) {
+                target.getGuns().forEach {
+                    it.toggleFiring(f)
+                }
+            }
+        }else{
+            attemptToAssign(gunnerJob)
+        }
     }
 }
