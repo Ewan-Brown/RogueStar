@@ -259,6 +259,7 @@ class SimpleShip() : ControllableEntity(){
         val hull = EntityPartImpl()
         val gun = BasicGun()
         val pawn = DumbPawn()
+        val pawn2 = DumbPawn()
 
         val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
 
@@ -278,7 +279,7 @@ class SimpleShip() : ControllableEntity(){
         gun.translate(Vector2(0.0, 1.0))
 
         navStation = Station(Coordinates(Vector2(0.0, 0.0)), Orientation(0.0), ZHeight(0.0))
-        weaponStation = Station(Coordinates(Vector2(0.0, 0.0)), Orientation(0.0), ZHeight(0.0))
+        weaponStation = Station(Coordinates(Vector2(0.0, 1.0)), Orientation(0.0), ZHeight(0.0))
 
         addParts(listOf(
             thruster,
@@ -288,8 +289,10 @@ class SimpleShip() : ControllableEntity(){
             gun))
 
         pawn.translate(Vector2(0.0, -1.0))
+        pawn2.translate(Vector2(0.0, -1.0))
 
         addPawn(pawn)
+        addPawn(pawn2)
 
     }
 
