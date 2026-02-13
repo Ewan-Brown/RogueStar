@@ -1,7 +1,14 @@
 Complete Pawn implementation.
-- Figure out Station<->Pawn relationship (Maybe just managed by jobs/job manager? minimize awkward references. Pawns should not reference stations?)
+-
+
+Debug tools
+- implement toString
+- implement a visual debugging system (hover things to see details etc)
+- implement a console
+
+Misc
 - Reuse 'Renderable' code
-- Write utility functions for Pawns - pathing, getting current part etc.
+- Reuse kinetic entity/pawn code (translation etc)
 
 Check TODOs!
 Write proper density calculations...
