@@ -148,6 +148,7 @@ class SimplePawnedInterface(target: SimpleShip) : PawnedControllerInterface<Simp
         addJob(gunnerJob)
     }
 
+    //TODO Can each of these be extracted and create single-method interfaces?
     override fun setDesiredThrust(thrust: Vector2) {
         if(pilotJob.assignedPawnUUID != null){
             if(pilotJob.isFulfilled) {
