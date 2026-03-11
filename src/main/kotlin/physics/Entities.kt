@@ -236,6 +236,16 @@ abstract class AbstractKinematicEntity() : KinematicEntityI{
     override fun getPawnsInside(): List<AbstractPawn> {
         return pawns
     }
+
+    data class PathNode(val part: EntityPartI, val coordinates: Coordinates<EntityReferenceFrame>)
+    data class PathSegment(val start: PathNode, val end: PathNode, val width: Double)
+
+    private var pathMap: Map<PathNode, List<PathNode>> = mapOf()
+
+    fun getPath(start: EntityPartI, end: EntityPartI): List<PathSegment> {
+
+        return emptyList()
+    }
 }
 
 open class DumbEntity() : AbstractKinematicEntity() {
@@ -346,7 +356,7 @@ open class ControllableEntity() : AbstractKinematicEntity() {
     override fun markedForRemoval(): Boolean {return false }
 }
 
-public class Station(private val coords: Coordinates<EntityReferenceFrame>, private val orientation: Orientation<EntityReferenceFrame>, private val zHeight: ZHeight<EntityReferenceFrame>) : InReferenceFrame<EntityReferenceFrame> {
+class Station(private val coords: Coordinates<EntityReferenceFrame>, private val orientation: Orientation<EntityReferenceFrame>, private val zHeight: ZHeight<EntityReferenceFrame>) : InReferenceFrame<EntityReferenceFrame> {
     override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
         return coords
     }
@@ -359,3 +369,4 @@ public class Station(private val coords: Coordinates<EntityReferenceFrame>, priv
         return zHeight
     }
 }
+

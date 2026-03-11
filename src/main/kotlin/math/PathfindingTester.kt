@@ -18,7 +18,7 @@ fun main(){
     var startNode: TestNode? = null
     var endNode: TestNode? = null
 
-    var naivePathProcessor: NaivePathProcessor<TestNode>? = null
+    var naivePathProcessor: ProcessorI<TestNode>? = null
     val cells = mutableListOf<TestNode>()
 
     var isButton1Pressed = false;
@@ -45,10 +45,7 @@ fun main(){
         }
     }
 
-
     var cellSize = 15
-
-
     val frame = JFrame()
     val panel = object : JPanel(), MouseListener, MouseWheelListener, KeyListener{
         override fun paint(g: Graphics) {
@@ -69,10 +66,11 @@ fun main(){
             }while(y <= height)
 
             cells.forEach {
-                square(it.vector.getX().toInt() * cellSize, it.vector.getY().toInt() * cellSize, cellSize, g)
+                square(it.vector * cellSize.toDouble(), cellSize, g)
             }
+
             if(naivePathProcessor != null){
-                renderNaive(naivePathProcessor!!, g, cellSize)
+                renderDrawableProcessor(naivePathProcessor!!, g, cellSize)
             }
         }
 
@@ -81,7 +79,6 @@ fun main(){
 
             var x = floor(e.x / cellSize.toDouble())
             var y = floor(e.y / cellSize.toDouble())
-
 
             println(e.button)
             when(e.button){
@@ -122,9 +119,7 @@ fun main(){
                 resetProcessor()
             }
             if(e.keyCode == KeyEvent.VK_SPACE){
-                if(naivePathProcessor != null){
-                    naivePathProcessor.update()
-                }
+                naivePathProcessor?.update()
             }
         }
 
@@ -153,29 +148,16 @@ fun main(){
 
 }
 
-private fun square(x: Int, y: Int, s: Int, g: Graphics){
-    (g as Graphics2D).fillRect(x, y, s, s)
+private fun square(pos: Vector2, s: Int, g: Graphics){
+    (g as Graphics2D).fillRect(pos.getX().toInt(), pos.getY().toInt(), s, s)
 }
 
-private fun renderNaive(naivePathProcessor: NaivePathProcessor<TestNode>, g: Graphics, cellSize: Int){
+private fun renderDrawableProcessor(processorI: ProcessorI<TestNode>, g: Graphics, cellSize: Int){
 
-    val startVec = naivePathProcessor.startNode.vector
-    val endVec = naivePathProcessor.endNode.vector
-
-    g.color = Color.DARK_GRAY
-    for (c in naivePathProcessor.excludedNodes){
-        square(c.vector.getX().toInt() * cellSize, c.vector.getY().toInt() * cellSize, cellSize, g)
+    for (rect in processorI.getDrawableNodes()) {
+        g.color = rect.color
+        square(rect.element.vector * cellSize.toDouble(), cellSize, g)
     }
-
-    g.color = Color.BLUE
-    for (c in naivePathProcessor.currentPath){
-        square(c.vector.getX().toInt() * cellSize, c.vector.getY().toInt() * cellSize, cellSize, g)
-    }
-
-    g.color = Color.GREEN
-    square(startVec.getX().toInt() * cellSize, startVec.getY().toInt() * cellSize, cellSize, g)
-    g.color = Color.RED
-    square(endVec.getX().toInt() * cellSize, endVec.getY().toInt() * cellSize, cellSize, g)
 }
 
 

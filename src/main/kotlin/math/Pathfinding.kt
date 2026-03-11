@@ -1,11 +1,18 @@
 package math
 
 import math.NaivePathProcessor.ProcessorUpdateResult
+import java.awt.Color
 import kotlin.collections.filter
 
-abstract class AbsPathProcessor<N, C>(val startNode: N, val endNode: N, val pathMap: Map<N, Collection<C>>){
 
+interface ProcessorI<N>{
+
+    data class Drawable<D>(val color: Color, val element: D)
+    fun getDrawableNodes(): List<Drawable<N>>
     abstract fun update(): ProcessorUpdateResult<N>
+}
+
+abstract class AbsPathProcessor<N, C>(protected val startNode: N, protected val endNode: N, val pathMap: Map<N, Collection<C>>) : ProcessorI<N>{
 
     init{
         if(!pathMap.none{it == startNode}) throw IllegalArgumentException("startNode not found in pathMap")
@@ -14,15 +21,11 @@ abstract class AbsPathProcessor<N, C>(val startNode: N, val endNode: N, val path
     }
 }
 
-abstract class WeightedPathProcessor<N>(startNode: N, endNode: N, pathMap: Map<N, List<Pair<N, Double>>>) : AbsPathProcessor<N, Pair<N, Double>>(startNode, endNode, pathMap){
-
-}
-
 class NaivePathProcessor<N>(startNode: N, endNode: N, pathMap: Map<N, Collection<N>>) : AbsPathProcessor<N, N>(startNode, endNode, pathMap){
 
-    val currentPath : MutableList<N> = mutableListOf(startNode)
-    val nodesToBeChecked : MutableCollection<N> = mutableListOf()
-    val excludedNodes : MutableCollection<N> = mutableSetOf(startNode)
+    private val currentPath : MutableList<N> = mutableListOf(startNode)
+    private val nodesToBeChecked : MutableCollection<N> = mutableListOf()
+    private val excludedNodes : MutableCollection<N> = mutableSetOf(startNode)
 
     data class ProcessorUpdateResult<N>(val isDone: Boolean, val canContinue: Boolean, val currentPath: List<N>)
 
@@ -60,6 +63,20 @@ class NaivePathProcessor<N>(startNode: N, endNode: N, pathMap: Map<N, Collection
 
     fun foundPath(): Boolean {
         return currentPath.last() == endNode
+    }
+
+    override fun getDrawableNodes(): List<ProcessorI.Drawable<N>> {
+        val drawables = mutableListOf<ProcessorI.Drawable<N>>()
+        for (c in excludedNodes){
+            drawables.add(ProcessorI.Drawable(Color.DARK_GRAY, c))
+        }
+        for (c in currentPath){
+            drawables.add(ProcessorI.Drawable(Color.BLUE, c))
+        }
+        drawables.add(ProcessorI.Drawable(Color.BLUE, startNode))
+        drawables.add(ProcessorI.Drawable(Color.MAGENTA, endNode))
+
+        return drawables
     }
 }
 
