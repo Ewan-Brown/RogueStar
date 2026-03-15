@@ -18,7 +18,7 @@ fun main(){
     var startNode: TestNode? = null
     var endNode: TestNode? = null
 
-    var naivePathProcessor: ProcessorI<TestNode>? = null
+    var processor: ProcessorI<TestNode>? = null
     val cells = mutableListOf<TestNode>()
 
     var isButton1Pressed = false;
@@ -41,7 +41,7 @@ fun main(){
         }else if(startNode == endNode){
             println("startNode and endNode are same, cannot create a pathProcessor")
         }else{
-            naivePathProcessor = NaivePathProcessor(startNode!!, endNode!!, nodeMap)
+            processor = NaivePathProcessor(startNode!!, endNode!!, nodeMap)
         }
     }
 
@@ -69,8 +69,8 @@ fun main(){
                 square(it.vector * cellSize.toDouble(), cellSize, g)
             }
 
-            if(naivePathProcessor != null){
-                renderDrawableProcessor(naivePathProcessor!!, g, cellSize)
+            if(processor != null){
+                renderDrawableProcessor(processor!!, g, cellSize)
             }
         }
 
@@ -119,7 +119,7 @@ fun main(){
                 resetProcessor()
             }
             if(e.keyCode == KeyEvent.VK_SPACE){
-                naivePathProcessor?.update()
+                processor?.update()
             }
         }
 

@@ -1,40 +1,43 @@
 package math
 
-import math.NaivePathProcessor.ProcessorUpdateResult
 import java.awt.Color
 import kotlin.collections.filter
 
+data class Drawable<D>(val color: Color, val element: D)
+data class ProcessorUpdateResult<N>(val isDone: Boolean, val canContinue: Boolean, val currentPath: List<N>)
 
 interface ProcessorI<N>{
-
-    data class Drawable<D>(val color: Color, val element: D)
     fun getDrawableNodes(): List<Drawable<N>>
-    abstract fun update(): ProcessorUpdateResult<N>
+    fun update(): ProcessorUpdateResult<N>
 }
 
-abstract class AbsPathProcessor<N, C>(protected val startNode: N, protected val endNode: N, val pathMap: Map<N, Collection<C>>) : ProcessorI<N>{
+open class Connection<N>(val node: N)
+class WeightedConnection<N>(node: N, val weight: Double) : Connection<N>(node)
 
+abstract class AbsPathProcessor<N, C>(protected val startNode: N, protected val endNode: N, val connectionMap: Map<N, Collection<Connection<N>>>) : ProcessorI<N>{
     init{
-        if(!pathMap.none{it == startNode}) throw IllegalArgumentException("startNode not found in pathMap")
-        if(!pathMap.none(){it == endNode}) throw IllegalArgumentException("startNode not found in pathMap")
+        if(!connectionMap.none{it == startNode}) throw IllegalArgumentException("startNode not found in pathMap")
+        if(!connectionMap.none(){it == endNode}) throw IllegalArgumentException("startNode not found in pathMap")
         if(startNode == endNode) throw IllegalArgumentException("startNode cannot be same as endNode")
     }
 }
 
-class NaivePathProcessor<N>(startNode: N, endNode: N, pathMap: Map<N, Collection<N>>) : AbsPathProcessor<N, N>(startNode, endNode, pathMap){
+
+//Source: I made it up
+class NaivePathProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Collection<Connection<N>>>) : AbsPathProcessor<N, N>(startNode, endNode, connectionMap){
 
     private val currentPath : MutableList<N> = mutableListOf(startNode)
     private val nodesToBeChecked : MutableCollection<N> = mutableListOf()
     private val excludedNodes : MutableCollection<N> = mutableSetOf(startNode)
 
-    data class ProcessorUpdateResult<N>(val isDone: Boolean, val canContinue: Boolean, val currentPath: List<N>)
-
     private fun processOneStep(){
         println("Processing")
         val currentNode = currentPath.last()
         excludedNodes.add(currentNode)
-        val currentNeighbors = pathMap[currentNode]
-        val interestingNeighbors = currentNeighbors!!.filter { !nodesToBeChecked.contains(it) && !excludedNodes.contains(it) }
+        val currentNeighbors = connectionMap[currentNode]!!.map { it.node }
+        val interestingNeighbors = currentNeighbors.filter { it: N ->
+            !nodesToBeChecked.contains(it) && !excludedNodes.contains(it)
+        }
         if(interestingNeighbors.isEmpty()){
             currentPath.remove(currentPath.last())
         }else{
@@ -65,18 +68,42 @@ class NaivePathProcessor<N>(startNode: N, endNode: N, pathMap: Map<N, Collection
         return currentPath.last() == endNode
     }
 
-    override fun getDrawableNodes(): List<ProcessorI.Drawable<N>> {
-        val drawables = mutableListOf<ProcessorI.Drawable<N>>()
+    override fun getDrawableNodes(): List<Drawable<N>> {
+        val drawables = mutableListOf<Drawable<N>>()
         for (c in excludedNodes){
-            drawables.add(ProcessorI.Drawable(Color.DARK_GRAY, c))
+            drawables.add(Drawable(Color.DARK_GRAY, c))
         }
         for (c in currentPath){
-            drawables.add(ProcessorI.Drawable(Color.BLUE, c))
+            drawables.add(Drawable(Color.BLUE, c))
         }
-        drawables.add(ProcessorI.Drawable(Color.BLUE, startNode))
-        drawables.add(ProcessorI.Drawable(Color.MAGENTA, endNode))
+        drawables.add(Drawable(Color.BLUE, startNode))
+        drawables.add(Drawable(Color.MAGENTA, endNode))
 
         return drawables
     }
 }
 
+//https://en.wikipedia.org/wiki/A*_search_algorithm
+class AStarProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Collection<WeightedConnection<N>>>) : AbsPathProcessor<N, N>(startNode, endNode, connectionMap){
+
+
+    private fun processOneStep(){
+        println("Processing")
+    }
+
+    override fun update(): ProcessorUpdateResult<N> {
+        TODO()
+    }
+
+    fun canContinue() : Boolean{
+        TODO()
+    }
+
+    fun foundPath(): Boolean {
+        TODO()
+    }
+
+    override fun getDrawableNodes(): List<Drawable<N>> {
+        TODO()
+    }
+}
