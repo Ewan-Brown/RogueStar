@@ -100,16 +100,21 @@ class AStarProcessor<N>(val startNode: N, val endNode: N, val connectionMap: Map
     private fun processOneStep(){
         println("====Processing====")
         if(openSet.isNotEmpty()){
+            println("Getting current node")
+            println("available: $openSet")
             val currentNode: N = getCurrentNode()
             if(currentNode == endNode){
                 println("Reached end!")
             }else{
-                println("removing current node, $currentNode")
+                println("Removing current node, $currentNode")
                 openSet.remove(currentNode)
-                println("inspecting ${connectionMap[currentNode]!!.size} neighbors")
+                println("Inspecting ${connectionMap[currentNode]!!.size} neighbors")
                 for(connection in connectionMap[currentNode]!!){
+                    println("Looking at ${connection.node} with weight ${connection.weight}")
                     val tentativeScore = gScore[currentNode]!! + connection.weight
+                    println("g score: ${gScore[currentNode]!!}")
                     if(tentativeScore < getGScore(connection.node)){
+                        println("lowest gscore so far!")
                         cameFrom[connection.node] = currentNode
                         gScore[connection.node] = tentativeScore
                         val hScore = heuristicFunction(connection.node)

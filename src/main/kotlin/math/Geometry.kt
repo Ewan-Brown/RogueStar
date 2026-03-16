@@ -77,7 +77,7 @@ class Vector2(private val x :Double, private val y :Double) {
 
     fun getSlope(): Double = this.getY()/this.getX()
     override fun toString(): String {
-        return "x = $x, y = $y"
+        return "[x = $x, y = $y]"
     }
 
     fun projectOnto(otherVector: Vector2) : Vector2 {
