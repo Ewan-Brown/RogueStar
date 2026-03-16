@@ -8,23 +8,14 @@ data class ProcessorUpdateResult<N>(val isDone: Boolean, val canContinue: Boolea
 
 interface ProcessorI<N>{
     fun getDrawableNodes(): List<Drawable<N>>
-    fun update(): ProcessorUpdateResult<N>
+    fun attemptUpdate(): ProcessorUpdateResult<N>
 }
 
 open class Connection<N>(val node: N)
 class WeightedConnection<N>(node: N, val weight: Double) : Connection<N>(node)
 
-abstract class AbsPathProcessor<N, C>(protected val startNode: N, protected val endNode: N, val connectionMap: Map<N, Collection<Connection<N>>>) : ProcessorI<N>{
-    init{
-        if(!connectionMap.none{it == startNode}) throw IllegalArgumentException("startNode not found in pathMap")
-        if(!connectionMap.none(){it == endNode}) throw IllegalArgumentException("startNode not found in pathMap")
-        if(startNode == endNode) throw IllegalArgumentException("startNode cannot be same as endNode")
-    }
-}
-
-
 //Source: I made it up
-class NaivePathProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Collection<Connection<N>>>) : AbsPathProcessor<N, N>(startNode, endNode, connectionMap){
+class NaivePathProcessor<N>(val startNode: N, val endNode: N, val connectionMap: Map<N, Collection<Connection<N>>>) : ProcessorI<N>{
 
     private val currentPath : MutableList<N> = mutableListOf(startNode)
     private val nodesToBeChecked : MutableCollection<N> = mutableListOf()
@@ -52,7 +43,7 @@ class NaivePathProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Coll
         }
     }
 
-    override fun update(): ProcessorUpdateResult<N> {
+    override fun attemptUpdate(): ProcessorUpdateResult<N> {
         if(!foundPath() && canContinue()){
             processOneStep()
         }
@@ -84,14 +75,30 @@ class NaivePathProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Coll
 }
 
 //https://en.wikipedia.org/wiki/A*_search_algorithm
-class AStarProcessor<N>(startNode: N, endNode: N, connectionMap: Map<N, Collection<WeightedConnection<N>>>) : AbsPathProcessor<N, N>(startNode, endNode, connectionMap){
+class AStarProcessor<N>(val startNode: N, val endNode: N, val connectionMap: Map<N, Collection<WeightedConnection<N>>>, val heuristicFunction: (N) -> Double) : ProcessorI<N>{
 
+    private val openSet: MutableList<N> = mutableListOf(startNode)
+    private val cameFrom: MutableMap<N, N> = mutableMapOf()
+    private val gScore: MutableMap<N, Double> = mutableMapOf(startNode to 0.0)
+    private val fScore: MutableMap<N, Double> = mutableMapOf(startNode to heuristicFunction(startNode))
 
     private fun processOneStep(){
         println("Processing")
+        if(openSet.isNotEmpty()){
+            val current: N = fScore.minBy { it.value}.key
+            if(current == endNode){
+                println("Reached end!")
+                TODO("Reconstruct Path...")
+            }else{
+                openSet.remove(current)
+                for(connection in connectionMap[current]!!){
+                    val tentativeScore = gScore[current]!! + connection.weight
+                }
+            }
+        }
     }
 
-    override fun update(): ProcessorUpdateResult<N> {
+    override fun attemptUpdate(): ProcessorUpdateResult<N> {
         TODO()
     }
 

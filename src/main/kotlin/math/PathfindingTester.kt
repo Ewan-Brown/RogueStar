@@ -23,15 +23,37 @@ fun main(){
 
     var isButton1Pressed = false;
 
-    fun resetProcessor() {
-        val nodeMap = mutableMapOf<TestNode, List<TestNode>>()
+    fun createNaiveProcessor() {
+        val nodeMap = mutableMapOf<TestNode, List<Connection<TestNode>>>()
 
         for(cell in cells){
             val neighborCells = cell.vector.let { cellV ->
                cells.filter {(it.vector - cellV).getMagnitude() == 1.0}
             }
             println(neighborCells.size)
-            nodeMap[cell] = neighborCells
+            nodeMap[cell] = neighborCells.map { Connection(it) }
+        }
+
+        if(startNode == null){
+            println("startNode is null, cannot create a pathProcessor")
+        }else if(endNode == null){
+            println("endNode is null, cannot create a pathProcessor")
+        }else if(startNode == endNode){
+            println("startNode and endNode are same, cannot create a pathProcessor")
+        }else{
+            processor = NaivePathProcessor(startNode!!, endNode!!, nodeMap)
+        }
+    }
+
+    fun createAStarProcessor() {
+        val nodeMap = mutableMapOf<TestNode, List<Connection<TestNode>>>()
+
+        for(cell in cells){
+            val neighborCells = cell.vector.let { cellV ->
+                cells.filter {(it.vector - cellV).getMagnitude() == 1.0}
+            }
+            println(neighborCells.size)
+            nodeMap[cell] = neighborCells.map { Connection(it) }
         }
 
         if(startNode == null){
@@ -116,10 +138,10 @@ fun main(){
 
         override fun keyPressed(e: KeyEvent) {
             if(e.keyCode == KeyEvent.VK_ENTER){
-                resetProcessor()
+                createAStarProcessor()
             }
             if(e.keyCode == KeyEvent.VK_SPACE){
-                processor?.update()
+                processor?.attemptUpdate()
             }
         }
 
