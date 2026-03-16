@@ -11,7 +11,10 @@ import java.awt.event.MouseWheelEvent
 import java.awt.event.MouseWheelListener
 import javax.swing.JFrame
 import javax.swing.JPanel
+import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.floor
+import kotlin.math.sqrt
 
 fun main(){
 
@@ -23,6 +26,21 @@ fun main(){
 
     var isButton1Pressed = false;
 
+    //Test Data
+    for (y in 0..2){
+        for(x in 0..6){
+            println("$x, $y")
+            val node = TestNode(Vector2(x.toDouble(), y.toDouble()))
+            cells.add(node)
+            if(x == 0 && y == 0){
+                startNode = node
+            }else if(x == 6 && y == 2){
+                endNode = node
+            }
+        }
+    }
+
+
     fun createNaiveProcessor() {
         val nodeMap = mutableMapOf<TestNode, List<Connection<TestNode>>>()
 
@@ -30,7 +48,6 @@ fun main(){
             val neighborCells = cell.vector.let { cellV ->
                cells.filter {(it.vector - cellV).getMagnitude() == 1.0}
             }
-            println(neighborCells.size)
             nodeMap[cell] = neighborCells.map { Connection(it) }
         }
 
@@ -46,14 +63,16 @@ fun main(){
     }
 
     fun createAStarProcessor() {
-        val nodeMap = mutableMapOf<TestNode, List<Connection<TestNode>>>()
+        val nodeMap = mutableMapOf<TestNode, List<WeightedConnection<TestNode>>>()
 
         for(cell in cells){
             val neighborCells = cell.vector.let { cellV ->
-                cells.filter {(it.vector - cellV).getMagnitude() == 1.0}
+                cells.filter {
+                    val diff = (it.vector - cellV)
+                    it != cell && abs(diff.getX()) <= 1.0 && abs(diff.getY()) <= 1.0
+                }
             }
-            println(neighborCells.size)
-            nodeMap[cell] = neighborCells.map { Connection(it) }
+            nodeMap[cell] = neighborCells.map { WeightedConnection(it, (it.vector - cell.vector).getMagnitude()) }
         }
 
         if(startNode == null){
@@ -63,7 +82,7 @@ fun main(){
         }else if(startNode == endNode){
             println("startNode and endNode are same, cannot create a pathProcessor")
         }else{
-            processor = NaivePathProcessor(startNode!!, endNode!!, nodeMap)
+            processor = AStarProcessor(startNode!!, endNode!!, nodeMap, {(it.vector - endNode!!.vector).getMagnitude()})
         }
     }
 
@@ -102,7 +121,6 @@ fun main(){
             var x = floor(e.x / cellSize.toDouble())
             var y = floor(e.y / cellSize.toDouble())
 
-            println(e.button)
             when(e.button){
                 MouseEvent.BUTTON1 -> {
                     val node = TestNode(Vector2(x, y))
@@ -185,7 +203,7 @@ private fun renderDrawableProcessor(processorI: ProcessorI<TestNode>, g: Graphic
 
 private data class TestNode(val vector: Vector2) {
     override fun toString(): String {
-        return this.hashCode().toString()
+        return vector.toString()
     }
 }
 

@@ -8,7 +8,7 @@ data class ProcessorUpdateResult<N>(val isDone: Boolean, val canContinue: Boolea
 
 interface ProcessorI<N>{
     fun getDrawableNodes(): List<Drawable<N>>
-    fun attemptUpdate(): ProcessorUpdateResult<N>
+    fun attemptUpdate()
 }
 
 open class Connection<N>(val node: N)
@@ -22,7 +22,6 @@ class NaivePathProcessor<N>(val startNode: N, val endNode: N, val connectionMap:
     private val excludedNodes : MutableCollection<N> = mutableSetOf(startNode)
 
     private fun processOneStep(){
-        println("Processing")
         val currentNode = currentPath.last()
         excludedNodes.add(currentNode)
         val currentNeighbors = connectionMap[currentNode]!!.map { it.node }
@@ -43,12 +42,10 @@ class NaivePathProcessor<N>(val startNode: N, val endNode: N, val connectionMap:
         }
     }
 
-    override fun attemptUpdate(): ProcessorUpdateResult<N> {
+    override fun attemptUpdate(){
         if(!foundPath() && canContinue()){
             processOneStep()
         }
-
-        return ProcessorUpdateResult(foundPath() , canContinue(), currentPath)
     }
 
     fun canContinue() : Boolean{
@@ -82,35 +79,82 @@ class AStarProcessor<N>(val startNode: N, val endNode: N, val connectionMap: Map
     private val gScore: MutableMap<N, Double> = mutableMapOf(startNode to 0.0)
     private val fScore: MutableMap<N, Double> = mutableMapOf(startNode to heuristicFunction(startNode))
 
-    private fun processOneStep(){
-        println("Processing")
-        if(openSet.isNotEmpty()){
-            val current: N = fScore.minBy { it.value}.key
-            if(current == endNode){
-                println("Reached end!")
-                TODO("Reconstruct Path...")
-            }else{
-                openSet.remove(current)
-                for(connection in connectionMap[current]!!){
-                    val tentativeScore = gScore[current]!! + connection.weight
-                }
-            }
+    private fun getGScore(node: N) : Double {
+        if(gScore.contains(node)){
+            return gScore[node]!!
+        }else{
+            return Double.POSITIVE_INFINITY
         }
     }
 
-    override fun attemptUpdate(): ProcessorUpdateResult<N> {
-        TODO()
+    private fun getFScore(node: N) : Double {
+        if(fScore.contains(node)){
+            return fScore[node]!!
+        }else{
+            return Double.POSITIVE_INFINITY
+        }
+    }
+
+    private fun getCurrentNode() = openSet.minBy { getFScore(it) }
+
+    private fun processOneStep(){
+        println("====Processing====")
+        if(openSet.isNotEmpty()){
+            val currentNode: N = getCurrentNode()
+            if(currentNode == endNode){
+                println("Reached end!")
+            }else{
+                println("removing current node, $currentNode")
+                openSet.remove(currentNode)
+                println("inspecting ${connectionMap[currentNode]!!.size} neighbors")
+                for(connection in connectionMap[currentNode]!!){
+                    val tentativeScore = gScore[currentNode]!! + connection.weight
+                    if(tentativeScore < getGScore(connection.node)){
+                        cameFrom[connection.node] = currentNode
+                        gScore[connection.node] = tentativeScore
+                        val hScore = heuristicFunction(connection.node)
+                        fScore[connection.node] = tentativeScore + hScore
+                        if(!openSet.contains(connection.node)){
+                            openSet.add(connection.node)
+                        }
+                    }
+                }
+            }
+        }
+        for (o in openSet) {
+            println("${o} : ${getGScore(o)}, ${heuristicFunction(o)}")
+        }
+    }
+
+    override fun attemptUpdate(){
+        if(!foundPath() && canContinue()){
+            processOneStep()
+        }
     }
 
     fun canContinue() : Boolean{
-        TODO()
+        return openSet.isNotEmpty()
     }
 
     fun foundPath(): Boolean {
-        TODO()
+        return getCurrentNode() == endNode
     }
 
     override fun getDrawableNodes(): List<Drawable<N>> {
-        TODO()
+        val drawables = mutableListOf<Drawable<N>>()
+        openSet.forEach { drawables.add(Drawable(Color.CYAN, it)) }
+        drawables.add(Drawable(Color.BLUE, startNode))
+        drawables.add(Drawable(Color.MAGENTA, endNode))
+
+        if(foundPath()){
+            drawables.add(Drawable(Color.GREEN, getCurrentNode()))
+        }else{
+            if(cameFrom[getCurrentNode()] != null){
+                drawables.add(Drawable(Color.ORANGE, cameFrom[getCurrentNode()]!!))
+            }
+            drawables.add(Drawable(Color(127, 100, 0), getCurrentNode()))
+        }
+
+        return drawables
     }
 }
