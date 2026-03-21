@@ -76,8 +76,8 @@ class AStarProcessor<N>(val startNode: N, val endNode: N, val connectionMap: Map
 
     private val openSet: MutableList<N> = mutableListOf(startNode)
     private val cameFrom: MutableMap<N, N> = mutableMapOf()
-    private val gScore: MutableMap<N, Double> = mutableMapOf(startNode to 0.0)
-    private val fScore: MutableMap<N, Double> = mutableMapOf(startNode to heuristicFunction(startNode))
+    private val gScore: MutableMap<N, Double> = mutableMapOf(startNode to 0.0) //the lowest found cost to get from start to N
+    private val fScore: MutableMap<N, Double> = mutableMapOf(startNode to heuristicFunction(startNode)) //The h(N) cost to get from N to end
 
     private fun getGScore(node: N) : Double {
         if(gScore.contains(node)){
