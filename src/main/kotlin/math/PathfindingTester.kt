@@ -29,13 +29,15 @@ fun main(){
     //Test Data
     for (y in 0..20){
         for(x in 0..20){
-            println("$x, $y")
-            val node = TestNode(Vector2(x.toDouble(), y.toDouble()))
-            cells.add(node)
-            if(x == 0 && y == 0){
-                startNode = node
-            }else if(x == 19 && y == 16){
-                endNode = node
+            if(y !in 5..15 || x !in 5..15){
+                println("$x, $y")
+                val node = TestNode(Vector2(x.toDouble(), y.toDouble()))
+                cells.add(node)
+                if(x == 0 && y == 0){
+                    startNode = node
+                }else if(x == 19 && y == 16){
+                    endNode = node
+                }
             }
         }
     }
@@ -74,7 +76,7 @@ fun main(){
             }
             //In a grid, a < 1.0 multiplier seems to make the search speedier! Neat!
             //Increasing above 1.0 multiplier makes the searcher "mine" for the result. Also neat...
-            nodeMap[cell] = neighborCells.map { WeightedConnection(it, (it.vector - cell.vector).getMagnitude() * 1.0) }
+            nodeMap[cell] = neighborCells.map { WeightedConnection(it, (it.vector - cell.vector).getMagnitude() * 0.1) }
         }
 
         if(startNode == null){
