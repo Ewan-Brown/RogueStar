@@ -4,16 +4,12 @@ sealed interface ReferenceFrame
 
 //"Label" types for the different coordinate systems in the game's hierarchy.
 object PawnReferenceFrame : ReferenceFrame
-object PartReferenceFrame : ReferenceFrame
+object ComponentReferenceFrame : ReferenceFrame
 object EntityReferenceFrame : ReferenceFrame
 object WorldReferenceFrame : ReferenceFrame
 
 //TODO rename this...
-interface ReferenceFrameVariable<S: ReferenceFrame>
-
-// Note - as awesome and cool as this is, this isn't perfect.
-// The child class must override this function with a return type equal to the type of the child class, hence the 'self'
-interface Transformable<S1: ReferenceFrame, Self : ReferenceFrameVariable<S1>>{
+interface ReferenceFrameVariable<in S1: ReferenceFrame>{
     fun <S2 : ReferenceFrame> applyTransform(transform: Transform<S1, S2>) : ReferenceFrameVariable<S2>
 }
 
@@ -41,7 +37,7 @@ fun <Local: ReferenceFrame, Parent: ReferenceFrame, T> getTransformParentToLocal
 }
 
 @JvmInline
-value class Coordinates<S: ReferenceFrame>(private val value: Vector2) : ReferenceFrameVariable<S>, Transformable<S, Coordinates<S>>{
+value class Coordinates<S: ReferenceFrame>(private val value: Vector2) : ReferenceFrameVariable<S>{
     fun rotate(theta: Double) : Coordinates<S> = Coordinates(value.rotate(theta))
     operator fun plus(vec: Vector2) : Coordinates<S> = Coordinates(this.value + vec)
     operator fun minus(vec: Vector2) : Coordinates<S> = Coordinates(this.value - vec)
@@ -50,16 +46,14 @@ value class Coordinates<S: ReferenceFrame>(private val value: Vector2) : Referen
     fun getX() : Double = value.getX()
     fun getY() : Double = value.getY()
 
-    //TODO Should this ever be used...?
     fun getVector() : Vector2 = value
-
     override fun <S2 : ReferenceFrame> applyTransform(transform: Transform<S, S2>): Coordinates<S2> {
         return Coordinates(value.rotate(transform.rotation) + transform.translation)
     }
 }
 
 @JvmInline
-value class Orientation<S: ReferenceFrame>(private val value: Double) : ReferenceFrameVariable<S>, Transformable<S, Orientation<S>>{
+value class Orientation<S: ReferenceFrame>(private val value: Double) : ReferenceFrameVariable<S>{
     fun rotate(theta: Double) : Orientation<S> = Orientation(this.value + theta)
     operator fun plus(theta: Double) : Orientation<S> = Orientation(this.value + theta)
     operator fun minus(theta: Double) : Orientation<S> = Orientation(this.value - theta)
@@ -71,7 +65,7 @@ value class Orientation<S: ReferenceFrame>(private val value: Double) : Referenc
 
 }
 @JvmInline
-value class ZHeight<S: ReferenceFrame>(private val value: Double) : ReferenceFrameVariable<S>, Transformable<S, ZHeight<S>>{
+value class ZHeight<S: ReferenceFrame>(private val value: Double) : ReferenceFrameVariable<S>{
 
     operator fun plus(z: Double) : ZHeight<S> = ZHeight(this.value + z)
     operator fun minus(z: Double) : ZHeight<S> = ZHeight(this.value - z)
@@ -83,11 +77,22 @@ value class ZHeight<S: ReferenceFrame>(private val value: Double) : ReferenceFra
     }
 }
 
-class Transform<from: ReferenceFrame, to: ReferenceFrame>(val translation: Vector2, val rotation: Double, val zHeight: Double){}
+class Transform<out from: ReferenceFrame, out to: ReferenceFrame>(val translation: Vector2, val rotation: Double, val zHeight: Double){}
 
 fun <S1: ReferenceFrame, S2: ReferenceFrame, S3: ReferenceFrame> combineTransforms(transform1: Transform<S1, S2>, transform2: Transform<S2, S3>) : Transform<S1, S3>{
     val newTranslation = transform1.translation.rotate(transform2.rotation) + transform2.translation
     val newRotation = transform1.rotation + transform2.rotation
     val newZHeight = transform1.zHeight + transform2.zHeight
     return Transform(newTranslation, newRotation, newZHeight)
+}
+
+data class Pose<R: ReferenceFrame>(val coordinate: Coordinates<R>, val orientation: Orientation<R>, val zHeight: ZHeight<R> ){
+    constructor() : this(Coordinates(Vector2()), Orientation(0.0), ZHeight(0.0))
+    fun <R2 : ReferenceFrame> applyTransform(transform: Transform<R, R2>) : Pose<R2>{
+        return Pose<R2>(
+            this.coordinate.applyTransform(transform),
+            this.orientation.applyTransform(transform),
+            this.zHeight.applyTransform(transform)
+        )
+    }
 }

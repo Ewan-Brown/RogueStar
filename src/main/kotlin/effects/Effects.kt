@@ -67,9 +67,9 @@ class SimpleParticle(var position: Coordinates<WorldReferenceFrame>, startVeloci
     override fun getRenderables() : List<Graphics.Renderable> {
         return listOf(Graphics.Renderable(
             Model.SQUARE,
-            position,
-            angle,
-            ZHeight(10.0),
+            position.getVector(),
+            angle.getAngle(),
+            10.0,
             0.3,
             RED,
             Graphics.MetaData(1.0f)))

@@ -4,41 +4,37 @@ import math.Coordinates
 import math.EntityReferenceFrame
 import math.Vector2
 
-interface HasCollidingPoint : KinematicEntityI{
+interface HasCollidingPoint{
     fun getPointOfContact() : Coordinates<EntityReferenceFrame>
-    fun doesCollideWith(otherEntity: KinematicEntityI) : Boolean
-    fun doesPenetrateShield() : Boolean
-    fun getHullDamage() : Int
-    fun getShieldDamage() : Int
+    fun doesCollideWith(otherEntity: EntityI) : Boolean
 }
 
-open class DumbProjectile() : AbstractKinematicEntity(), HasCollidingPoint{
-
-    init {
-        val body = EntityPartImpl()
-        addPart(body)
-    }
-    override fun update(timeStep: Double) {}
-    override fun markedForRemoval(): Boolean {return false }
-
-    override fun getPointOfContact(): Coordinates<EntityReferenceFrame> {
-        return Coordinates(Vector2(0.0, 0.0))
-    }
-
-    override fun doesCollideWith(otherEntity: KinematicEntityI): Boolean {
-        return false;
-    }
-
-    override fun doesPenetrateShield(): Boolean {
-        return false
-    }
-
-    override fun getHullDamage(): Int {
-        return 0
-    }
-
-    override fun getShieldDamage(): Int {
-        return 0
-    }
-
-}
+//open class DumbProjectile() : AbstractEntity(), HasCollidingPoint{
+//    init {
+//        val body = EntityPartImpl()
+//        addPart(body)
+//    }
+//    override fun update(timeStep: Double) {}
+//    override fun markedForRemoval(): Boolean {return false }
+//
+//    override fun getPointOfContact(): Coordinates<EntityReferenceFrame> {
+//        return Coordinates(Vector2(0.0, 0.0))
+//    }
+//
+//    override fun doesCollideWith(otherEntity: EntityI): Boolean {
+//        return false;
+//    }
+//
+//    override fun doesPenetrateShield(): Boolean {
+//        return false
+//    }
+//
+//    override fun getHullDamage(): Int {
+//        return 0
+//    }
+//
+//    override fun getShieldDamage(): Int {
+//        return 0
+//    }
+//
+//}

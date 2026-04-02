@@ -1,5 +1,7 @@
-Complete Pawn implementation.
--
+Complete Parts rewrite
+- Write a POC for a ship with Hull, Modules, Pawns.
+- Write POC for a hull with multiple renderables
+- Explicitly document what the differences between Entity, Component, Pawn, and Renderable are.
 
 Debug tools
 - implement toString
@@ -7,8 +9,6 @@ Debug tools
 - implement a console
 
 Misc
-- Reuse 'Renderable' code
-- Reuse kinetic entity/pawn code (translation etc)
 
 Check TODOs!
 Write proper density calculations...

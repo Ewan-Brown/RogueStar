@@ -1,28 +1,26 @@
 package physics
 
 import graphics.Graphics
+import graphics.Graphics.*
+import graphics.HasNestedRenderables
 import graphics.RED
-import graphics.WHITE
 import math.Coordinates
 import math.InReferenceFrame
 import math.Orientation
-import math.PartReferenceFrame
 import math.PawnReferenceFrame
 import math.EntityReferenceFrame
 import math.HasReferenceFrame
-import math.ReferenceFrame
+import math.Pose
 import math.Vector2
-import math.WorldReferenceFrame
 import math.ZHeight
 import models.Model
-import java.util.UUID
+import javax.swing.text.html.parser.Entity
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
 // TODO It might be neat if pawns could be agnostic to their frame of reference? (InReferenceFrame<F : ReferenceFrame>)
-abstract class AbstractPawn() : HasReferenceFrame<PawnReferenceFrame>, InReferenceFrame<EntityReferenceFrame>{
-    abstract fun getRenderables() : List<PawnRenderablePart>
+abstract class Pawn() : HasNestedRenderables<EntityReferenceFrame, PawnReferenceFrame> {
     @OptIn(ExperimentalUuidApi::class)
     val UUID = Uuid.random()
 
@@ -56,50 +54,24 @@ abstract class AbstractPawn() : HasReferenceFrame<PawnReferenceFrame>, InReferen
 
 }
 
-abstract class PawnRenderablePart : InReferenceFrame<PawnReferenceFrame>{
-    abstract fun getModel() : Model
-    abstract fun getScale() : Double
-    abstract fun getColor() : Graphics.ColorData
-    abstract fun getMetadata() : Graphics.MetaData
-}
-
-class DumbPawn() : AbstractPawn(){
-
-    override fun getRenderables(): List<PawnRenderablePart> {
-        return listOf(object : PawnRenderablePart() {
-            override fun getModel(): Model {
-                return Model.SQUARE
-            }
-
-            override fun getScale(): Double {
-                return 0.2
-            }
-
-            override fun getColor(): Graphics.ColorData {
-                return RED
-            }
-
-            override fun getMetadata(): Graphics.MetaData {
-                return Graphics.MetaData(1.0f)
-            }
-
-            override fun getCoordinates(): Coordinates<PawnReferenceFrame> {
-                return Coordinates(Vector2())
-            }
-
-            override fun getOrientation(): Orientation<PawnReferenceFrame> {
-                return Orientation(0.0)
-            }
-
-            override fun getZHeight(): ZHeight<PawnReferenceFrame> {
-                return ZHeight(0.0)
-            }
-
-        })
-    }
+class DumbPawn() : Pawn(){
 
     override fun getMaxMovementSpeed(): Double {
         return 0.03
+    }
+
+    override fun getImmediateRenderables(): List<IntermediaryRenderable<PawnReferenceFrame>> {
+        return listOf(IntermediaryRenderable(
+            Model.SQUARE,
+            Pose(Coordinates(Vector2()), Orientation(0.0), ZHeight(0.0)),
+           0.0,
+            RED,
+            MetaData(1.0f))
+        )
+    }
+
+    override fun getChildren(): List<HasNestedRenderables<PawnReferenceFrame, *>> {
+        return emptyList()
     }
 
 }

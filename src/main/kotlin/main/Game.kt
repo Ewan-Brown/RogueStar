@@ -19,8 +19,6 @@ import math.Vector2
 import java.util.*
 import ControllerLayerI
 import DebugLineData
-import controllers.PlayerController
-import controllers.SimplePawnedInterface
 import graphics.CameraDetails
 import graphics.GraphicsI
 import physics.*
@@ -72,12 +70,13 @@ fun main() {
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
-    val playerEntity = SimpleShip()
+    val playerEntity = DumbEntity()
+
     playerEntity.setEffectsConsumer(effectsLayer)
     playerEntity.setEntityConsumer(physicsLayer)
     physicsLayer.addEntity(playerEntity)
-    val playerController = PlayerController(bitSet)
-    controllerLayer.addControllerEntry(playerController, SimplePawnedInterface(playerEntity))
+//    val playerController = PlayerController(bitSet)
+//    controllerLayer.addControllerEntry(playerController, SimplePawnedInterface(playerEntity))
 
     while(true){
         game.update(timeStep)

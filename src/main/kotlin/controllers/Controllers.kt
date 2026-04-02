@@ -5,8 +5,6 @@ import DebugLineData
 import graphics.Graphics
 import math.Vector2
 import models.Model
-import physics.ControllableEntity
-import physics.SimpleShip
 import java.awt.event.KeyEvent
 import java.util.BitSet
 

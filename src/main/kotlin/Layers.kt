@@ -6,7 +6,7 @@ import effects.EffectsInput
 import graphics.Graphics
 import math.Coordinates
 import math.WorldReferenceFrame
-import physics.AbstractKinematicEntity
+import physics.AbstractEntity
 import physics.PhysicsInput
 import physics.PhysicsOutput
 
@@ -26,7 +26,7 @@ interface EffectsLayerI : Layer, EffectsConsumer{
 }
 
 interface EntityConsumer {
-    fun addEntity(entity: AbstractKinematicEntity)
+    fun addEntity(entity: AbstractEntity)
 }
 
 interface EffectsConsumer {

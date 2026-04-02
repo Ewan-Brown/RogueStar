@@ -7,11 +7,10 @@ import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
 import graphics.WHITE
+import graphics.processRenderables
 import math.Coordinates
-import math.HasReferenceFrame
 import math.EntityReferenceFrame
 import math.Vector2
-import math.WorldReferenceFrame
 import math.getTransformLocalToParentFrame
 import models.Model
 import kotlin.collections.HashMap
@@ -27,9 +26,11 @@ class PhysicsLayer() : PhysicsLayerI{
 
     override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {
         for (entity in world.getEntities()) {
-            for (renderableComponent in entity.getRenderables()) {
-                modelDataMap[renderableComponent.model]!!.add(renderableComponent)
-            }
+            //TODO replace with processor call
+                processRenderables(entity, {
+                    modelDataMap[it.model]!!.add(it)
+                })
+
         }
     }
 
@@ -50,7 +51,7 @@ class PhysicsLayer() : PhysicsLayerI{
         return lines
     }
 
-    override fun addEntity(entity: AbstractKinematicEntity) {
+    override fun addEntity(entity: AbstractEntity) {
         world.addEntity(entity)
     }
 

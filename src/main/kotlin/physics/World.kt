@@ -1,12 +1,11 @@
 package physics
 
 import math.HasReferenceFrame
-import math.Vector2
 import math.WorldReferenceFrame
 
 class FlatWorld : World {
-    private val entities = mutableListOf<AbstractKinematicEntity>()
-    private val entityBuffer = mutableListOf<AbstractKinematicEntity>()
+    private val entities = mutableListOf<AbstractEntity>()
+    private val entityBuffer = mutableListOf<AbstractEntity>()
 
     override fun update(input : PhysicsInput) {
 
@@ -61,11 +60,11 @@ class FlatWorld : World {
         entities.removeIf{it.markedForRemoval()}
 
     }
-    override fun getEntities(): List<AbstractKinematicEntity> {
+    override fun getEntities(): List<AbstractEntity> {
         return entities
     }
 
-    override fun addEntity(entity: AbstractKinematicEntity) {
+    override fun addEntity(entity: AbstractEntity) {
         synchronized(entityBuffer){
             entityBuffer.add(entity)
         }
@@ -74,6 +73,6 @@ class FlatWorld : World {
 
 interface World : HasReferenceFrame<WorldReferenceFrame>{
     public fun update(input: PhysicsInput)
-    public fun getEntities(): List<AbstractKinematicEntity>
-    public fun addEntity(entity: AbstractKinematicEntity)
+    public fun getEntities(): List<AbstractEntity>
+    public fun addEntity(entity: AbstractEntity)
 }

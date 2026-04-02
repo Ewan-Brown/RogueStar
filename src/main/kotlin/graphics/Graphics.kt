@@ -12,7 +12,6 @@ import com.jogamp.opengl.math.FloatUtil
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import graphics.Graphics.ColorData
-import graphics.Graphics.Renderable
 import math.*
 import java.awt.MouseInfo
 import java.lang.Error
@@ -29,7 +28,7 @@ import kotlin.system.exitProcess
 data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
 interface GraphicsI{
     fun getMousePositionInWorldCoordinates() : Vector2
-    fun updateDrawables(data: Map<Model, List<Renderable>>)
+    fun updateDrawables(data: Map<Model, List<Graphics.Renderable>>)
     fun updateDebug(debugLines: List<DebugLineData>)
     fun updateCamera(cameraDetails: CameraDetails)
     //TODO Genericize this!
@@ -425,11 +424,14 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
      * Stores RGBA, each from 0.0 - 1.0
      * TODO Alpha is currently unused
      */
-    //TODO generalize vector math so it can be reused here?
+    //TODO generalize vector math so it can be reused on things like colors?
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
+    data class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
 
-    class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
-    class Renderable(val model: Model, val coordinates: Coordinates<WorldReferenceFrame>, val orientation: Orientation<WorldReferenceFrame>, val zHeight: ZHeight<WorldReferenceFrame>, val scale : Double, val colorData: ColorData, val metaData: MetaData)
+    data class IntermediaryRenderable<R : ReferenceFrame>(val model: Model, var pose: Pose<R>, val scale : Double, val colorData: ColorData, val metaData: MetaData){}
+
+    data class Renderable(val model: Model, val coordinates: Vector2, val orientation: Double, val zHeight: Double, val scale : Double, val colorData: ColorData, val metaData: MetaData)
+
 
     //TODO Clean this up... DO we need separate VBONames and Attributes classes? Why is this not an enum? Should it start at zero?
     private interface VBONames {
@@ -454,10 +456,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
     }
 
     enum class InstancedAttributes(val index: Int, val size: Int, val dataExtractor: (Renderable) -> List<Float>, val VBOBuffer: Int){
-        POSITION(1, 3, {listOf(it.coordinates.getX().toFloat(), it.coordinates.getY().toFloat(), it.zHeight.getZ().toFloat())},
+        POSITION(1, 3, {listOf(it.coordinates.getX().toFloat(), it.coordinates.getY().toFloat(), it.zHeight.toFloat())},
             VBONames.INSTANCED_POSITIONS
         ),
-        ROTATION(2, 1, {listOf(it.orientation.getAngle().toFloat())}, VBONames.INSTANCED_ROTATIONS),
+        ROTATION(2, 1, {listOf(it.orientation.toFloat())}, VBONames.INSTANCED_ROTATIONS),
         SCALE(3, 1, {listOf(it.scale.toFloat())}, VBONames.INSTANCED_SCALES),
         COLOR(4, 3, {listOf(it.colorData.red, it.colorData.green, it.colorData.blue)}, VBONames.INSTANCED_COLORS),
         HEALTH(5, 1, {listOf(it.metaData.health)}, VBONames.INSTANCED_HEALTHS)
