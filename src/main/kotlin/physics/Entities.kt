@@ -7,7 +7,6 @@ import graphics.Graphics.*
 import graphics.HasNestedRenderables
 import math.*
 import math.Orientation
-import javax.swing.text.html.parser.Entity
 import kotlin.math.sin
 
 interface EntityI: HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame> {
@@ -36,54 +35,14 @@ interface EntityI: HasNestedRenderables<WorldReferenceFrame, EntityReferenceFram
 }
 
 
-interface EntityComponent : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
-    fun getMass(): Double
-    fun isCollideable() : Boolean
-    fun getCenterOfMass() : Coordinates<ComponentReferenceFrame>
-    fun getCollisionBoundary() : List<Coordinates<ComponentReferenceFrame>>
-}
+class AbstractEntity() : EntityI{
 
-abstract class AbstractComponent(val boundary: List<Vector2>) : EntityComponent{
+    var effectsConsumer: EffectsConsumer? = null
+    var entityConsumer: EntityConsumer? = null
 
-    private val coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
-    private val orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
-    private val ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
-
-    override fun isCollideable(): Boolean {
-        return true
-    }
-
-    override fun getCollisionBoundary(): List<Coordinates<ComponentReferenceFrame>> {
-        return boundary.map { Coordinates(it) }
-    }
-
-    override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
-        return coordinates
-    }
-
-    override fun getOrientation(): Orientation<EntityReferenceFrame> {
-        return orientation
-    }
-
-    override fun getZHeight(): ZHeight<EntityReferenceFrame> {
-        return ZHeight
-    }
-
-}
-
-abstract class EntityHull(boundary: List<Vector2>, coordinates: Coordinates<EntityReferenceFrame>, orientation: Orientation<EntityReferenceFrame>,
-                          ZHeight: ZHeight<EntityReferenceFrame>) : AbstractComponent(boundary)
-abstract class EntityModule(boundary: List<Vector2>, coordinates: Coordinates<EntityReferenceFrame>, orientation: Orientation<EntityReferenceFrame>,
-                            ZHeight: ZHeight<EntityReferenceFrame>) : AbstractComponent(boundary)
-
-abstract class AbstractEntity() : EntityI{
-
-    private var effectsConsumer: EffectsConsumer? = null
-    private var entityConsumer: EntityConsumer? = null
-
-    private var position: Coordinates<WorldReferenceFrame> = Coordinates(Vector2())
-    private var zpos: ZHeight<WorldReferenceFrame> = ZHeight(0.0)
-    private var rotation: Orientation<WorldReferenceFrame> = Orientation(0.0)
+    private var coordinates: Coordinates<WorldReferenceFrame> = Coordinates(Vector2())
+    private var orientation: Orientation<WorldReferenceFrame> = Orientation(0.0)
+    private var zheight: ZHeight<WorldReferenceFrame> = ZHeight(0.0)
 
     private var vel = Vector2()
     private var rotVelocity = 0.0
@@ -93,10 +52,23 @@ abstract class AbstractEntity() : EntityI{
 
     private var forceAccumulator = Vector2()
     private var torqueAccumulator = 0.0
-    
-    private var pawns = mutableListOf<Pawn>()
+
+    /**
+     * Everything that 'makes up' a ship. Sum of its parts.
+     * Hull - the structure. Stations, Pawns reside in hull. Modules can connect to hull
+     * Modules - anything functional for the entity. Turrets, Thrusters, Radar... Anything that might act or provide
+     *   -> mostly just to hold state, should have minimal logic
+     * Stations - A way for pawns to interact with systems. Exists within hull, basically just checkpoints
+     *   -> should only provide actions around declarative statements
+     *   -> no state. just a real-world adapter for pawn->module interactions
+     * Systems - The connection between state, stations and modules.
+     *   ->  Holds all the imperative logic and execution of decisions
+    **/
     private var hulls = mutableListOf<EntityHull>()
     private var modules = mutableListOf<EntityModule>()
+    private var systems = mutableListOf<EntitySystem>()
+    private var stations = mutableListOf<EntityStation>()
+    private var pawns = mutableListOf<Pawn>()
 
     //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
     override fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
@@ -120,9 +92,10 @@ abstract class AbstractEntity() : EntityI{
         return getPawnsInside() + getHull() + getModules()
     }
 
-    abstract fun markedForRemoval() : Boolean
-
-    //TODO Make this stuff reusable, for things like pawns etc.
+    //TODO Flesh this out
+    fun markedForRemoval() : Boolean {
+        return false
+    }
 
     override fun getRotationalVelocity(): Double {
         return rotVelocity
@@ -141,16 +114,20 @@ abstract class AbstractEntity() : EntityI{
     }
 
     override fun rotate(rotation: Double) {
-        this.rotation += rotation
+        this.orientation += rotation
     }
 
     override fun translate(translation: Vector2) {
-        this.position += translation
+        this.coordinates += translation
     }
 
     //TODO Flesh this out
     override fun getMass(): Double {
         return 1.0
+    }
+
+    override fun update(timeStep: Double) {
+
     }
 
     // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
@@ -199,17 +176,14 @@ abstract class AbstractEntity() : EntityI{
         return lastForces
     }
 
-    fun setEffectsConsumer(effectsConsumer: EffectsConsumer){this.effectsConsumer = effectsConsumer}
-    fun setEntityConsumer(entityConsumer: EntityConsumer){this.entityConsumer = entityConsumer}
-
-    protected fun sendEffect(effect: Effect){
+    fun sendEffect(effect: Effect){
         if(effectsConsumer != null){
             effectsConsumer!!.addEffect(effect)
         }else{
             throw NullPointerException("EffectsConsumer not set!")
         }
     }
-    protected fun sendEntity(entity: AbstractEntity){
+    fun sendEntity(entity: AbstractEntity){
         if(entityConsumer != null){
             entityConsumer!!.addEntity(entity)
         }else{
@@ -218,15 +192,15 @@ abstract class AbstractEntity() : EntityI{
     }
 
     override fun getZHeight(): ZHeight<WorldReferenceFrame> {
-        return zpos
+        return zheight
     }
 
     final override fun getOrientation(): Orientation<WorldReferenceFrame> {
-        return rotation
+        return orientation
     }
 
     final override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
-        return position
+        return coordinates
     }
 
     override fun getPawnsInside(): List<Pawn> {
@@ -240,123 +214,10 @@ abstract class AbstractEntity() : EntityI{
     override fun getModules(): List<EntityModule> {
         return modules
     }
-}
 
-open class DumbEntity() : AbstractEntity() {
-
-    init {
-
-        val hull = DummyHull()
-        this.addHull(hull)
+    fun setPose(pose: Pose<WorldReferenceFrame>){
+        coordinates = pose.coordinate
+        orientation = pose.orientation
+        zheight = pose.zHeight
     }
-
-    override fun update(timeStep: Double) {}
-    override fun markedForRemoval(): Boolean {return false }
-
 }
-//
-//class SimpleShip() : ControllableEntity(){
-//
-//    val navStation: Station
-//    val weaponStation: Station
-//
-//    init {
-//        val thruster = BasicThruster()
-//        val cockpit = Cockpit()
-//        val thruster2 = BasicThruster()
-//        val hull = EntityPartImpl()
-//        val gun = BasicGun()
-//        val pawn = DumbPawn()
-//        val pawn2 = DumbPawn()
-//
-//        val color = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)
-//
-//        cockpit.setColor(PURPLE)
-//        cockpit.translate(Vector2(0.0, 0.0))
-//
-//        thruster.setColor(BLUE)
-//        thruster.translate(Vector2(-1.0, 0.0))
-//
-//        thruster2.setColor(BLUE)
-//        thruster2.translate(Vector2(1.0, 0.0))
-//
-//        hull.setColor(color)
-//        hull.translate(Vector2(0.0, -1.0))
-//
-//        gun.setColor(GREEN)
-//        gun.translate(Vector2(0.0, 1.0))
-//
-//        navStation = Station(Coordinates(Vector2(0.0, 0.0)), Orientation(0.0), ZHeight(0.0))
-//        weaponStation = Station(Coordinates(Vector2(0.0, 1.0)), Orientation(0.0), ZHeight(0.0))
-//
-//        addParts(listOf(
-//            thruster,
-//            cockpit,
-//            thruster2,
-//            hull,
-//            gun))
-//
-//        pawn.translate(Vector2(0.0, -1.0))
-//        pawn2.translate(Vector2(0.0, -1.0))
-//
-//        addPawn(pawn)
-//        addPawn(pawn2)
-//
-//    }
-//
-//    fun getThrusters() : List<Thruster> {return getParts().filterIsInstance<Thruster>()}
-//    fun getTorquers() : List<Torquer> {return getParts().filterIsInstance<Torquer>()}
-//    fun getRadars() : List<Radar> {return getParts().filterIsInstance<Radar>()}
-//    fun getGuns() : List<Gun> {return getParts().filterIsInstance<Gun>()}
-//}
-//
-//open class ControllableEntity() : AbstractEntity() {
-//
-//    override fun update(timeStep: Double) {
-//
-//        getParts().filterIsInstance<Thruster>().forEach {
-//            if(it.getCurrentThrust().getMagnitude() > Double.MIN_VALUE){
-//                val partCoordsLocal: Coordinates<EntityReferenceFrame> = it.getCoordinates()
-//
-//                val partCoordsWorld: Coordinates<WorldReferenceFrame> = partCoordsLocal.applyTransform(getTransformLocalToParentFrame(this))
-//                val partOrientation : Orientation<WorldReferenceFrame> = it.getOrientation().applyTransform(getTransformLocalToParentFrame(this))
-//
-//                val force = Force(it.getCurrentThrust(), partCoordsLocal)
-//                this.applyForce(force);
-//                for(i in 0 until 100){
-//                    sendEffect(SimpleParticle(partCoordsWorld,
-//                        (it.getCurrentThrust() + this.getVelocity()).rotate(Math.random() * 0.1 * getRandomSign()) * (0.8 + Math.random()*0.2),
-//                        partOrientation,
-//                        Math.random() * 0.2 + 0.2,
-//                        100))
-//                }
-//
-//            }
-//        }
-//        getParts().filterIsInstance<Torquer>().forEach {
-//            this.applyTorque(it.getTorque())
-//        }
-//        getParts().filterIsInstance<Gun>().forEach {
-//            val partCoordsLocal: Coordinates<EntityReferenceFrame> = it.getCoordinates()
-//            val partCoordsWorld: Coordinates<WorldReferenceFrame> = partCoordsLocal.applyTransform(getTransformLocalToParentFrame(this))
-//
-//            val gunOrientation = it.getFiringOrientation().applyTransform(getTransformLocalToParentFrame(it)).applyTransform(getTransformLocalToParentFrame(this))
-//            if(it.isFiring()){
-//                val projectile = it.createProjectile()
-//                projectile.translate(partCoordsWorld.getVector())
-//                projectile.rotate(gunOrientation.getAngle())
-//                projectile.setVelocity(this.getVelocity() + Vector2(gunOrientation.getAngle()) * 0.3)
-//                sendEntity(projectile)
-//            }
-//        }
-//    }
-//
-//    override fun markedForRemoval(): Boolean {return false }
-//}
-
-//class Station(private val pose: Pose<EntityReferenceFrame>) : InReferenceFrame<EntityReferenceFrame> {
-//    override fun getPose(): Pose<EntityReferenceFrame> {
-//        return pose
-//    }
-//}
-

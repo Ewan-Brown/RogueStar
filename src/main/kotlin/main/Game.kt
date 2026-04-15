@@ -23,6 +23,16 @@ import graphics.CameraDetails
 import graphics.GraphicsI
 import physics.*
 
+
+@JvmInline
+value class Timestamp(val time: Double){
+    operator fun minus(t2 : Timestamp) : TimeDuration{
+        return TimeDuration(time - t2.time)
+    }
+}
+@JvmInline
+value class TimeDuration(val duration: Double)
+
 fun loadModels() : Map<Int, Model> {
     val mapper = ObjectMapper()
     val module = SimpleModule()
@@ -70,10 +80,17 @@ fun main() {
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
-    val playerEntity = DumbEntity()
+    val playerEntity = AbstractEntity()
 
-    playerEntity.setEffectsConsumer(effectsLayer)
-    playerEntity.setEntityConsumer(physicsLayer)
+    val hull1 = DummyHull()
+    val hull2 = DummyHull()
+    hull2.translate(Vector2(1.0, 0.0))
+
+    playerEntity.addHull(hull1)
+    playerEntity.addHull(hull2)
+
+    playerEntity.effectsConsumer = effectsLayer
+    playerEntity.entityConsumer = physicsLayer
     physicsLayer.addEntity(playerEntity)
 //    val playerController = PlayerController(bitSet)
 //    controllerLayer.addControllerEntry(playerController, SimplePawnedInterface(playerEntity))

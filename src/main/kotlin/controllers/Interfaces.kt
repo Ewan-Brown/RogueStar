@@ -3,50 +3,24 @@ package controllers
 import math.Coordinates
 import math.EntityReferenceFrame
 import math.Vector2
+import physics.AbstractEntity
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
-interface PlantInterface{
-    fun update()
-}
-
-sealed interface SimpleInterface : PlantInterface{
-    abstract fun setDesiredThrust(thrust: Vector2)
-    abstract fun setDesiredTorque(t: Double)
-    abstract fun setFiring(f: Boolean)
-}
-
-sealed interface ExampleAlternativeInterface : PlantInterface{
-    abstract fun setSomeVariable(thrust: Vector2)
-    abstract fun setAnotherThing(t: Double)
-    abstract fun setYetAnotherThing(f: Boolean)
-}
-
-@OptIn(ExperimentalUuidApi::class)
-abstract class Job(){
-    var assignedPawnUUID : Uuid? = null
-
-//    abstract fun canPerform(p : AbstractPawn) : Boolean
-    abstract fun isComplete() : Boolean
-}
-
-class MoveJob(val destination: Coordinates<EntityReferenceFrame>) : Job() {
-    override fun isComplete(): Boolean {
-        TODO()
-    }
-}
-
-//class ManStationJob(val station: Station) : Job() {
-//    override fun isComplete(): Boolean {
-//        return false
-//    }
-//
-//    var isFulfilled = false
-//
+//interface PlantInterface<E: AbstractEntity>{
+//    fun update()
 //}
-//
-//abstract class DirectControllerInterface<S: ControllableEntity>(protected val target: S) : PlantInterface
+
+//sealed interface SimpleInterface : PlantInterface{
+//    fun
+//}
+
+//sealed interface ExampleAlternativeInterface : PlantInterface{
+//    abstract fun setSomeVariable(thrust: Vector2)
+//    abstract fun setAnotherThing(t: Double)
+//    abstract fun setYetAnotherThing(f: Boolean)
+//}
 //
 //@OptIn(ExperimentalUuidApi::class)
 //abstract class PawnedControllerInterface<S: ControllableEntity>(protected val target: S) : PlantInterface{

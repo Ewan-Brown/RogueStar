@@ -1,7 +1,7 @@
 Complete Parts rewrite
 - Write a POC for a ship with Hull, Modules, Pawns.
 - Write POC for a hull with multiple renderables
-- Explicitly document what the differences between Entity, Component, Pawn, and Renderable are.
+- I need to rewrite interfaces/controllers
 
 Debug tools
 - implement toString

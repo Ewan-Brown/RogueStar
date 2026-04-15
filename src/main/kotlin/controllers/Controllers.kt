@@ -10,7 +10,7 @@ import java.util.BitSet
 
 class ControllerLayer : ControllerLayerI {
 
-    private class ControllerEntityEntry<S: PlantInterface>(val controller : Controller<S>, val plantInterface: S){
+    private class ControllerEntityEntry<S>(val controller : Controller<S>, val plantInterface: S){
         fun update(){
             controller.update(plantInterface)
             plantInterface.update()

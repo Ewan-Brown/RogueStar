@@ -57,6 +57,7 @@ value class Orientation<S: ReferenceFrame>(private val value: Double) : Referenc
     fun rotate(theta: Double) : Orientation<S> = Orientation(this.value + theta)
     operator fun plus(theta: Double) : Orientation<S> = Orientation(this.value + theta)
     operator fun minus(theta: Double) : Orientation<S> = Orientation(this.value - theta)
+    operator fun minus(orientation: Orientation<S>) : Double = this.value - orientation.getAngle()
 
     fun getAngle() : Double = value
     override fun <S2 : ReferenceFrame> applyTransform(transform: Transform<S, S2>): Orientation<S2> {

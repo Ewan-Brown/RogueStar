@@ -101,6 +101,10 @@ class Vector2(private val x :Double, private val y :Double) {
         )
     }
 
+    fun applyTransform(transform: Transform<*, *>): Vector2 {
+        return this.rotate(transform.rotation) + transform.translation
+    }
+
 }
 
 /**

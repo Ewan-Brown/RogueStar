@@ -1,5 +1,4 @@
 import controllers.Controller
-import controllers.PlantInterface
 import effects.Effect
 import models.Model
 import effects.EffectsInput
