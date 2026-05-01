@@ -22,6 +22,7 @@ import DebugLineData
 import controllers.PlayerController
 import graphics.CameraDetails
 import graphics.GraphicsI
+import math.Coordinates
 import physics.*
 
 
@@ -89,12 +90,24 @@ fun main() {
     val torquer = Torquer()
     torquer.translate(Vector2(0.0, 2.0))
 
+    val gun = Weapon()
+    gun.translate(Vector2(0.0, 1.0))
+
+    fun createBullet() : Entity {
+        val bullet = Entity()
+        bullet.addHull(DummyHull())
+        bullet.applyForce(Force(Vector2(1.0, 0.0), Coordinates(Vector2())))
+        return bullet
+    }
+
     playerEntity.addHull(hull)
     playerEntity.addModule(thruster)
     playerEntity.addModule(torquer)
+    playerEntity.addModule(gun)
 
-    playerEntity.addSystem(ThrusterSystem(playerEntity, listOf(thruster), EntityStation()))
-    playerEntity.addSystem(TorqueSystem(playerEntity, listOf(torquer), EntityStation()))
+    playerEntity.addSystem(ThrusterSystem( listOf(thruster), EntityStation()))
+    playerEntity.addSystem(TorqueSystem( listOf(torquer), EntityStation()))
+    playerEntity.addSystem(WeaponGroupSystem(listOf(gun), {createBullet()} , EntityStation()))
 
     playerEntity.effectsConsumer = effectsLayer
     playerEntity.entityConsumer = physicsLayer

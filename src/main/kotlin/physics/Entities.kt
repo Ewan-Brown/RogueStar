@@ -104,7 +104,7 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
 
     fun update(timeStep: Double) {
         for(system in systems){
-            system.update(timeStep)
+            system.update(timeStep, this)
         }
     }
 

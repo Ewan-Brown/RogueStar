@@ -19,12 +19,12 @@ import kotlin.math.min
  * Pawn controllers reference the system for state, then use pawns to attempt to modify part state via
  *
  */
-abstract class EntitySystem(protected val entity: Entity){
-    abstract fun update(timeStep: Double)
+abstract class EntitySystem(){
+    abstract fun update(timeStep: Double, entity: Entity)
 }
 
 //TODO Add fuel system
-class ThrusterSystem(entity: Entity, private val thrusters: List<Thruster>, private val pilotStation: EntityStation?) : EntitySystem(entity) {
+class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotStation: EntityStation?) : EntitySystem() {
 
     fun setThrust(direction: Orientation<EntityReferenceFrame>, thrust: Double){
         for (thruster in thrusters){
@@ -34,7 +34,7 @@ class ThrusterSystem(entity: Entity, private val thrusters: List<Thruster>, priv
         }
     }
 
-    override fun update(timeStep: Double){
+    override fun update(timeStep: Double, entity: Entity){
         var forceOrigin : Coordinates<EntityReferenceFrame> = Coordinates(thrusters.map { it.thrustForceOrigin.applyTransform(getTransformLocalToParentFrame(it)).getVector() }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble())
         var netForceVector : Vector2 = thrusters.map {
             val localForceVec = Vector2(it.thrusterOrientation.getAngle()) * it.thrusterThrottle
@@ -50,8 +50,8 @@ class ThrusterSystem(entity: Entity, private val thrusters: List<Thruster>, priv
     }
 }
 
-class TorqueSystem(entity: Entity, private val torquers: List<Torquer>, private val pilotStation: EntityStation?) : EntitySystem(entity){
-    override fun update(timeStep: Double) {
+class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation: EntityStation?) : EntitySystem(){
+    override fun update(timeStep: Double, entity: Entity) {
         val netTorque = torquers.map{it.torque}.reduce { t1, t2 -> t1+t2 }
         entity.applyTorque(netTorque)
     }
@@ -64,8 +64,8 @@ class TorqueSystem(entity: Entity, private val torquers: List<Torquer>, private 
 }
 
 //TODO Add Ammo system
-class WeaponGroupSystem(entity: Entity, private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation) : EntitySystem(entity){
-    override fun update(timeStep: Double) {
+class WeaponGroupSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation) : EntitySystem(){
+    override fun update(timeStep: Double, entity: Entity) {
         for(weapon in weapons){
             weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
             if(weapon.cooldownRemaining <= 0.0 && weapon.isToggledOn){
@@ -80,6 +80,8 @@ class WeaponGroupSystem(entity: Entity, private val weapons: List<Weapon>, priva
                 proj.setPose(spawnPoseInWorldCoords)
 
                 entity.sendEntity(proj)
+
+                weapon.cooldownRemaining = weapon.maxCooldown
             }
         }
     }

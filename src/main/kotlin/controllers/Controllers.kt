@@ -77,12 +77,12 @@ class PlayerController(val bitSet: BitSet) : Controller<Entity>(){
 
         val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
-//        val weaponsSystem : WeaponGroupSystem = plant.getSystems().filterIsInstance<WeaponGroupSystem>().first()
+        val weaponsSystem : WeaponGroupSystem = plant.getSystems().filterIsInstance<WeaponGroupSystem>().first()
 
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
-//        weaponsSystem.setToggle(firing)
+        weaponsSystem.setToggle(firing)
 //        plant.setDesiredThrust(thrust)
 //        plant.setDesiredTorque(torque/100.0)
 //        plant.setFiring(firing)
