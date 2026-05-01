@@ -9,33 +9,7 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
-interface EntityI: HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame> {
-    fun getVelocity() : Vector2
-    fun getRotationalVelocity() : Double
-
-    fun setVelocity(vel: Vector2)
-    fun setRotationalVelocity(rotVel: Double)
-
-    fun translate(translation: Vector2)
-    fun rotate(rotation: Double)
-
-    fun getCenterOfMass() : Coordinates<EntityReferenceFrame>
-    fun getMass() : Double
-    fun update(timeStep: Double)
-
-    fun applyForce(force: Force)
-    fun applyTorque(torque: Double)
-    fun checkNetForce() : Vector2
-    fun checkNetTorque() : Double
-
-    fun getLastForces(): List<Force>
-    fun getPawnsInside() : List<Pawn>
-    fun getHull() : List<EntityHull>
-    fun getModules() : List<EntityModule>
-}
-
-
-class AbstractEntity() : EntityI{
+class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
 
     var effectsConsumer: EffectsConsumer? = null
     var entityConsumer: EntityConsumer? = null
@@ -56,7 +30,7 @@ class AbstractEntity() : EntityI{
     /**
      * Everything that 'makes up' a ship. Sum of its parts.
      * Hull - the structure. Stations, Pawns reside in hull. Modules can connect to hull
-     * Modules - anything functional for the entity. Turrets, Thrusters, Radar... Anything that might act or provide
+     * Modules - anything functional for 1the entity. Turrets, Thrusters, Radar... Anything that might act or provide
      *   -> mostly just to hold state, should have minimal logic
      * Stations - A way for pawns to interact with systems. Exists within hull, basically just checkpoints
      *   -> should only provide actions around declarative statements
@@ -64,20 +38,22 @@ class AbstractEntity() : EntityI{
      * Systems - The connection between state, stations and modules.
      *   ->  Holds all the imperative logic and execution of decisions
     **/
-    private var hulls = mutableListOf<EntityHull>()
-    private var modules = mutableListOf<EntityModule>()
-    private var systems = mutableListOf<EntitySystem>()
-    private var stations = mutableListOf<EntityStation>()
-    private var pawns = mutableListOf<Pawn>()
+    private val hulls = mutableListOf<EntityHull>()
+    private val modules = mutableListOf<EntityModule>()
+    private val systems = mutableListOf<EntitySystem>()
+    private val stations = mutableListOf<EntityStation>()
+    private val pawns = mutableListOf<Pawn>()
 
-    //TODO This assumes that (0.0) of each part is also its center of mass, and that the mass of each part is equal!
-    override fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
+    fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
         var cumulativeMassVector = Vector2()
         var cumulativeMassValue = 0.0
-//        getParts().forEach {
-//            cumulativeMassVector += it.getCenterOfMass().applyTransform(getTransformLocalToParentFrame(it)).getVector()
-//            cumulativeMassValue += it.getMass()
-//        }
+
+        val thingsWithMass = getModules().toMutableList() + getHull().toMutableList()
+
+        for (module in thingsWithMass) {
+            cumulativeMassVector += module.centerOfMass.applyTransform(getTransformLocalToParentFrame(module)).getVector() * module.mass
+            cumulativeMassValue += module.mass
+        }
 
         val dividedMass = cumulativeMassVector / cumulativeMassValue
 
@@ -97,41 +73,43 @@ class AbstractEntity() : EntityI{
         return false
     }
 
-    override fun getRotationalVelocity(): Double {
+    fun getRotationalVelocity(): Double {
         return rotVelocity
     }
 
-    override fun getVelocity(): Vector2 {
+    fun getVelocity(): Vector2 {
         return vel
     }
 
-    override fun setRotationalVelocity(rotVel: Double) {
+    fun setRotationalVelocity(rotVel: Double) {
         rotVelocity = rotVel
     }
 
-    override fun setVelocity(vel: Vector2) {
+    fun setVelocity(vel: Vector2) {
         this.vel = vel
     }
 
-    override fun rotate(rotation: Double) {
+    fun rotate(rotation: Double) {
         this.orientation += rotation
     }
 
-    override fun translate(translation: Vector2) {
+    fun translate(translation: Vector2) {
         this.coordinates += translation
     }
 
     //TODO Flesh this out
-    override fun getMass(): Double {
-        return 1.0
+    fun getMass(): Double {
+        return getModules().sumOf { it.mass } + getHull().sumOf { it.mass }
     }
 
-    override fun update(timeStep: Double) {
-
+    fun update(timeStep: Double) {
+        for(system in systems){
+            system.update(timeStep)
+        }
     }
 
     // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
-    override fun applyForce(force: Force) {
+    fun applyForce(force: Force) {
         forceAccumulator += force.vector
         currentForces.add(force)
 
@@ -142,11 +120,11 @@ class AbstractEntity() : EntityI{
         applyTorque(torque)
     }
 
-    override fun applyTorque(torque: Double) {
+    fun applyTorque(torque: Double) {
         torqueAccumulator += torque
     }
 
-    final override fun checkNetForce(): Vector2 {
+    fun checkAndResetNetForce(): Vector2 {
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
@@ -154,7 +132,7 @@ class AbstractEntity() : EntityI{
         return netForce
     }
 
-    final override fun checkNetTorque(): Double {
+    fun checkAndResetNetTorque(): Double {
         val netTorque = torqueAccumulator
         torqueAccumulator = 0.0;
         return netTorque
@@ -172,7 +150,11 @@ class AbstractEntity() : EntityI{
         hulls.add(hull)
     }
 
-    override fun getLastForces(): List<Force> {
+    fun addSystem(system: EntitySystem){
+        systems.add(system)
+    }
+
+    fun getLastForces(): List<Force> {
         return lastForces
     }
 
@@ -183,7 +165,7 @@ class AbstractEntity() : EntityI{
             throw NullPointerException("EffectsConsumer not set!")
         }
     }
-    fun sendEntity(entity: AbstractEntity){
+    fun sendEntity(entity: Entity){
         if(entityConsumer != null){
             entityConsumer!!.addEntity(entity)
         }else{
@@ -203,15 +185,15 @@ class AbstractEntity() : EntityI{
         return coordinates
     }
 
-    override fun getPawnsInside(): List<Pawn> {
+    fun getPawnsInside(): List<Pawn> {
         return pawns
     }
 
-    override fun getHull(): List<EntityHull> {
+    fun getHull(): List<EntityHull> {
         return hulls
     }
 
-    override fun getModules(): List<EntityModule> {
+    fun getModules(): List<EntityModule> {
         return modules
     }
 
@@ -219,5 +201,9 @@ class AbstractEntity() : EntityI{
         coordinates = pose.coordinate
         orientation = pose.orientation
         zheight = pose.zHeight
+    }
+
+    fun getSystems() : List<EntitySystem>{
+        return systems;
     }
 }

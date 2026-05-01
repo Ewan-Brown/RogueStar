@@ -22,8 +22,9 @@ fun square(color : Graphics.ColorData = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0
 }
 
 
-abstract class AbstractComponent(val boundary: List<Vector2>, val mass: Double, val centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
+abstract class AbstractComponent(val boundary: List<Vector2>, val mass: Double, centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
 
+    val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
     private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
     private var ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
@@ -74,17 +75,15 @@ class Thruster : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var thrustForceOrigin: Coordinates<ComponentReferenceFrame> = Coordinates(Vector2())
 
     override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return listOf(square(Graphics.ColorData(0.0f, 1.0f, 1.0f, 0.0f)))
+        return listOf(square(Graphics.ColorData(0.0f, 0.0f, 1.0f, 0.0f)))
     }
 }
 
 class Torquer : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var torque: Double = 0.0
-
     override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
         return listOf(square(Graphics.ColorData(0.0f, 1.0f, 1.0f, 0.0f)))
     }
-
 }
 
 class Weapon() : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){

@@ -2,11 +2,10 @@ package physics
 
 import math.Coordinates
 import math.EntityReferenceFrame
-import math.Vector2
 
 interface HasCollidingPoint{
     fun getPointOfContact() : Coordinates<EntityReferenceFrame>
-    fun doesCollideWith(otherEntity: EntityI) : Boolean
+    fun doesCollideWith(otherEntity: Entity) : Boolean
 }
 
 //open class DumbProjectile() : AbstractEntity(), HasCollidingPoint{

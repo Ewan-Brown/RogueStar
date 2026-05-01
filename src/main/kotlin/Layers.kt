@@ -5,7 +5,7 @@ import effects.EffectsInput
 import graphics.Graphics
 import math.Coordinates
 import math.WorldReferenceFrame
-import physics.AbstractEntity
+import physics.Entity
 import physics.PhysicsInput
 import physics.PhysicsOutput
 
@@ -25,7 +25,7 @@ interface EffectsLayerI : Layer, EffectsConsumer{
 }
 
 interface EntityConsumer {
-    fun addEntity(entity: AbstractEntity)
+    fun addEntity(entity: Entity)
 }
 
 interface EffectsConsumer {
@@ -34,5 +34,5 @@ interface EffectsConsumer {
 
 interface ControllerLayerI : Layer{
     fun update()
-    fun <T: PlantInterface> addControllerEntry(controller: Controller<T>, `interface`: T)
+    fun <T> addControllerEntry(controller: Controller<T>, `interface`: T)
 }

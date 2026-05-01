@@ -1,11 +1,16 @@
 package physics
 
+import math.Coordinates
 import math.HasReferenceFrame
+import math.Orientation
+import math.Pose
 import math.WorldReferenceFrame
+import math.ZHeight
+import math.getTransformLocalToParentFrame
 
 class FlatWorld : World {
-    private val entities = mutableListOf<AbstractEntity>()
-    private val entityBuffer = mutableListOf<AbstractEntity>()
+    private val entities = mutableListOf<Entity>()
+    private val entityBuffer = mutableListOf<Entity>()
 
     override fun update(input : PhysicsInput) {
 
@@ -19,14 +24,20 @@ class FlatWorld : World {
             //Calculate new positions
             var velocity = entity.getVelocity()
             var rotVelocity = entity.getRotationalVelocity()
-            entity.translate(velocity * input.timeStep)
+
+            val comLocal = entity.getCenterOfMass()
+            var comWorld = comLocal.applyTransform(getTransformLocalToParentFrame(entity))
+
             entity.rotate(rotVelocity * input.timeStep)
+            comWorld += velocity * input.timeStep
+
+            entity.setPose(Pose(Coordinates(comWorld.getVector() - comLocal.getVector().rotate(entity.getOrientation().getAngle())), entity.getOrientation(), entity.getZHeight()))
 
             val entityAngle = entity.getOrientation().getAngle()
 
             //Calculate new derivatives
-            velocity = entity.getVelocity() + entity.checkNetForce().rotate(entityAngle)/entity.getMass()
-            rotVelocity = entity.getRotationalVelocity() + entity.checkNetTorque()/entity.getMass()
+            velocity = entity.getVelocity() + entity.checkAndResetNetForce().rotate(entityAngle)/entity.getMass()
+            rotVelocity = entity.getRotationalVelocity() + entity.checkAndResetNetTorque()/entity.getMass()
 
             //Apply friction
             velocity *= 0.99
@@ -60,11 +71,11 @@ class FlatWorld : World {
         entities.removeIf{it.markedForRemoval()}
 
     }
-    override fun getEntities(): List<AbstractEntity> {
+    override fun getEntities(): List<Entity> {
         return entities
     }
 
-    override fun addEntity(entity: AbstractEntity) {
+    override fun addEntity(entity: Entity) {
         synchronized(entityBuffer){
             entityBuffer.add(entity)
         }
@@ -73,6 +84,6 @@ class FlatWorld : World {
 
 interface World : HasReferenceFrame<WorldReferenceFrame>{
     public fun update(input: PhysicsInput)
-    public fun getEntities(): List<AbstractEntity>
-    public fun addEntity(entity: AbstractEntity)
+    public fun getEntities(): List<Entity>
+    public fun addEntity(entity: Entity)
 }

@@ -22,7 +22,7 @@ class Vector2(private val x :Double, private val y :Double) {
     }
     fun normalize() : Vector2 {
         val length = getMagnitude()
-        return this / length
+        return if (length == 0.0) Vector2(0.0, 0.0) else this / length
     }
 
     operator fun plus(v : Vector2) : Vector2 {

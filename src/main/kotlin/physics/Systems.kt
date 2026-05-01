@@ -9,6 +9,7 @@ import math.Vector2
 import math.ZHeight
 import math.combineTransforms
 import math.getTransformLocalToParentFrame
+import math.getTransformParentToLocalFrame
 import kotlin.math.min
 
 /**
@@ -18,20 +19,18 @@ import kotlin.math.min
  * Pawn controllers reference the system for state, then use pawns to attempt to modify part state via
  *
  */
-abstract class EntitySystem(val entity: AbstractEntity){
+abstract class EntitySystem(protected val entity: Entity){
     abstract fun update(timeStep: Double)
 }
 
 //TODO Add fuel system
-class ThrusterSystem(entity: AbstractEntity, val thrusters: List<Thruster>, pilotStation: EntityStation?) : EntitySystem(entity) {
+class ThrusterSystem(entity: Entity, private val thrusters: List<Thruster>, private val pilotStation: EntityStation?) : EntitySystem(entity) {
 
-    fun setThrustDirection(desiredOrientation: Orientation<EntityReferenceFrame>, throttle: Double){
+    fun setThrust(direction: Orientation<EntityReferenceFrame>, thrust: Double){
         for (thruster in thrusters){
-            val componentOrientation = thruster.getOrientation()
-            //This might need to be flipped
-            val orientationDiff = desiredOrientation - componentOrientation
-            thruster.thrusterOrientation = Orientation(orientationDiff)
-            thruster.thrusterThrottle = throttle
+            val desiredOrientation = direction.applyTransform(getTransformParentToLocalFrame(thruster))
+            thruster.thrusterOrientation = desiredOrientation
+            thruster.thrusterThrottle = thrust
         }
     }
 
@@ -39,24 +38,33 @@ class ThrusterSystem(entity: AbstractEntity, val thrusters: List<Thruster>, pilo
         var forceOrigin : Coordinates<EntityReferenceFrame> = Coordinates(thrusters.map { it.thrustForceOrigin.applyTransform(getTransformLocalToParentFrame(it)).getVector() }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble())
         var netForceVector : Vector2 = thrusters.map {
             val localForceVec = Vector2(it.thrusterOrientation.getAngle()) * it.thrusterThrottle
-            val entityFrameForceVec = localForceVec.applyTransform(getTransformLocalToParentFrame(it))
+            val entityFrameForceVec = localForceVec.rotate(getTransformLocalToParentFrame(it).rotation)
             return@map entityFrameForceVec
         }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble()
 
+//        println("totalForce = $netForceVector")
+//        println ("forceOrigin = $forceOrigin")
+//        println("                    ")
         val force = Force(netForceVector, forceOrigin)
         entity.applyForce(force)
     }
 }
 
-class TorqueSystem(entity: AbstractEntity, val torquers: List<Torquer>, pilotStation: EntityStation?) : EntitySystem(entity){
+class TorqueSystem(entity: Entity, private val torquers: List<Torquer>, private val pilotStation: EntityStation?) : EntitySystem(entity){
     override fun update(timeStep: Double) {
         val netTorque = torquers.map{it.torque}.reduce { t1, t2 -> t1+t2 }
         entity.applyTorque(netTorque)
     }
+
+    fun setTorque(torque: Double){
+        for (torquer in torquers){
+            torquer.torque = torque
+        }
+    }
 }
 
 //TODO Add Ammo system
-class WeaponGroupSystem(entity: AbstractEntity, val weapons: List<Weapon>, val projectileCreator: () -> AbstractEntity, val weaponStation: EntityStation) : EntitySystem(entity){
+class WeaponGroupSystem(entity: Entity, private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation) : EntitySystem(entity){
     override fun update(timeStep: Double) {
         for(weapon in weapons){
             weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
@@ -76,25 +84,10 @@ class WeaponGroupSystem(entity: AbstractEntity, val weapons: List<Weapon>, val p
         }
     }
 
-}
-//
-//class RadarSystem() : EntitySystem(){
-//
-//}
-//
-//class ShieldSystem() : EntitySystem(){
-//
-//}
+    fun setToggle(toggle: Boolean){
+        for (weapon in weapons){
+            weapon.isToggledOn = toggle
+        }
+    }
 
-interface HasThrusters {
-    fun getThrusters() : ThrusterSystem
 }
-
-interface HasTorquers {
-    fun getTorquers() : TorqueSystem
-}
-
-interface HasWeapons{
-    fun getWeapons() : WeaponGroupSystem
-}
-interface BasicShipInterface: HasThrusters, HasTorquers, HasWeapons

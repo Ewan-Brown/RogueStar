@@ -3,6 +3,8 @@ package physics
 import DebugLineData
 import PhysicsLayerI
 import effects.Effect
+import graphics.BLUE
+import graphics.CYAN
 import graphics.GREEN
 import graphics.Graphics
 import graphics.RED
@@ -30,7 +32,6 @@ class PhysicsLayer() : PhysicsLayerI{
                 processRenderables(entity, {
                     modelDataMap[it.model]!!.add(it)
                 })
-
         }
     }
 
@@ -40,8 +41,8 @@ class PhysicsLayer() : PhysicsLayerI{
         for (entity in world.getEntities()) {
             val pos = entity.getCoordinates()
             val com = entity.getCenterOfMass().applyTransform(getTransformLocalToParentFrame(entity))
-            lines.add(DebugLineData(com, pos, RED, GREEN))
-            lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, RED, GREEN))
+            lines.add(DebugLineData(com, pos, CYAN, BLUE))
+            lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, BLUE, GREEN))
             for (force in entity.getLastForces()) {
                 val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
                 val fEnd = fOrigin + force.vector.rotate(entity.getOrientation().getAngle()) * 500.0
@@ -51,7 +52,7 @@ class PhysicsLayer() : PhysicsLayerI{
         return lines
     }
 
-    override fun addEntity(entity: AbstractEntity) {
+    override fun addEntity(entity: Entity) {
         world.addEntity(entity)
     }
 

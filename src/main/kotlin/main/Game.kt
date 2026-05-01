@@ -19,6 +19,7 @@ import math.Vector2
 import java.util.*
 import ControllerLayerI
 import DebugLineData
+import controllers.PlayerController
 import graphics.CameraDetails
 import graphics.GraphicsI
 import physics.*
@@ -80,20 +81,26 @@ fun main() {
     gui.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
 
-    val playerEntity = AbstractEntity()
+    val playerEntity = Entity()
 
-    val hull1 = DummyHull()
-    val hull2 = DummyHull()
-    hull2.translate(Vector2(1.0, 0.0))
+    val hull = DummyHull()
+    val thruster = Thruster()
+    thruster.translate(Vector2(0.0, 1.0))
+    val torquer = Torquer()
+    torquer.translate(Vector2(0.0, 2.0))
 
-    playerEntity.addHull(hull1)
-    playerEntity.addHull(hull2)
+    playerEntity.addHull(hull)
+    playerEntity.addModule(thruster)
+    playerEntity.addModule(torquer)
+
+    playerEntity.addSystem(ThrusterSystem(playerEntity, listOf(thruster), EntityStation()))
+    playerEntity.addSystem(TorqueSystem(playerEntity, listOf(torquer), EntityStation()))
 
     playerEntity.effectsConsumer = effectsLayer
     playerEntity.entityConsumer = physicsLayer
     physicsLayer.addEntity(playerEntity)
-//    val playerController = PlayerController(bitSet)
-//    controllerLayer.addControllerEntry(playerController, SimplePawnedInterface(playerEntity))
+    val playerController = PlayerController(bitSet)
+    controllerLayer.addControllerEntry(playerController, playerEntity)
 
     while(true){
         game.update(timeStep)
