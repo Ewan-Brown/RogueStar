@@ -112,6 +112,7 @@ fun main() {
     playerEntity.effectsConsumer = effectsLayer
     playerEntity.entityConsumer = physicsLayer
     physicsLayer.addEntity(playerEntity)
+
     val playerController = PlayerController(bitSet)
     controllerLayer.addControllerEntry(playerController, playerEntity)
 
