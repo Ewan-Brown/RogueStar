@@ -8,7 +8,7 @@ import com.jogamp.newt.event.WindowAdapter
 import com.jogamp.newt.event.WindowEvent
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
-import com.jogamp.opengl.math.FloatUtil
+import com.jogamp.math.FloatUtil
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import graphics.Graphics.ColorData
@@ -325,9 +325,10 @@ class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
 
     private fun calculateViewMat() : FloatArray {
         val scale = FloatUtil.makeScale(FloatArray(16), true, 0.06f * cameraScale, 0.06f * cameraScale, 0.03f) //FIXME There's something weird about this - try increasing sz to above 0.06
-        val translate = FloatUtil.makeTranslation(FloatArray(16), 0, true, -cameraPos.getX().toFloat(), -cameraPos.getY().toFloat(), 0f)
-        val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
-        return FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
+        val translate = FloatUtil.makeTranslation(FloatArray(16), true, -cameraPos.getX().toFloat(), -cameraPos.getY().toFloat(), 0f)
+//        val rotate = FloatUtil.makeRotationEuler(FloatArray(16), 0, 0.0f, 0.0f , 0.0f)
+//        return FloatUtil.multMatrix(FloatUtil.multMatrix(scale, rotate), translate)
+        return FloatUtil.multMatrix(scale, translate)
     }
 
     override fun display(drawable: GLAutoDrawable) {

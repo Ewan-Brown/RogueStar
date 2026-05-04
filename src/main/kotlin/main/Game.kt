@@ -25,7 +25,6 @@ import graphics.GraphicsI
 import math.Coordinates
 import physics.*
 
-
 @JvmInline
 value class Timestamp(val time: Double){
     operator fun minus(t2 : Timestamp) : TimeDuration{
