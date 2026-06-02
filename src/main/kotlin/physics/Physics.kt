@@ -42,7 +42,7 @@ class PhysicsLayer() : PhysicsLayerI{
             val pos = entity.getCoordinates()
             val com = entity.getCenterOfMass().applyTransform(getTransformLocalToParentFrame(entity))
             lines.add(DebugLineData(com, pos, CYAN, BLUE))
-            lines.add(DebugLineData(pos, pos + entity.getVelocity()*10.0, BLUE, GREEN))
+            lines.add(DebugLineData(com, com + entity.getVelocity()*10.0, BLUE, GREEN))
             for (force in entity.getLastForces()) {
                 val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
                 val fEnd = fOrigin + force.vector.rotate(entity.getOrientation().getAngle()) * 500.0

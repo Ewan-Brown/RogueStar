@@ -49,11 +49,20 @@
                 </executions>
             </plugin>
             <plugin>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>GameKt</mainClass>
+                            <mainClass>main.GameKt</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
@@ -68,14 +77,6 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.22.2</version>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <configuration>
-                    <mainClass>MainKt</mainClass>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
