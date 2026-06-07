@@ -1,9 +1,8 @@
 package physics
 
-import EffectsConsumer
-import EntityConsumer
 import effects.Effect
-import graphics.Graphics.*
+import effects.EffectsConsumer
+import graphics.Renderer.*
 import graphics.HasNestedRenderables
 import math.*
 import math.Orientation

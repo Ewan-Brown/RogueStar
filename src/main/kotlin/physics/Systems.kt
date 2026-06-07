@@ -41,10 +41,6 @@ class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotSta
             val entityFrameForceVec = localForceVec.rotate(getTransformLocalToParentFrame(it).rotation)
             return@map entityFrameForceVec
         }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble()
-
-//        println("totalForce = $netForceVector")
-//        println ("forceOrigin = $forceOrigin")
-//        println("                    ")
         val force = Force(netForceVector, forceOrigin)
         entity.applyForce(force)
     }

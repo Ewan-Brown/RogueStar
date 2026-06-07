@@ -1,6 +1,9 @@
 package graphics
 
-import DebugLineData
+import codec.VectorDeserializer
+import codec.VectorSerializer
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.module.SimpleModule
 import models.Model
 import math.Vector2
 import com.jogamp.newt.event.KeyListener
@@ -11,7 +14,8 @@ import com.jogamp.opengl.*
 import com.jogamp.math.FloatUtil
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
-import graphics.Graphics.ColorData
+import designers.Shape
+import graphics.Renderer.ColorData
 import math.*
 import java.awt.MouseInfo
 import java.lang.Error
@@ -25,10 +29,11 @@ import kotlin.collections.set
 import kotlin.collections.withIndex
 import kotlin.system.exitProcess
 
+data class DebugLineData(val p1: Coordinates<WorldReferenceFrame>, val p2: Coordinates<WorldReferenceFrame>, val colorData1: Renderer.ColorData, val colorData2: Renderer.ColorData)
 data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
-interface GraphicsI{
+interface RendererI{
     fun getMousePositionInWorldCoordinates() : Vector2
-    fun updateDrawables(data: Map<Model, List<Graphics.Renderable>>)
+    fun updateDrawables(data: Map<Model, List<Renderer.Renderable>>)
     fun updateDebug(debugLines: List<DebugLineData>)
     fun updateCamera(cameraDetails: CameraDetails)
     //TODO Genericize this!
@@ -44,7 +49,21 @@ val BLACK = ColorData(0.0f, 0.0f, 0.0f, 1.0f)
 val CYAN = ColorData(0.0f, 1.0f, 1.0f, 1.0f)
 val PURPLE = ColorData(0.5f, 0.0f, 0.5f, 1.0f)
 
-class Graphics(val loadedModels: List<Model>) : GraphicsI, GLEventListener {
+fun loadModels() : Map<Int, Model> {
+    val mapper = ObjectMapper()
+    val module = SimpleModule()
+    module.addSerializer(Vector2::class.java, VectorSerializer())
+    module.addDeserializer(Vector2::class.java, VectorDeserializer())
+    mapper.registerModules(module)
+    val stream = Renderer::class.java.getResourceAsStream("/entities/shapes.json")
+    val shapes = mapper.readValue(stream, Array<Shape>::class.java).toList()
+    return shapes.associate { shape ->
+        val points = shape.points.map { listOf(it.getX().toFloat() / 30.0f, it.getY().toFloat() / 30.0f, 0.0f) }.flatten().toFloatArray()
+        shape.ID to Model(points, GL.GL_TRIANGLE_FAN)
+    }
+}
+
+class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
 
     val width: Int = 600
     val height: Int = 600

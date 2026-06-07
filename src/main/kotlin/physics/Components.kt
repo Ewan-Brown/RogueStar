@@ -1,9 +1,7 @@
 package physics
 
-import graphics.Graphics
+import graphics.Renderer
 import graphics.HasNestedRenderables
-import main.TimeDuration
-import main.Timestamp
 import math.ComponentReferenceFrame
 import math.Coordinates
 import math.EntityReferenceFrame
@@ -13,12 +11,12 @@ import math.Vector2
 import math.ZHeight
 import models.Model
 
-fun square(color : Graphics.ColorData = Graphics.ColorData(1.0f, 1.0f, 1.0f, 1.0f)) : Graphics.IntermediaryRenderable<ComponentReferenceFrame>{ return Graphics.IntermediaryRenderable<ComponentReferenceFrame>(
+fun square(color : Renderer.ColorData = Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0f)) : Renderer.IntermediaryRenderable<ComponentReferenceFrame>{ return Renderer.IntermediaryRenderable<ComponentReferenceFrame>(
     Model.SQUARE,
     Pose(),
     1.0,
     color,
-    Graphics.MetaData(1.0f))
+    Renderer.MetaData(1.0f))
 }
 
 
@@ -64,8 +62,8 @@ abstract class EntityModule(boundary: List<Vector2>, mass: Double, centerOfMass:
 
 class DummyHull : EntityHull(Model.SQUARE.asVectors(), 1.0, Vector2()){
 
-    override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return listOf(square(Graphics.ColorData(1.0f, 0.0f, 0.0f, 0.0f)))
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(1.0f, 0.0f, 0.0f, 0.0f)))
     }
 }
 
@@ -74,15 +72,15 @@ class Thruster : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var thrusterThrottle: Double = 0.0
     var thrustForceOrigin: Coordinates<ComponentReferenceFrame> = Coordinates(Vector2())
 
-    override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return listOf(square(Graphics.ColorData(0.0f, 0.0f, 1.0f, 0.0f)))
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(0.0f, 0.0f, 1.0f, 0.0f)))
     }
 }
 
 class Torquer : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var torque: Double = 0.0
-    override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return listOf(square(Graphics.ColorData(0.0f, 1.0f, 1.0f, 0.0f)))
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(0.0f, 1.0f, 1.0f, 0.0f)))
     }
 }
 
@@ -92,7 +90,7 @@ class Weapon() : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     val maxCooldown: Double = 10.0
     var cooldownRemaining: Double = 0.0
 
-    override fun getImmediateRenderables(): List<Graphics.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return listOf(square(Graphics.ColorData(1.0f, 0.0f, 1.0f, 0.0f)))
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(1.0f, 0.0f, 1.0f, 0.0f)))
     }
 }

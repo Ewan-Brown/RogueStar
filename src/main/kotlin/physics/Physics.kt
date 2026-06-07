@@ -1,12 +1,11 @@
 package physics
 
-import DebugLineData
-import PhysicsLayerI
 import effects.Effect
 import graphics.BLUE
 import graphics.CYAN
+import graphics.DebugLineData
 import graphics.GREEN
-import graphics.Graphics
+import graphics.Renderer
 import graphics.RED
 import graphics.WHITE
 import graphics.processRenderables
@@ -17,16 +16,16 @@ import math.getTransformLocalToParentFrame
 import models.Model
 import kotlin.collections.HashMap
 
-data class PhysicsInput(val timeStep: Double)
-data class PhysicsOutput(val effects: List<Effect>)
+interface EntityConsumer {
+    fun addEntity(entity: Entity)
+}
 
-class PhysicsLayer() : PhysicsLayerI{
-    override fun update(input: PhysicsInput): PhysicsOutput {
-        world.update(input)
-        return PhysicsOutput(listOf())
+class PhysicsManager() : EntityConsumer {
+    fun update(timeStep: Double) {
+        world.update(timeStep)
     }
 
-    override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Renderer.Renderable>>) {
         for (entity in world.getEntities()) {
             //TODO replace with processor call
                 processRenderables(entity, {
@@ -35,7 +34,7 @@ class PhysicsLayer() : PhysicsLayerI{
         }
     }
 
-    override fun getDebugLines(): List<DebugLineData> {
+    fun getDebugLines(): List<DebugLineData> {
         val lines = mutableListOf<DebugLineData>()
 
         for (entity in world.getEntities()) {
@@ -56,7 +55,7 @@ class PhysicsLayer() : PhysicsLayerI{
         world.addEntity(entity)
     }
 
-    val world: World = FlatWorld()
+    val world: World = FlatWorld() //In theory this is so I can replace this with non-flat worlds easily... Not sure about that...
 }
 
 data class Force(val vector: Vector2, val origin: Coordinates<EntityReferenceFrame>)

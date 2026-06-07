@@ -2,17 +2,15 @@ package physics
 
 import math.Coordinates
 import math.HasReferenceFrame
-import math.Orientation
 import math.Pose
 import math.WorldReferenceFrame
-import math.ZHeight
 import math.getTransformLocalToParentFrame
 
 class FlatWorld : World {
     private val entities = mutableListOf<Entity>()
     private val entityBuffer = mutableListOf<Entity>()
 
-    override fun update(input : PhysicsInput) {
+    override fun update(timestep: Double) {
 
         synchronized(entityBuffer){
             entities.addAll(entityBuffer)
@@ -28,8 +26,8 @@ class FlatWorld : World {
             val comLocal = entity.getCenterOfMass()
             var comWorld = comLocal.applyTransform(getTransformLocalToParentFrame(entity))
 
-            entity.rotate(rotVelocity * input.timeStep)
-            comWorld += velocity * input.timeStep
+            entity.rotate(rotVelocity * timestep)
+            comWorld += velocity * timestep
 
             entity.setPose(Pose(Coordinates(comWorld.getVector() - comLocal.getVector().rotate(entity.getOrientation().getAngle())), entity.getOrientation(), entity.getZHeight()))
 
@@ -66,7 +64,7 @@ class FlatWorld : World {
 
         // Do entity updates
         for (entity in entities) {
-            entity.update(input.timeStep)
+            entity.update(timestep)
         }
         entities.removeIf{it.markedForRemoval()}
 
@@ -83,7 +81,7 @@ class FlatWorld : World {
 }
 
 interface World : HasReferenceFrame<WorldReferenceFrame>{
-    public fun update(input: PhysicsInput)
+    public fun update(timestep: Double)
     public fun getEntities(): List<Entity>
     public fun addEntity(entity: Entity)
 }

@@ -1,8 +1,6 @@
 package physics
 
-import graphics.Graphics
 import math.*
-import models.Model
 import java.util.*
 
 //interface EntityPartI : InReferenceFrame<EntityReferenceFrame>, HasReferenceFrame<PartReferenceFrame> {

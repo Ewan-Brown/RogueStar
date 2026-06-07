@@ -1,7 +1,5 @@
 package math
 
-import physics.PhysicsLayer
-
 //https://dyn4j.org/2010/01/sat/
 
 //TODO make sure to check for containment!

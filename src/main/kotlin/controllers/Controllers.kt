@@ -1,8 +1,7 @@
 package controllers
 
-import ControllerLayerI
-import DebugLineData
-import graphics.Graphics
+import graphics.DebugLineData
+import graphics.Renderer
 import math.Orientation
 import math.Vector2
 import models.Model
@@ -14,7 +13,7 @@ import java.awt.event.KeyEvent
 import java.util.BitSet
 
 //TODO Entries are currently never removed
-class ControllerLayer : ControllerLayerI {
+class ControllerManager {
 
     private class ControllerEntityEntry<S>(val controller : Controller<S>, val plantInterface: S){
         fun update(){
@@ -24,18 +23,18 @@ class ControllerLayer : ControllerLayerI {
 
     private val controllerEntryList = mutableListOf<ControllerEntityEntry<*>>()
 
-    override fun update() {
+    fun update() {
         for (controllerEntityEntry in controllerEntryList) {
            controllerEntityEntry.update()
         }
     }
 
-    override fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Graphics.Renderable>>) {}
-    override fun getDebugLines() : List<DebugLineData>{
+    fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Renderer.Renderable>>) {}
+    fun getDebugLines() : List<DebugLineData>{
         return listOf()
     }
 
-    override fun <T> addControllerEntry(controller: Controller<T>, `interface`: T) {
+    fun <T> addControllerEntry(controller: Controller<T>, `interface`: T) {
         controllerEntryList.add(ControllerEntityEntry(controller, `interface`))
     }
 }
@@ -83,8 +82,5 @@ class PlayerController(val bitSet: BitSet) : Controller<Entity>(){
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
         weaponsSystem.setToggle(firing)
-//        plant.setDesiredThrust(thrust)
-//        plant.setDesiredTorque(torque/100.0)
-//        plant.setFiring(firing)
     }
 }

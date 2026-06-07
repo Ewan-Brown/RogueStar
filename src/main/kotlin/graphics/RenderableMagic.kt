@@ -1,7 +1,7 @@
 package graphics
 
-import graphics.Graphics.IntermediaryRenderable
-import graphics.Graphics.Renderable
+import graphics.Renderer.IntermediaryRenderable
+import graphics.Renderer.Renderable
 import math.HasReferenceFrame
 import math.InReferenceFrame
 import math.Pose

@@ -1,27 +1,18 @@
 package main
 
-import EffectsLayerI
-import PhysicsLayerI
 import models.Model
-import codec.VectorDeserializer
-import codec.VectorSerializer
-import effects.EffectsInput
-import effects.EffectsLayer
-import graphics.Graphics
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
+import effects.EffectsManager
+import graphics.Renderer
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
-import com.jogamp.opengl.GL
-import controllers.ControllerLayer
-import designers.Shape
+import controllers.ControllerManager
 import math.Vector2
 import java.util.*
-import ControllerLayerI
-import DebugLineData
 import controllers.PlayerController
 import graphics.CameraDetails
-import graphics.GraphicsI
+import graphics.DebugLineData
+import graphics.RendererI
+import graphics.loadModels
 import math.Coordinates
 import physics.*
 
@@ -34,20 +25,6 @@ value class Timestamp(val time: Double){
 @JvmInline
 value class TimeDuration(val duration: Double)
 
-fun loadModels() : Map<Int, Model> {
-    val mapper = ObjectMapper()
-    val module = SimpleModule()
-    module.addSerializer(Vector2::class.java, VectorSerializer())
-    module.addDeserializer(Vector2::class.java, VectorDeserializer())
-    mapper.registerModules(module)
-    val stream = Graphics::class.java.getResourceAsStream("/entities/shapes.json")
-    val shapes = mapper.readValue(stream, Array<Shape>::class.java).toList()
-    return shapes.associate { shape ->
-        val points = shape.points.map { listOf(it.getX().toFloat() / 30.0f, it.getY().toFloat() / 30.0f, 0.0f) }.flatten().toFloatArray()
-        shape.ID to Model(points, GL.GL_TRIANGLE_FAN)
-    }
-}
-
 fun main() {
     val timeStep = 1.0;
 
@@ -55,12 +32,10 @@ fun main() {
     val models = mutableListOf(Model.SQUARE, Model.BACKPLATE)
     models.addAll(entityModels)
 
-    val physics = PhysicsLayer()
-
-    val effectsLayer: EffectsLayerI = EffectsLayer()
-    val controllerLayer: ControllerLayerI = ControllerLayer()
-    val physicsLayer: PhysicsLayerI = physics
-    val gui : GraphicsI = Graphics(models)
+    val effectsManager = EffectsManager()
+    val controllerManager = ControllerManager()
+    val physicsLayer = PhysicsManager()
+    val renderer : RendererI = Renderer(models)
 
     //We should decouple this from clear server stuff a little better.
     val bitSet = BitSet(256)
@@ -78,8 +53,8 @@ fun main() {
         }
     }
 
-    gui.addListener(keyListener)
-    val game = Game(models, physicsLayer, controllerLayer, effectsLayer, gui)
+    renderer.addListener(keyListener)
+    val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
     val playerEntity = Entity()
 
@@ -108,12 +83,12 @@ fun main() {
     playerEntity.addSystem(TorqueSystem( listOf(torquer), EntityStation()))
     playerEntity.addSystem(WeaponGroupSystem(listOf(gun), {createBullet()} , EntityStation()))
 
-    playerEntity.effectsConsumer = effectsLayer
+    playerEntity.effectsConsumer = effectsManager
     playerEntity.entityConsumer = physicsLayer
     physicsLayer.addEntity(playerEntity)
 
     val playerController = PlayerController(bitSet)
-    controllerLayer.addControllerEntry(playerController, playerEntity)
+    controllerManager.addControllerEntry(playerController, playerEntity)
 
     while(true){
         game.update(timeStep)
@@ -121,10 +96,10 @@ fun main() {
 
 }
 
-class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val controllerLayer: ControllerLayerI, val effectsLayer: EffectsLayerI, val gui: GraphicsI){
+class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, val controllerManager: ControllerManager, val effectsManager: EffectsManager, val gui: RendererI){
 
     fun update(timeStep : Double){
-        val modelDataMap = hashMapOf<Model, MutableList<Graphics.Renderable>>()
+        val modelDataMap = hashMapOf<Model, MutableList<Renderer.Renderable>>()
 
         //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
         val populateData = fun (details : CameraDetails) {
@@ -132,16 +107,15 @@ class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val 
                 modelDataMap[model] = mutableListOf()
             }
             //Let each world append data to the model data map
-            physicsLayer.populateModelMap(modelDataMap)
-            effectsLayer.populateModelMap(modelDataMap)
-            controllerLayer.populateModelMap(modelDataMap)
+            physicsManager.populateModelMap(modelDataMap)
+            effectsManager.populateModelMap(modelDataMap)
+            controllerManager.populateModelMap(modelDataMap)
 
             val debugData = mutableListOf<DebugLineData>()
 
             //Enable when necessary :)
-            debugData.addAll(physicsLayer.getDebugLines())
-            debugData.addAll(effectsLayer.getDebugLines())
-            debugData.addAll(controllerLayer.getDebugLines())
+            debugData.addAll(physicsManager.getDebugLines())
+            debugData.addAll(controllerManager.getDebugLines())
 
             gui.updateDrawables(modelDataMap)
             gui.updateCamera(details)
@@ -152,12 +126,9 @@ class Game(val models: MutableList<Model>, val physicsLayer: PhysicsLayerI, val 
 
         while(true){
             Thread.sleep(16)
-            val pOut = physicsLayer.update(PhysicsInput(timeStep))
-            for(p in pOut.effects){
-                effectsLayer.addEffect(p)
-            }
-            effectsLayer.update(EffectsInput(timeStep))
-            controllerLayer.update()
+            val pOut = physicsManager.update(timeStep)
+            effectsManager.update(timeStep)
+            controllerManager.update()
             populateData(CameraDetails(Vector2(0.0) , 1.0, 0.0))
         }
     }

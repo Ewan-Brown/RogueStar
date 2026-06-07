@@ -1,20 +1,16 @@
 package physics
 
-import graphics.Graphics
-import graphics.Graphics.*
+import graphics.Renderer.*
 import graphics.HasNestedRenderables
 import graphics.RED
 import math.Coordinates
-import math.InReferenceFrame
 import math.Orientation
 import math.PawnReferenceFrame
 import math.EntityReferenceFrame
-import math.HasReferenceFrame
 import math.Pose
 import math.Vector2
 import math.ZHeight
 import models.Model
-import javax.swing.text.html.parser.Entity
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
