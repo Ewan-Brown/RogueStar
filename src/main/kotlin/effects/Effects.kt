@@ -2,7 +2,6 @@ package effects
 
 import graphics.Renderer
 import graphics.RED
-import main.Timestamp
 import math.Coordinates
 import math.InReferenceFrame
 import math.Orientation

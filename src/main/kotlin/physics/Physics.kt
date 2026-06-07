@@ -20,6 +20,15 @@ interface EntityConsumer {
     fun addEntity(entity: Entity)
 }
 
+@JvmInline
+value class Timestamp(val time: Double){
+    operator fun minus(t2 : Timestamp) : TimeDuration{
+        return TimeDuration(time - t2.time)
+    }
+}
+@JvmInline
+value class TimeDuration(val duration: Double)
+
 class PhysicsManager() : EntityConsumer {
     fun update(timeStep: Double) {
         world.update(timeStep)

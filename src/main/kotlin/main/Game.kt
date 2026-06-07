@@ -16,15 +16,6 @@ import graphics.loadModels
 import math.Coordinates
 import physics.*
 
-@JvmInline
-value class Timestamp(val time: Double){
-    operator fun minus(t2 : Timestamp) : TimeDuration{
-        return TimeDuration(time - t2.time)
-    }
-}
-@JvmInline
-value class TimeDuration(val duration: Double)
-
 fun main() {
     val timeStep = 1.0;
 
