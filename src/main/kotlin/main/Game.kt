@@ -80,11 +80,13 @@ fun main() {
     blueprint.systemBlueprints.add(weaponSystemBlueprint)
 
     val playerEntity = blueprint.build()
+    val nonPlayerEntity = blueprint.build()
 
     val playerController = PlayerController(bitSet)
     controllerManager.addControllerEntry(playerController, playerEntity)
 
     physicsLayer.addEntity(playerEntity)
+    physicsLayer.addEntity(nonPlayerEntity)
 
     while(true){
         game.update(timeStep)
