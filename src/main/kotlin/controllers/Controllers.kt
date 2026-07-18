@@ -8,7 +8,7 @@ import models.Model
 import physics.Entity
 import physics.ThrusterSystem
 import physics.TorqueSystem
-import physics.WeaponGroupSystem
+import physics.WeaponSystem
 import java.awt.event.KeyEvent
 import java.util.BitSet
 
@@ -76,7 +76,7 @@ class PlayerController(val bitSet: BitSet) : Controller<Entity>(){
 
         val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
-        val weaponsSystem : WeaponGroupSystem = plant.getSystems().filterIsInstance<WeaponGroupSystem>().first()
+        val weaponsSystem : WeaponSystem = plant.getSystems().filterIsInstance<WeaponSystem>().first()
 
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)

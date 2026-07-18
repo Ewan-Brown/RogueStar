@@ -28,13 +28,13 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
 
     /**
      * Everything that 'makes up' a ship. Sum of its parts.
-     * Hull - the structure. Stations, Pawns reside in hull. Modules can connect to hull
-     * Modules - anything functional for 1the entity. Turrets, Thrusters, Radar... Anything that might act or provide
+     * Hull - Physical - the structure. Stations, Pawns reside in hull. Modules can connect to hull
+     * Modules - Physical - anything functional for 1the entity. Turrets, Thrusters, Radar... Anything that might act or provide
      *   -> mostly just to hold state, should have minimal logic
-     * Stations - A way for pawns to interact with systems. Exists within hull, basically just checkpoints
+     * Stations - Pseudophysical - A way for pawns to interact with systems. Exists within hull, basically just checkpoints
      *   -> should only provide actions around declarative statements
      *   -> no state. just a real-world adapter for pawn->module interactions
-     * Systems - The connection between state, stations and modules.
+     * Systems - Non Physical - The connection between state, stations and modules.
      *   ->  Holds all the imperative logic and execution of decisions
     **/
     private val hulls = mutableListOf<EntityHull>()
@@ -42,6 +42,10 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
     private val systems = mutableListOf<EntitySystem>()
     private val stations = mutableListOf<EntityStation>()
     private val pawns = mutableListOf<Pawn>()
+
+    private val hullToHullMap = mutableMapOf<EntityHull, List<EntityHull>>() // Two-way
+    private val hullToModuleMap = mutableMapOf<EntityHull, List<EntityModule>>()
+    private val hullToStationMap = mutableMapOf<EntityHull, List<EntityStation>>()
 
     fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
         var cumulativeMassVector = Vector2()

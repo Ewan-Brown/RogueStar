@@ -47,39 +47,44 @@ fun main() {
     renderer.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
-    val playerEntity = Entity()
-
-    val hull = DummyHull()
-    val thruster = Thruster()
-    thruster.translate(Vector2(0.0, 1.0))
-    val torquer = Torquer()
-    torquer.translate(Vector2(0.0, 2.0))
-
-    val gun = Weapon()
-    gun.translate(Vector2(0.0, 1.0))
-
     fun createBullet() : Entity {
         val bullet = Entity()
-        bullet.addHull(DummyHull())
+        bullet.addHull(EntityHull(Model.SQUARE.asVectors(), 1.0, Vector2()))
         bullet.applyForce(Force(Vector2(1.0, 0.0), Coordinates(Vector2())))
         return bullet
     }
 
-    playerEntity.addHull(hull)
-    playerEntity.addModule(thruster)
-    playerEntity.addModule(torquer)
-    playerEntity.addModule(gun)
+    val blueprint = EntityBlueprint()
 
-    playerEntity.addSystem(ThrusterSystem( listOf(thruster), EntityStation()))
-    playerEntity.addSystem(TorqueSystem( listOf(torquer), EntityStation()))
-    playerEntity.addSystem(WeaponGroupSystem(listOf(gun), {createBullet()} , EntityStation()))
+    val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 
-    playerEntity.effectsConsumer = effectsManager
-    playerEntity.entityConsumer = physicsLayer
-    physicsLayer.addEntity(playerEntity)
+    val thrusterBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Thruster()})
+    val torquerBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Torquer()})
+    val weaponBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Weapon()})
+    val ammoDepotBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {AmmoDepot()})
+
+    val stationBlueprint = StationBlueprint()
+
+    val thrusterSystemBlueprint = ThrusterSystemBlueprint(listOf(thrusterBlueprint), stationBlueprint)
+    val torqueSystemBlueprint = TorqueSystemBlueprint(listOf(torquerBlueprint), stationBlueprint)
+    val weaponSystemBlueprint = WeaponSystemBlueprint(listOf(weaponBlueprint), stationBlueprint, {createBullet()}, listOf(ammoDepotBlueprint))
+
+    blueprint.hullBlueprints.add(hullBlueprint1)
+    blueprint.moduleBlueprints.add(thrusterBlueprint)
+    blueprint.moduleBlueprints.add(torquerBlueprint)
+    blueprint.moduleBlueprints.add(weaponBlueprint)
+    blueprint.moduleBlueprints.add(ammoDepotBlueprint)
+    blueprint.stationBlueprints.add(stationBlueprint)
+    blueprint.systemBlueprints.add(thrusterSystemBlueprint)
+    blueprint.systemBlueprints.add(torqueSystemBlueprint)
+    blueprint.systemBlueprints.add(weaponSystemBlueprint)
+
+    val playerEntity = blueprint.build()
 
     val playerController = PlayerController(bitSet)
     controllerManager.addControllerEntry(playerController, playerEntity)
+
+    physicsLayer.addEntity(playerEntity)
 
     while(true){
         game.update(timeStep)

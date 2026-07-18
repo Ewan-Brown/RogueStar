@@ -20,7 +20,7 @@ fun square(color : Renderer.ColorData = Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0
 }
 
 
-abstract class AbstractComponent(val boundary: List<Vector2>, val mass: Double, centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
+abstract class Component(val boundary: List<Vector2>, val mass: Double, centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
 
     val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
@@ -57,15 +57,13 @@ abstract class AbstractComponent(val boundary: List<Vector2>, val mass: Double, 
 
 }
 
-abstract class EntityHull(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : AbstractComponent(boundary, mass, centerOfMass)
-abstract class EntityModule(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : AbstractComponent(boundary, mass, centerOfMass)
-
-class DummyHull : EntityHull(Model.SQUARE.asVectors(), 1.0, Vector2()){
-
+class EntityHull(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundary, mass, centerOfMass){
     override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
         return listOf(square(Renderer.ColorData(1.0f, 0.0f, 0.0f, 0.0f)))
     }
 }
+
+abstract class EntityModule(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundary, mass, centerOfMass)
 
 class Thruster : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var thrusterOrientation : Orientation<ComponentReferenceFrame> = Orientation(0.0)
@@ -92,5 +90,23 @@ class Weapon() : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
 
     override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
         return listOf(square(Renderer.ColorData(1.0f, 0.0f, 1.0f, 0.0f)))
+    }
+}
+
+class AmmoDepot() : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
+
+    var ammoStored = 0;
+
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(0.5f, 0.0f, 0.5f, 0.0f)))
+    }
+}
+
+class Battery() : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
+
+    var chargeStored = 0;
+
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return listOf(square(Renderer.ColorData(0.5f, 0.0f, 0.5f, 0.0f)))
     }
 }

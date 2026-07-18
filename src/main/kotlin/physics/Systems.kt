@@ -23,6 +23,11 @@ abstract class EntitySystem(){
     abstract fun update(timeStep: Double, entity: Entity)
 }
 
+//TODO Decide
+/**
+ * Should each system just have 1 system?
+ */
+
 //TODO Add fuel system
 class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotStation: EntityStation?) : EntitySystem() {
 
@@ -60,7 +65,7 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 }
 
 //TODO Add Ammo system
-class WeaponGroupSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation) : EntitySystem(){
+class WeaponSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
     override fun update(timeStep: Double, entity: Entity) {
         for(weapon in weapons){
             weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
