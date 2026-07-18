@@ -98,9 +98,9 @@ class HullBlueprint(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vect
     }
 }
 
-class ModuleBlueprint<M: EntityModule>(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2, val moduleProducer: () -> M) : ComponentBlueprint(boundingBox, mass, centerOfMass){
+class ModuleBlueprint<M: EntityModule>(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2, val moduleProducer: (List<Vector2>, Double, Vector2) -> M) : ComponentBlueprint(boundingBox, mass, centerOfMass){
     fun createModule() : M{
-        val module = moduleProducer();
+        val module = moduleProducer(boundingBox, mass, centerOfMass.getVector());
         module.rotate(orientation.getAngle())
         module.translate(coordinates.getVector())
         module.translateZ(ZHeight.getZ())
