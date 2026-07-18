@@ -23,7 +23,7 @@ class BlueprintStore{
         val weaponBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { Weapon() })
         val ammoDepotBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { AmmoDepot() })
 
-        val stationBlueprint = StationBlueprint()
+        val stationBlueprint = StationBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 
         val thrusterSystemBlueprint = ThrusterSystemBlueprint(listOf(thrusterBlueprint), stationBlueprint)
         val torqueSystemBlueprint = TorqueSystemBlueprint(listOf(torquerBlueprint), stationBlueprint)

@@ -153,6 +153,10 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         hulls.add(hull)
     }
 
+    fun addStation(station: EntityStation){
+        stations.add(station)
+    }
+
     fun addSystem(system: EntitySystem){
         systems.add(system)
     }

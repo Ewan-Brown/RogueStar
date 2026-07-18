@@ -54,6 +54,10 @@ class EntityBlueprint {
             entity.addModule(module.value)
         }
 
+        for (station in intermediateBuild.stations){
+            entity.addStation(station.value)
+        }
+
         for (system in intermediateBuild.systems) {
             entity.addSystem(system.value)
         }
@@ -69,11 +73,11 @@ class IntermediateBuild(){
     val stations = mutableMapOf<StationBlueprint, EntityStation>()
 }
 
-abstract class ComponentBlueprint(val boundary: List<Vector2>, val mass: Double, centerOfMass: Vector2){
+abstract class ComponentBlueprint(val boundingBox: List<Vector2>, val mass: Double, centerOfMass: Vector2){
     val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
-    private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
-    private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
-    private var ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+    var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
+    var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
+    var ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0) //TODO stupid name. This is not folded into coordinates to make math less clunky, as it's solely for graphical purposes
 
     fun rotate(rotation: Double) {
         this.orientation += rotation
@@ -84,18 +88,22 @@ abstract class ComponentBlueprint(val boundary: List<Vector2>, val mass: Double,
     }
 }
 
-class HullBlueprint(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : ComponentBlueprint(boundary, mass, centerOfMass){
+class HullBlueprint(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : ComponentBlueprint(boundingBox, mass, centerOfMass){
     fun createHull() : EntityHull{
-        val hull = EntityHull(boundary, mass, centerOfMass.getVector());
-        //TODO apply transform to hull
+        val hull = EntityHull(boundingBox, mass, centerOfMass.getVector());
+        hull.rotate(orientation.getAngle())
+        hull.translate(coordinates.getVector())
+        hull.translateZ(ZHeight.getZ())
         return hull
     }
 }
 
-class ModuleBlueprint<M: EntityModule>(val boundary: List<Vector2>, val mass: Double, val centerOfMass: Vector2, val moduleProducer: () -> M) {
+class ModuleBlueprint<M: EntityModule>(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2, val moduleProducer: () -> M) : ComponentBlueprint(boundingBox, mass, centerOfMass){
     fun createModule() : M{
         val module = moduleProducer();
-        //TODO apply transform to module
+        module.rotate(orientation.getAngle())
+        module.translate(coordinates.getVector())
+        module.translateZ(ZHeight.getZ())
         return module;
     }
 }
@@ -124,15 +132,17 @@ class WeaponSystemBlueprint(private val weaponblueprints: List<ModuleBlueprint<W
     override fun createSystem(b : IntermediateBuild): WeaponSystem {
         val weapons = weaponblueprints.map {b.modules[it]} as List<Weapon>
         val ammos = ammoDepotBlueprints.map { b.modules[it] } as List<AmmoDepot>
-        val weaponstation = b.stations[weaponstationBlueprint]
-        return WeaponSystem(weapons, projectileCreator, weaponstation, ammos)
+        val weaponStation = b.stations[weaponstationBlueprint]
+        return WeaponSystem(weapons, projectileCreator, weaponStation, ammos)
     }
 }
 
-class StationBlueprint(){
+class StationBlueprint(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : ComponentBlueprint(boundingBox, mass, centerOfMass){
     fun createStation() : EntityStation{
-        val station = EntityStation();
-        //TODO apply transform to hull return station
+        val station = EntityStation(boundingBox, mass, centerOfMass.getVector());
+        station.rotate(orientation.getAngle())
+        station.translate(coordinates.getVector())
+        station.translateZ(ZHeight.getZ())
         return station
     }
 }

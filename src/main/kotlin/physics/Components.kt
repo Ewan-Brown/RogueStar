@@ -20,7 +20,7 @@ fun square(color : Renderer.ColorData = Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0
 }
 
 
-abstract class Component(val boundary: List<Vector2>, val mass: Double, centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
+abstract class Component(val boundingBox: List<Vector2>, val mass: Double, centerOfMass: Vector2) : HasNestedRenderables<EntityReferenceFrame, ComponentReferenceFrame>{
 
     val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
@@ -32,7 +32,7 @@ abstract class Component(val boundary: List<Vector2>, val mass: Double, centerOf
     }
 
     fun getCollisionBoundary(): List<Coordinates<ComponentReferenceFrame>> {
-        return boundary.map { Coordinates(it) }
+        return boundingBox.map { Coordinates(it) }
     }
 
     override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
@@ -55,15 +55,19 @@ abstract class Component(val boundary: List<Vector2>, val mass: Double, centerOf
         this.coordinates += translation
     }
 
+    fun translateZ(z: Double){
+        this.ZHeight += z;
+    }
+
 }
 
-class EntityHull(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundary, mass, centerOfMass){
+class EntityHull(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundingBox, mass, centerOfMass){
     override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
         return listOf(square(Renderer.ColorData(1.0f, 0.0f, 0.0f, 0.0f)))
     }
 }
 
-abstract class EntityModule(boundary: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundary, mass, centerOfMass)
+abstract class EntityModule(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundingBox, mass, centerOfMass)
 
 class Thruster : EntityModule(Model.SQUARE.asVectors(), 1.0, Vector2()){
     var thrusterOrientation : Orientation<ComponentReferenceFrame> = Orientation(0.0)

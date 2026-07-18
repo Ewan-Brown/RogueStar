@@ -1,5 +1,7 @@
 package physics
 
+import graphics.Renderer
+import math.ComponentReferenceFrame
 import math.Coordinates
 import math.EntityReferenceFrame
 import math.InReferenceFrame
@@ -7,11 +9,11 @@ import math.Orientation
 import math.Vector2
 import math.ZHeight
 
-public class EntityStation : InReferenceFrame<EntityReferenceFrame> {
+public class EntityStation(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundingBox, mass, centerOfMass) {
 
-    private val coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
-    private val orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
-    private val ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
+    private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
+    private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
+    private var ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0)
 
     override fun getCoordinates(): Coordinates<EntityReferenceFrame> {
         return coordinates
@@ -23,5 +25,9 @@ public class EntityStation : InReferenceFrame<EntityReferenceFrame> {
 
     override fun getZHeight(): ZHeight<EntityReferenceFrame> {
         return ZHeight
+    }
+
+    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
+        return emptyList()
     }
 }

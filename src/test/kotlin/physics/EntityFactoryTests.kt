@@ -26,7 +26,7 @@ class EntityFactoryTests {
         val thrusterProducer: () -> Thruster = {Thruster()}
         val moduleBlueprint1 = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), thrusterProducer)
 
-        val stationBlueprint = StationBlueprint()
+        val stationBlueprint = StationBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 
         val systemBlueprint = ThrusterSystemBlueprint(listOf(moduleBlueprint1), stationBlueprint)
 
