@@ -47,40 +47,10 @@ fun main() {
     renderer.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
-    fun createBullet() : Entity {
-        val bullet = Entity()
-        bullet.addHull(EntityHull(Model.SQUARE.asVectors(), 1.0, Vector2()))
-        bullet.applyForce(Force(Vector2(1.0, 0.0), Coordinates(Vector2())))
-        return bullet
-    }
+    val blueprints = BlueprintStore()
 
-    val blueprint = EntityBlueprint()
-
-    val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
-
-    val thrusterBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Thruster()})
-    val torquerBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Torquer()})
-    val weaponBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {Weapon()})
-    val ammoDepotBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), {AmmoDepot()})
-
-    val stationBlueprint = StationBlueprint()
-
-    val thrusterSystemBlueprint = ThrusterSystemBlueprint(listOf(thrusterBlueprint), stationBlueprint)
-    val torqueSystemBlueprint = TorqueSystemBlueprint(listOf(torquerBlueprint), stationBlueprint)
-    val weaponSystemBlueprint = WeaponSystemBlueprint(listOf(weaponBlueprint), stationBlueprint, {createBullet()}, listOf(ammoDepotBlueprint))
-
-    blueprint.hullBlueprints.add(hullBlueprint1)
-    blueprint.moduleBlueprints.add(thrusterBlueprint)
-    blueprint.moduleBlueprints.add(torquerBlueprint)
-    blueprint.moduleBlueprints.add(weaponBlueprint)
-    blueprint.moduleBlueprints.add(ammoDepotBlueprint)
-    blueprint.stationBlueprints.add(stationBlueprint)
-    blueprint.systemBlueprints.add(thrusterSystemBlueprint)
-    blueprint.systemBlueprints.add(torqueSystemBlueprint)
-    blueprint.systemBlueprints.add(weaponSystemBlueprint)
-
-    val playerEntity = blueprint.build()
-    val nonPlayerEntity = blueprint.build()
+    val playerEntity = blueprints.basicEntityBlueprint.build()
+    val nonPlayerEntity = blueprints.basicEntityBlueprint.build()
 
     val playerController = PlayerController(bitSet)
     controllerManager.addControllerEntry(playerController, playerEntity)
