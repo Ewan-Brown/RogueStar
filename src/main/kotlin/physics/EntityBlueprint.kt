@@ -19,6 +19,7 @@ class EntityBlueprint {
     val systemBlueprints = mutableListOf<SystemBlueprint<*>>()
     val stationBlueprints = mutableListOf<StationBlueprint>()
 
+    //TODO Use these for destruction purposes
     val hullToHullBlueprintMap = mutableMapOf<HullBlueprint, HullBlueprint>()
     val hullToModuleBlueprintMap = mutableMapOf<HullBlueprint, List<ModuleBlueprint<*>>>()
     val hullToStationBlueprint = mutableMapOf<HullBlueprint, List<StationBlueprint>>()

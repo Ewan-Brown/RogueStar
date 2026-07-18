@@ -18,13 +18,15 @@ class EntityFactoryTests {
     }
 
     @Test
-    fun simpleEntityTestOneOfEach(){
+    fun entityBlueprintTest(){
         val blueprint = EntityBlueprint()
 
         val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 
-        val thrusterProducer: () -> Thruster = {Thruster()}
-        val moduleBlueprint1 = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), thrusterProducer)
+        val thrusterProducer: (List<Vector2>, Double, Vector2) -> Thruster = {vec, d1, v2 ->
+            Thruster(vec, d1, v2)
+        }
+        val moduleBlueprint1 = ModuleBlueprint<Thruster>(Model.SQUARE.asVectors(), 1.0, Vector2(), thrusterProducer)
 
         val stationBlueprint = StationBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 

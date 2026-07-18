@@ -54,8 +54,8 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         val thingsWithMass = getModules().toMutableList() + getHull().toMutableList()
 
         for (module in thingsWithMass) {
-            cumulativeMassVector += module.centerOfMass.applyTransform(getTransformLocalToParentFrame(module)).getVector() * module.mass
-            cumulativeMassValue += module.mass
+            cumulativeMassVector += module.centerOfMass.applyTransform(getTransformLocalToParentFrame(module)).getVector() * module.getMass()
+            cumulativeMassValue += module.getMass()
         }
 
         val dividedMass = cumulativeMassVector / cumulativeMassValue
@@ -102,7 +102,7 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
 
     //TODO Flesh this out
     fun getMass(): Double {
-        return getModules().sumOf { it.mass } + getHull().sumOf { it.mass }
+        return getModules().sumOf { it.getMass() } + getHull().sumOf { it.getMass() }
     }
 
     fun update(timeStep: Double) {

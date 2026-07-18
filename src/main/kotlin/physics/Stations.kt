@@ -9,7 +9,7 @@ import math.Orientation
 import math.Vector2
 import math.ZHeight
 
-public class EntityStation(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : Component(boundingBox, mass, centerOfMass) {
+public class EntityStation(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : Component(boundingBox, centerOfMass) {
 
     private var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
     private var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
@@ -25,6 +25,10 @@ public class EntityStation(boundingBox: List<Vector2>, mass: Double, centerOfMas
 
     override fun getZHeight(): ZHeight<EntityReferenceFrame> {
         return ZHeight
+    }
+
+    override fun getMass(): Double {
+        return mass
     }
 
     override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {

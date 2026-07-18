@@ -9,6 +9,7 @@ fun createBullet() : Entity {
     val bullet = Entity()
     bullet.addHull(EntityHull(Model.SQUARE.asVectors(), 1.0, Vector2()))
     bullet.applyForce(Force(Vector2(1.0, 0.0), Coordinates(Vector2())))
+    bullet
     return bullet
 }
 
@@ -18,10 +19,10 @@ class BlueprintStore{
     init {
         val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 
-        val thrusterBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { Thruster() })
-        val torquerBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { Torquer() })
-        val weaponBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { Weapon() })
-        val ammoDepotBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { AmmoDepot() })
+        val thrusterBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { vec2, d, v1 -> Thruster(vec2, d, v1) })
+        val torquerBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { vec2, d, v1 -> Torquer(vec2, d, v1) })
+        val weaponBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { vec2, d, v1 -> Weapon(vec2, d, v1) })
+        val ammoDepotBlueprint = ModuleBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2(), { vec2, d, v1 -> AmmoDepot(vec2, d, v1) })
 
         val stationBlueprint = StationBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 

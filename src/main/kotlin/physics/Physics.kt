@@ -62,6 +62,7 @@ class PhysicsManager() : EntityConsumer {
 
     override fun addEntity(entity: Entity) {
         world.addEntity(entity)
+        entity.entityConsumer = this
     }
 
     val world: World = FlatWorld() //In theory this is so I can replace this with non-flat worlds easily... Not sure about that...

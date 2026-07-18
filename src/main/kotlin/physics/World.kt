@@ -76,6 +76,7 @@ class FlatWorld : World {
     override fun addEntity(entity: Entity) {
         synchronized(entityBuffer){
             entityBuffer.add(entity)
+            entity.entityConsumer
         }
     }
 }
