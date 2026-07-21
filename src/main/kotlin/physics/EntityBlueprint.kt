@@ -19,10 +19,9 @@ class EntityBlueprint {
     val systemBlueprints = mutableListOf<SystemBlueprint<*>>()
     val stationBlueprints = mutableListOf<StationBlueprint>()
 
-    //TODO Use these for destruction purposes
-    val hullToHullBlueprintMap = mutableMapOf<HullBlueprint, HullBlueprint>()
+    val hullToHullBlueprintMap = mutableMapOf<HullBlueprint, List<HullBlueprint>>()
     val hullToModuleBlueprintMap = mutableMapOf<HullBlueprint, List<ModuleBlueprint<*>>>()
-    val hullToStationBlueprint = mutableMapOf<HullBlueprint, List<StationBlueprint>>()
+    val hullToStationBlueprintMap = mutableMapOf<HullBlueprint, List<StationBlueprint>>()
 
     fun build(): Entity {
 
@@ -62,6 +61,14 @@ class EntityBlueprint {
         for (system in intermediateBuild.systems) {
             entity.addSystem(system.value)
         }
+
+        val hullToHullMap = hullToHullBlueprintMap.entries.associate {hull1 -> intermediateBuild.hulls[hull1.key]!! to hull1.value.map { hull2 -> intermediateBuild.hulls[hull2]!! }}
+        val hullToModuleMap = hullToModuleBlueprintMap.entries.associate {hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { module -> intermediateBuild.modules[module]!! }}
+        val hullToStationMap = hullToStationBlueprintMap.entries.associate {hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { station -> intermediateBuild.stations[station]!! }}
+
+        entity.addHullToHullMap(hullToHullMap)
+        entity.addHullToModuleMap(hullToModuleMap)
+        entity.addHullToStationMap(hullToStationMap)
 
         return entity
     }

@@ -161,6 +161,18 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         systems.add(system)
     }
 
+    fun addHullToHullMap(map: Map<EntityHull, List<EntityHull>>){
+        hullToHullMap.putAll(map)
+    }
+
+    fun addHullToModuleMap(map: Map<EntityHull, List<EntityModule>>){
+        hullToModuleMap.putAll(map)
+    }
+
+    fun addHullToStationMap(map: Map<EntityHull, List<EntityStation>>){
+        hullToStationMap.putAll(map)
+    }
+
     fun getLastForces(): List<Force> {
         return lastForces
     }

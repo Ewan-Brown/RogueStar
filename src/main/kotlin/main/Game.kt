@@ -13,7 +13,6 @@ import graphics.CameraDetails
 import graphics.DebugLineData
 import graphics.RendererI
 import graphics.loadModels
-import math.Coordinates
 import physics.*
 
 fun main() {
@@ -49,8 +48,8 @@ fun main() {
 
     val blueprints = BlueprintStore()
 
-    val playerEntity = blueprints.basicEntityBlueprint.build()
-    val nonPlayerEntity = blueprints.basicEntityBlueprint.build()
+    val playerEntity = blueprints.singleHullEntity.build()
+    val nonPlayerEntity = blueprints.singleHullEntity.build()
 
     val playerController = PlayerController(bitSet)
     controllerManager.addControllerEntry(playerController, playerEntity)
