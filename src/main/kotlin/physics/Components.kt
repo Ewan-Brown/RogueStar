@@ -100,10 +100,6 @@ class Thruster(boundingBox: List<Vector2>, private val mass: Double, centerOfMas
     var thrusterThrottle: Double = 0.0
     var thrustForceOrigin: Coordinates<ComponentReferenceFrame> = Coordinates(Vector2())
 
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(0.0f, 0.0f, 1.0f, 0.0f)))
-//    }
-
     override fun getMass(): Double {
         return mass
     }
@@ -111,9 +107,6 @@ class Thruster(boundingBox: List<Vector2>, private val mass: Double, centerOfMas
 
 class Torquer(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
     var torque: Double = 0.0
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(0.0f, 1.0f, 1.0f, 0.0f)))
-//    }
 
     override fun getMass(): Double {
         return mass
@@ -127,10 +120,6 @@ class Weapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass:
     val maxCooldown: Double = 10.0
     var cooldownRemaining: Double = 0.0
 
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(1.0f, 0.0f, 1.0f, 0.0f)))
-//    }
-
     override fun getMass(): Double {
         return mass
     }
@@ -140,10 +129,6 @@ class AmmoDepot(boundingBox: List<Vector2>, private val mass: Double, centerOfMa
 
     var ammoStored = 0;
 
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(0.5f, 0.0f, 0.5f, 0.0f)))
-//    }
-
     override fun getMass(): Double {
         return mass
     }
@@ -152,10 +137,6 @@ class AmmoDepot(boundingBox: List<Vector2>, private val mass: Double, centerOfMa
 class Battery(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
 
     var chargeStored = 0;
-
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(0.5f, 0.0f, 0.5f, 0.0f)))
-//    }
 
     override fun getMass(): Double {
         return mass

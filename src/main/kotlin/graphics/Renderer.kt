@@ -129,6 +129,7 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
     override fun updateDrawables(data: Map<Model, List<Renderable>>) {
         synchronized(modelDataMap) {
             //Update graphics buffers
+            cameraPos += cameraVelocity
             for (loadedModel in loadedModels) {
                 if(modelDataMap.contains(loadedModel)) {
                     modelDataMap.getValue(loadedModel).instanceData = data.getValue(loadedModel)
@@ -143,10 +144,9 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
     }
 
     override fun updateCamera(cameraDetails: CameraDetails) {
-        val diff = cameraDetails.targetPosition - cameraPos
-        println(cameraDetails.targetPosition)
-        cameraVelocity = diff * 0.03
-        cameraPos += cameraVelocity
+            val diff = cameraDetails.targetPosition - cameraPos
+            println(cameraPos)
+            cameraVelocity = diff * 0.1
     }
 
     override fun addListener(keyListener: KeyListener) {
