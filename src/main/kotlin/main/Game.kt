@@ -48,8 +48,8 @@ fun main() {
 
     val blueprints = BlueprintStore()
 
-    val playerEntity = blueprints.singleHullEntity.build()
-    val nonPlayerEntity = blueprints.singleHullEntity.build()
+    val playerEntity = blueprints.singleHullShipBlueprint.build()
+    val nonPlayerEntity = blueprints.singleHullShipBlueprint.build()
 
     val playerController = PlayerController(bitSet)
     controllerManager.addControllerEntry(playerController, playerEntity)
