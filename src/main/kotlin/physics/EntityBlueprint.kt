@@ -1,11 +1,13 @@
 package physics
 
+import graphics.Renderer.IntermediaryRenderable
 import math.ComponentReferenceFrame
 import math.Coordinates
 import math.EntityReferenceFrame
 import math.Orientation
 import math.Vector2
 import math.ZHeight
+import kotlin.collections.iterator
 
 /**
  * Stores the "blueprint" info required to build a particular type of entity
@@ -14,29 +16,29 @@ import math.ZHeight
  */
 class EntityBlueprint {
 
-    val hullBlueprints = mutableListOf<HullBlueprint>()
-    val moduleBlueprints = mutableListOf<ModuleBlueprint<*>>()
+    val hullBlueprints = mutableListOf<ComponentBlueprint<EntityHull>>()
+    val moduleBlueprints = mutableListOf<ComponentBlueprint<EntityModule>>()
     val systemBlueprints = mutableListOf<SystemBlueprint<*>>()
-    val stationBlueprints = mutableListOf<StationBlueprint>()
+    val stationBlueprints = mutableListOf<ComponentBlueprint<EntityStation>>()
 
-    val hullToHullBlueprintMap = mutableMapOf<HullBlueprint, List<HullBlueprint>>()
-    val hullToModuleBlueprintMap = mutableMapOf<HullBlueprint, List<ModuleBlueprint<*>>>()
-    val hullToStationBlueprintMap = mutableMapOf<HullBlueprint, List<StationBlueprint>>()
+    val hullToHullBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityHull>>>()
+    val hullToModuleBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityModule>>>()
+    val hullToStationBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityStation>>>()
 
     fun build(): Entity {
 
         val intermediateBuild = IntermediateBuild()
 
         for (hullB in hullBlueprints) {
-            intermediateBuild.hulls[hullB] = hullB.createHull()
+            intermediateBuild.hulls[hullB] = hullB.createComponent()
         }
 
         for (moduleB in moduleBlueprints) {
-            intermediateBuild.modules[moduleB] = moduleB.createModule()
+            intermediateBuild.modules[moduleB] = moduleB.createComponent()
         }
 
         for (stationB in stationBlueprints) {
-            intermediateBuild.stations[stationB] = stationB.createStation()
+            intermediateBuild.stations[stationB] = stationB.createComponent()
         }
 
         for (systemB in systemBlueprints){
@@ -75,13 +77,13 @@ class EntityBlueprint {
 }
 
 class IntermediateBuild(){
-    val hulls = mutableMapOf<HullBlueprint, EntityHull>()
-    val modules = mutableMapOf<ModuleBlueprint<*>, EntityModule>()
+    val hulls = mutableMapOf<ComponentBlueprint<EntityHull>, EntityHull>()
+    val modules = mutableMapOf<ComponentBlueprint<EntityModule>, EntityModule>()
     val systems = mutableMapOf<SystemBlueprint<*>, EntitySystem>()
-    val stations = mutableMapOf<StationBlueprint, EntityStation>()
+    val stations = mutableMapOf<ComponentBlueprint<EntityStation>, EntityStation>()
 }
 
-abstract class ComponentBlueprint(val boundingBox: List<Vector2>, val mass: Double, centerOfMass: Vector2){
+class ComponentBlueprint<out C: Component>(val boundingBox: List<Vector2>, val mass: Double, centerOfMass: Vector2, val staticRenderables: List<IntermediaryRenderable<ComponentReferenceFrame>>, val componentProducer: (List<Vector2>, Double, Vector2) -> C, private val initialConditions: (C) -> Unit = {}){
     val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
     var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
     var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
@@ -94,25 +96,15 @@ abstract class ComponentBlueprint(val boundingBox: List<Vector2>, val mass: Doub
     fun translate(translation: Vector2) {
         this.coordinates += translation
     }
-}
 
-class HullBlueprint(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : ComponentBlueprint(boundingBox, mass, centerOfMass){
-    fun createHull() : EntityHull{
-        val hull = EntityHull(boundingBox, mass, centerOfMass.getVector());
-        hull.rotate(orientation.getAngle())
-        hull.translate(coordinates.getVector())
-        hull.translateZ(ZHeight.getZ())
-        return hull
-    }
-}
-
-class ModuleBlueprint<M: EntityModule>(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2, val moduleProducer: (List<Vector2>, Double, Vector2) -> M) : ComponentBlueprint(boundingBox, mass, centerOfMass){
-    fun createModule() : M{
-        val module = moduleProducer(boundingBox, mass, centerOfMass.getVector());
-        module.rotate(orientation.getAngle())
-        module.translate(coordinates.getVector())
-        module.translateZ(ZHeight.getZ())
-        return module;
+    fun createComponent() : C {
+        val component = componentProducer(boundingBox, mass, centerOfMass.getVector());
+        component.rotate(orientation.getAngle())
+        component.translate(coordinates.getVector())
+        component.translateZ(ZHeight.getZ())
+        component.addStaticRenderables(staticRenderables)
+        initialConditions(component)
+        return component
     }
 }
 
@@ -120,7 +112,7 @@ interface SystemBlueprint<S: EntitySystem>{
     fun createSystem(b: IntermediateBuild) : S
 }
 
-class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ModuleBlueprint<Thruster>>, private val pilotStationBlueprint: StationBlueprint) : SystemBlueprint<ThrusterSystem>{
+class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ComponentBlueprint<Thruster>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<ThrusterSystem>{
     override fun createSystem(b : IntermediateBuild): ThrusterSystem {
         val thrusters = thrusterBlueprints.map {b.modules[it]} as List<Thruster>
         val station = b.stations[pilotStationBlueprint]
@@ -128,7 +120,7 @@ class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ModuleBluepri
     }
 }
 
-class TorqueSystemBlueprint(private val torquerblueprints: List<ModuleBlueprint<Torquer>>, private val pilotStationBlueprint: StationBlueprint) : SystemBlueprint<TorqueSystem>{
+class TorqueSystemBlueprint(private val torquerblueprints: List<ComponentBlueprint<Torquer>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<TorqueSystem>{
     override fun createSystem(b : IntermediateBuild): TorqueSystem {
         val torquers = torquerblueprints.map {b.modules[it]} as List<Torquer>
         val station = b.stations[pilotStationBlueprint]
@@ -136,22 +128,16 @@ class TorqueSystemBlueprint(private val torquerblueprints: List<ModuleBlueprint<
     }
 }
 
-class WeaponSystemBlueprint(private val weaponblueprints: List<ModuleBlueprint<Weapon>>, private val weaponstationBlueprint: StationBlueprint, private val projectileCreator: () -> Entity ,private val ammoDepotBlueprints: List<ModuleBlueprint<AmmoDepot>>) : SystemBlueprint<WeaponSystem>{
+class WeaponSystemBlueprint(private val weaponblueprints: List<ComponentBlueprint<Weapon>>, private val weaponstationBlueprint: ComponentBlueprint<EntityStation>, private val projectileCreator: EntityBlueprint ,private val ammoDepotBlueprints: List<ComponentBlueprint<AmmoDepot>>) : SystemBlueprint<WeaponSystem>{
     override fun createSystem(b : IntermediateBuild): WeaponSystem {
         val weapons = weaponblueprints.map {b.modules[it]} as List<Weapon>
         val ammos = ammoDepotBlueprints.map { b.modules[it] } as List<AmmoDepot>
         val weaponStation = b.stations[weaponstationBlueprint]
-        return WeaponSystem(weapons, projectileCreator, weaponStation, ammos)
-    }
-}
-
-class StationBlueprint(boundingBox: List<Vector2>, mass: Double, centerOfMass: Vector2) : ComponentBlueprint(boundingBox, mass, centerOfMass){
-    fun createStation() : EntityStation{
-        val station = EntityStation(boundingBox, mass, centerOfMass.getVector());
-        station.rotate(orientation.getAngle())
-        station.translate(coordinates.getVector())
-        station.translateZ(ZHeight.getZ())
-        return station
+        return WeaponSystem(weapons, {
+            val e = projectileCreator.build()
+            e.applyForce(Force(Vector2(0.1, 0.0), Coordinates(Vector2(0.0,0.0))))
+            e
+        }, weaponStation, ammos)
     }
 }
 

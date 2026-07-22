@@ -31,7 +31,4 @@ public class EntityStation(boundingBox: List<Vector2>, private val mass: Double,
         return mass
     }
 
-    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-        return emptyList()
-    }
 }
