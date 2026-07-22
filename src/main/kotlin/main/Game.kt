@@ -58,6 +58,7 @@ fun main() {
     physicsLayer.addEntity(nonPlayerEntity)
 
     while(true){
+        game.targetEntity = playerEntity
         game.update(timeStep)
     }
 
@@ -65,39 +66,38 @@ fun main() {
 
 class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, val controllerManager: ControllerManager, val effectsManager: EffectsManager, val gui: RendererI){
 
-    fun update(timeStep : Double){
+    var targetEntity: Entity? = null
+
+    fun populateData() {
         val modelDataMap = hashMapOf<Model, MutableList<Renderer.Renderable>>()
+        for (model in models) {
+            modelDataMap[model] = mutableListOf()
+        }
+        //Let each world append data to the model data map
+        physicsManager.populateModelMap(modelDataMap)
+        effectsManager.populateModelMap(modelDataMap)
+        controllerManager.populateModelMap(modelDataMap)
 
+        val debugData = mutableListOf<DebugLineData>()
+
+        //Enable when necessary :)
+        debugData.addAll(physicsManager.getDebugLines())
+        debugData.addAll(controllerManager.getDebugLines())
+
+        if(targetEntity != null) {
+            gui.updateCamera(CameraDetails(targetEntity!!.getCoordinates().getVector(), 1.0, 0.0))
+        }
+        gui.updateDrawables(modelDataMap)
+        gui.updateDebug(debugData)
+    }
+
+    fun update(timeStep : Double){
         //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
-        val populateData = fun (details : CameraDetails) {
-            for (model in models) {
-                modelDataMap[model] = mutableListOf()
-            }
-            //Let each world append data to the model data map
-            physicsManager.populateModelMap(modelDataMap)
-            effectsManager.populateModelMap(modelDataMap)
-            controllerManager.populateModelMap(modelDataMap)
-
-            val debugData = mutableListOf<DebugLineData>()
-
-            //Enable when necessary :)
-            debugData.addAll(physicsManager.getDebugLines())
-            debugData.addAll(controllerManager.getDebugLines())
-
-            gui.updateDrawables(modelDataMap)
-            gui.updateCamera(details)
-            gui.updateDebug(debugData)
-        }
-
-        populateData(CameraDetails(Vector2(0.0) , 1.0, 0.0))
-
-        while(true){
-            Thread.sleep(16)
-            val pOut = physicsManager.update(timeStep)
-            effectsManager.update(timeStep)
-            controllerManager.update()
-            populateData(CameraDetails(Vector2(0.0) , 1.0, 0.0))
-        }
+        populateData()
+        Thread.sleep(16)
+        val pOut = physicsManager.update(timeStep)
+        effectsManager.update(timeStep)
+        controllerManager.update()
     }
 }
 
