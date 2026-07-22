@@ -137,7 +137,7 @@ class WeaponSystemBlueprint(private val weaponblueprints: List<ComponentBlueprin
             val e = projectileCreator.build()
             e.applyForce(Force(Vector2(0.1, 0.0), Coordinates(Vector2(0.0,0.0))))
             e
-        }, weaponStation, ammos)
+                                     }, weaponStation, ammos)
     }
 }
 
