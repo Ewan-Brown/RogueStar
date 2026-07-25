@@ -7,8 +7,8 @@ import math.WorldReferenceFrame
 import math.getTransformLocalToParentFrame
 
 class FlatWorld : World {
-    private val entities = mutableListOf<Entity>()
-    private val entityBuffer = mutableListOf<Entity>()
+    private val entities = mutableListOf<KineticEntity>()
+    private val entityBuffer = mutableListOf<KineticEntity>()
 
     override fun update(timestep: Double) {
 
@@ -28,7 +28,6 @@ class FlatWorld : World {
 
             entity.rotate(rotVelocity * timestep)
             comWorld += velocity * timestep
-
             entity.setPose(Pose(Coordinates(comWorld.getVector() - comLocal.getVector().rotate(entity.getOrientation().getAngle())), entity.getOrientation(), entity.getZHeight()))
 
             val entityAngle = entity.getOrientation().getAngle()
@@ -44,9 +43,9 @@ class FlatWorld : World {
             entity.setRotationalVelocity(rotVelocity)
         }
 
-        for(projectile in entities.filterIsInstance<HasCollidingPoint>()){
+        for(projectile in entities.filterIsInstance<ProjectileEntity>()){
             val pointOfContactLocal = projectile.getPointOfContact()
-//                val pointOfContactWorld = pointOfContactLocal.rotate(projectile.getWorldOrientation().value) + projectile.getWorldTransform().translation
+            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation
             for(entity in entities){
                 if(entity != projectile){
                     //TODO Do cheap preliminary collision checking
@@ -56,9 +55,11 @@ class FlatWorld : World {
 
         //Do pawn updates
         for(entity in entities) {
-            for(pawn in entity.getPawnsInside()){
-                pawn.translate(pawn.getVelocity())
+            if(entity is ShipEntity){
+                for(pawn in entity.getPawnsInside()){
+                    pawn.translate(pawn.getVelocity())
 //                pawn.setVelocity(Vector2())
+                }
             }
         }
 
@@ -69,20 +70,19 @@ class FlatWorld : World {
         entities.removeIf{it.markedForRemoval()}
 
     }
-    override fun getEntities(): List<Entity> {
+    override fun getEntities(): List<KineticEntity> {
         return entities
     }
 
-    override fun addEntity(entity: Entity) {
+    override fun addEntity(entity: KineticEntity) {
         synchronized(entityBuffer){
             entityBuffer.add(entity)
-            entity.entityConsumer
         }
     }
 }
 
 interface World : HasReferenceFrame<WorldReferenceFrame>{
     public fun update(timestep: Double)
-    public fun getEntities(): List<Entity>
-    public fun addEntity(entity: Entity)
+    public fun getEntities(): List<KineticEntity>
+    public fun addEntity(entity: KineticEntity)
 }

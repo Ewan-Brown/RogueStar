@@ -1,6 +1,5 @@
 package physics
 
-import effects.Effect
 import graphics.BLUE
 import graphics.CYAN
 import graphics.DebugLineData
@@ -17,7 +16,7 @@ import models.Model
 import kotlin.collections.HashMap
 
 interface EntityConsumer {
-    fun addEntity(entity: Entity)
+    fun addEntity(entity: KineticEntity)
 }
 
 @JvmInline
@@ -60,9 +59,9 @@ class PhysicsManager() : EntityConsumer {
         return lines
     }
 
-    override fun addEntity(entity: Entity) {
+    override fun addEntity(entity: KineticEntity) {
         world.addEntity(entity)
-        entity.entityConsumer = this
+        entity.setEntityConsumer(this)
     }
 
     val world: World = FlatWorld() //In theory this is so I can replace this with non-flat worlds easily... Not sure about that...

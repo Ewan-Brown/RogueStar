@@ -25,7 +25,7 @@ class EntityBlueprint {
     val hullToModuleBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityModule>>>()
     val hullToStationBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityStation>>>()
 
-    fun build(): Entity {
+    fun build(): ShipEntity {
 
         val intermediateBuild = IntermediateBuild()
 
@@ -46,7 +46,7 @@ class EntityBlueprint {
         }
 
         //Build up an entity with the blueprints
-        val entity = Entity()
+        val entity = ShipEntity()
 
         for (hull in intermediateBuild.hulls) {
             entity.addHull(hull.value)
