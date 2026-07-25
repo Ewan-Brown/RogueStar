@@ -145,7 +145,6 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
 
     override fun updateCamera(cameraDetails: CameraDetails) {
             val diff = cameraDetails.targetPosition - cameraPos
-            println(cameraPos)
             cameraVelocity = diff * 0.1
     }
 

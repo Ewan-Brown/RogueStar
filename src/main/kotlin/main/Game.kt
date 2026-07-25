@@ -6,9 +6,9 @@ import graphics.Renderer
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
 import controllers.ControllerManager
-import math.Vector2
 import java.util.*
 import controllers.PlayerController
+import controllers.SimpleNPCController
 import graphics.CameraDetails
 import graphics.DebugLineData
 import graphics.RendererI
@@ -52,7 +52,10 @@ fun main() {
     val nonPlayerEntity = blueprints.singleHullShipBlueprint.build()
 
     val playerController = PlayerController(bitSet)
+    val npcController = SimpleNPCController()
+
     controllerManager.addControllerEntry(playerController, playerEntity)
+    controllerManager.addControllerEntry(npcController, nonPlayerEntity)
 
     physicsLayer.addEntity(playerEntity)
     physicsLayer.addEntity(nonPlayerEntity)
@@ -66,7 +69,7 @@ fun main() {
 
 class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, val controllerManager: ControllerManager, val effectsManager: EffectsManager, val gui: RendererI){
 
-    var targetEntity: Entity? = null
+    var targetEntity: ShipEntity? = null
 
     fun populateData() {
         val modelDataMap = hashMapOf<Model, MutableList<Renderer.Renderable>>()

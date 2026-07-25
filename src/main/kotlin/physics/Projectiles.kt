@@ -5,7 +5,7 @@ import math.EntityReferenceFrame
 
 interface HasCollidingPoint{
     fun getPointOfContact() : Coordinates<EntityReferenceFrame>
-    fun doesCollideWith(otherEntity: Entity) : Boolean
+    fun doesCollideWith(otherEntity: ShipEntity) : Boolean
 }
 
 //open class DumbProjectile() : AbstractEntity(), HasCollidingPoint{

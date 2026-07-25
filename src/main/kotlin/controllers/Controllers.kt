@@ -5,7 +5,7 @@ import graphics.Renderer
 import math.Orientation
 import math.Vector2
 import models.Model
-import physics.Entity
+import physics.ShipEntity
 import physics.ThrusterSystem
 import physics.TorqueSystem
 import physics.WeaponSystem
@@ -55,9 +55,9 @@ sealed class Controller<in T>{
     abstract fun update(plant: T)
 }
 
-class PlayerController(val bitSet: BitSet) : Controller<Entity>(){
+class PlayerController(val bitSet: BitSet) : Controller<ShipEntity>(){
 
-    override fun update(plant: Entity) {
+    override fun update(plant: ShipEntity) {
         var thrust = Vector2(0.0, 0.0)
         for (entry in ThrustKeys.entries) {
             if(bitSet[entry.keyValue]) {
@@ -73,6 +73,28 @@ class PlayerController(val bitSet: BitSet) : Controller<Entity>(){
         }
 
         val firing = bitSet[KeyEvent.VK_SPACE]
+
+        val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
+        val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
+        val weaponsSystem : WeaponSystem = plant.getSystems().filterIsInstance<WeaponSystem>().first()
+
+        val thrustAngle = Vector2().getAngleTo(thrust)
+        thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
+        torquerSystem.setTorque(torque*0.01)
+        weaponsSystem.setToggle(firing)
+    }
+}
+
+class SimpleNPCController() : Controller<ShipEntity>(){
+
+    private var currentThrust: Vector2 = Vector2(0.5, 0.0)
+
+    override fun update(plant: ShipEntity) {
+        var thrust = currentThrust
+
+        currentThrust = currentThrust.rotate(0.07)
+        var torque = Math.random() - 0.5
+        val firing = false
 
         val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()

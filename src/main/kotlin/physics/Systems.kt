@@ -20,7 +20,7 @@ import kotlin.math.min
  *
  */
 abstract class EntitySystem(){
-    abstract fun update(timeStep: Double, entity: Entity)
+    abstract fun update(timeStep: Double, entity: ShipEntity)
 }
 
 //TODO Decide
@@ -39,7 +39,7 @@ class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotSta
         }
     }
 
-    override fun update(timeStep: Double, entity: Entity){
+    override fun update(timeStep: Double, entity: ShipEntity){
         var forceOrigin : Coordinates<EntityReferenceFrame> = Coordinates(thrusters.map { it.thrustForceOrigin.applyTransform(getTransformLocalToParentFrame(it)).getVector() }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble())
         var netForceVector : Vector2 = thrusters.map {
             val localForceVec = Vector2(it.thrusterOrientation.getAngle()) * it.thrusterThrottle
@@ -52,7 +52,7 @@ class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotSta
 }
 
 class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation: EntityStation?) : EntitySystem(){
-    override fun update(timeStep: Double, entity: Entity) {
+    override fun update(timeStep: Double, entity: ShipEntity) {
         val netTorque = torquers.map{it.torque}.reduce { t1, t2 -> t1+t2 }
         entity.applyTorque(netTorque)
     }
@@ -65,8 +65,8 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 }
 
 //TODO Add Ammo system
-class WeaponSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> Entity, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
-    override fun update(timeStep: Double, entity: Entity) {
+class WeaponSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> ShipEntity, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
+    override fun update(timeStep: Double, entity: ShipEntity) {
         for(weapon in weapons){
             weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
             if(weapon.cooldownRemaining <= 0.0 && weapon.isToggledOn){

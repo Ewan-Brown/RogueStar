@@ -8,10 +8,38 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
-class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
 
-    var effectsConsumer: EffectsConsumer? = null
-    var entityConsumer: EntityConsumer? = null
+interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
+    fun getCenterOfMass() : Coordinates<EntityReferenceFrame>
+    fun markedForRemoval() : Boolean
+    fun getRotationalVelocity(): Double
+    fun getVelocity(): Vector2
+    fun setRotationalVelocity(rotVel: Double)
+    fun setVelocity(vel: Vector2)
+    fun rotate(rotation: Double)
+    fun translate(translation: Vector2)
+    fun getMass(): Double
+    fun update(timeStep: Double)
+    fun applyForce(force: Force)
+    fun applyTorque(torque: Double)
+    fun checkAndResetNetForce(): Vector2
+    fun checkAndResetNetTorque(): Double
+    fun getLastForces(): List<Force>
+    fun sendEffect(effect: Effect)
+    fun sendEntity(entity: ShipEntity)
+    fun setEntityConsumer(consumer: EntityConsumer)
+    fun setEffectConsumer(consumer: EffectsConsumer)
+    fun setPose(pose: Pose<WorldReferenceFrame>)
+}
+
+interface ProjectileEntity : KineticEntity {
+    fun getCollidingPoint(): Coordinates<EntityReferenceFrame>
+}
+
+class ShipEntity(): KineticEntity{
+
+    private var effectsConsumer: EffectsConsumer? = null
+    private var entityConsumer: EntityConsumer? = null
 
     private var coordinates: Coordinates<WorldReferenceFrame> = Coordinates(Vector2())
     private var orientation: Orientation<WorldReferenceFrame> = Orientation(0.0)
@@ -47,15 +75,15 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
     private val hullToModuleMap = mutableMapOf<EntityHull, List<EntityModule>>()
     private val hullToStationMap = mutableMapOf<EntityHull, List<EntityStation>>()
 
-    fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
+    override fun getCenterOfMass() : Coordinates<EntityReferenceFrame>{
         var cumulativeMassVector = Vector2()
         var cumulativeMassValue = 0.0
 
-        val thingsWithMass = getModules().toMutableList() + getHull().toMutableList()
+        val componentsWithMass = getModules().toMutableList() + getHull().toMutableList() + stations.toMutableList()
 
-        for (module in thingsWithMass) {
-            cumulativeMassVector += module.centerOfMass.applyTransform(getTransformLocalToParentFrame(module)).getVector() * module.getMass()
-            cumulativeMassValue += module.getMass()
+        for (component in componentsWithMass) {
+            cumulativeMassVector += component.centerOfMass.applyTransform(getTransformLocalToParentFrame(component)).getVector() * component.getMass()
+            cumulativeMassValue += component.getMass()
         }
 
         val dividedMass = cumulativeMassVector / cumulativeMassValue
@@ -72,47 +100,47 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
     }
 
     //TODO Flesh this out
-    fun markedForRemoval() : Boolean {
+    override fun markedForRemoval() : Boolean {
         return false
     }
 
-    fun getRotationalVelocity(): Double {
+    override fun getRotationalVelocity(): Double {
         return rotVelocity
     }
 
-    fun getVelocity(): Vector2 {
+    override fun getVelocity(): Vector2 {
         return vel
     }
 
-    fun setRotationalVelocity(rotVel: Double) {
+    override fun setRotationalVelocity(rotVel: Double) {
         rotVelocity = rotVel
     }
 
-    fun setVelocity(vel: Vector2) {
+    override fun setVelocity(vel: Vector2) {
         this.vel = vel
     }
 
-    fun rotate(rotation: Double) {
+    override fun rotate(rotation: Double) {
         this.orientation += rotation
     }
 
-    fun translate(translation: Vector2) {
+    override fun translate(translation: Vector2) {
         this.coordinates += translation
     }
 
     //TODO Flesh this out
-    fun getMass(): Double {
+    override fun getMass(): Double {
         return getModules().sumOf { it.getMass() } + getHull().sumOf { it.getMass() }
     }
 
-    fun update(timeStep: Double) {
+    override fun update(timeStep: Double) {
         for(system in systems){
             system.update(timeStep, this)
         }
     }
 
     // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
-    fun applyForce(force: Force) {
+    override fun applyForce(force: Force) {
         forceAccumulator += force.vector
         currentForces.add(force)
 
@@ -123,11 +151,17 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         applyTorque(torque)
     }
 
-    fun applyTorque(torque: Double) {
+    override fun applyTorque(torque: Double) {
         torqueAccumulator += torque
     }
 
-    fun checkAndResetNetForce(): Vector2 {
+    override fun setPose(pose: Pose<WorldReferenceFrame>){
+        coordinates = pose.coordinate
+        orientation = pose.orientation
+        zheight = pose.zHeight
+    }
+
+    override fun checkAndResetNetForce(): Vector2 {
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
@@ -135,7 +169,7 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         return netForce
     }
 
-    fun checkAndResetNetTorque(): Double {
+    override fun checkAndResetNetTorque(): Double {
         val netTorque = torqueAccumulator
         torqueAccumulator = 0.0;
         return netTorque
@@ -173,37 +207,6 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         hullToStationMap.putAll(map)
     }
 
-    fun getLastForces(): List<Force> {
-        return lastForces
-    }
-
-    fun sendEffect(effect: Effect){
-        if(effectsConsumer != null){
-            effectsConsumer!!.addEffect(effect)
-        }else{
-            throw NullPointerException("EffectsConsumer not set!")
-        }
-    }
-    fun sendEntity(entity: Entity){
-        if(entityConsumer != null){
-            entityConsumer!!.addEntity(entity)
-        }else{
-            throw NullPointerException("EntityConsumer not set!")
-        }
-    }
-
-    override fun getZHeight(): ZHeight<WorldReferenceFrame> {
-        return zheight
-    }
-
-    final override fun getOrientation(): Orientation<WorldReferenceFrame> {
-        return orientation
-    }
-
-    final override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
-        return coordinates
-    }
-
     fun getPawnsInside(): List<Pawn> {
         return pawns
     }
@@ -216,13 +219,47 @@ class Entity(): HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
         return modules
     }
 
-    fun setPose(pose: Pose<WorldReferenceFrame>){
-        coordinates = pose.coordinate
-        orientation = pose.orientation
-        zheight = pose.zHeight
-    }
-
     fun getSystems() : List<EntitySystem>{
         return systems;
+    }
+
+    override fun getLastForces(): List<Force> {
+        return lastForces
+    }
+
+    override fun sendEffect(effect: Effect){
+        if(effectsConsumer != null){
+            effectsConsumer!!.addEffect(effect)
+        }else{
+            throw NullPointerException("EffectsConsumer not set!")
+        }
+    }
+
+    override fun sendEntity(entity: ShipEntity){
+        if(entityConsumer != null){
+            entityConsumer!!.addEntity(entity)
+        }else{
+            throw NullPointerException("EntityConsumer not set!")
+        }
+    }
+
+    override fun setEntityConsumer(consumer: EntityConsumer) {
+        this.entityConsumer = consumer
+    }
+
+    override fun setEffectConsumer(consumer: EffectsConsumer) {
+        this.effectsConsumer = consumer
+    }
+
+    override fun getZHeight(): ZHeight<WorldReferenceFrame> {
+        return zheight
+    }
+
+    override fun getOrientation(): Orientation<WorldReferenceFrame> {
+        return orientation
+    }
+
+    override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
+        return coordinates
     }
 }

@@ -9,7 +9,6 @@ import models.Model
 import math.Vector2
 import math.WorldReferenceFrame
 import math.ZHeight
-import physics.Entity
 
 interface EffectsConsumer {
     fun addEffect(effect: Effect)
