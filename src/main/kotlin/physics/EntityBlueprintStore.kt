@@ -7,6 +7,7 @@ import models.Model
 object EntityBlueprintStore{
 
     val singleHullShipBlueprint = ComplexEntityBlueprint()
+    val emptyShipBlueprint = ComplexEntityBlueprint()
 
     init {
 
