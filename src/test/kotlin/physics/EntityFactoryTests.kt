@@ -8,7 +8,7 @@ class EntityFactoryTests {
 
     @Test
     fun singleHullEntityTest(){
-        val blueprint = EntityBlueprint()
+        val blueprint = ComplexEntityBlueprint()
         val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
         blueprint.hullBlueprints.add(hullBlueprint1)
 
@@ -19,7 +19,7 @@ class EntityFactoryTests {
 
     @Test
     fun entityBlueprintTest(){
-        val blueprint = EntityBlueprint()
+        val blueprint = ComplexEntityBlueprint()
 
         val hullBlueprint1 = HullBlueprint(Model.SQUARE.asVectors(), 1.0, Vector2())
 

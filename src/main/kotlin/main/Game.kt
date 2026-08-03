@@ -14,6 +14,7 @@ import graphics.DebugLineData
 import graphics.RendererI
 import graphics.loadModels
 import physics.*
+import physics.EntityBlueprintStore.singleHullShipBlueprint
 
 fun main() {
     val timeStep = 1.0;
@@ -46,10 +47,8 @@ fun main() {
     renderer.addListener(keyListener)
     val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
-    val blueprints = BlueprintStore()
-
-    val playerEntity = blueprints.singleHullShipBlueprint.build()
-    val nonPlayerEntity = blueprints.singleHullShipBlueprint.build()
+    val playerEntity = singleHullShipBlueprint.build()
+    val nonPlayerEntity = singleHullShipBlueprint.build()
 
     val playerController = PlayerController(bitSet)
     val npcController = SimpleNPCController()
@@ -69,7 +68,7 @@ fun main() {
 
 class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, val controllerManager: ControllerManager, val effectsManager: EffectsManager, val gui: RendererI){
 
-    var targetEntity: ShipEntity? = null
+    var targetEntity: ComplexEntity? = null
 
     fun populateData() {
         val modelDataMap = hashMapOf<Model, MutableList<Renderer.Renderable>>()

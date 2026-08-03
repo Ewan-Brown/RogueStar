@@ -44,18 +44,24 @@ class FlatWorld : World {
         }
 
         for(projectile in entities.filterIsInstance<ProjectileEntity>()){
-            val pointOfContactLocal = projectile.getPointOfContact()
-            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation
-            for(entity in entities){
-                if(entity != projectile){
-                    //TODO Do cheap preliminary collision checking
-                }
+            val pointOfContactDescriptor = projectile.getProjectileInteractionDescriptor()
+            when(pointOfContactDescriptor){
+                is LineProjectileInteraction -> TODO()
+                is PointProjectileInteraction -> TODO()
+                is RadiusProjectileInteraction -> TODO()
             }
+//            val pointOfContactLocal = projectile.getPointOfContact()
+//            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation
+//            for(entity in entities){
+//                if(entity != projectile){
+//                    //TODO Do cheap preliminary collision checking
+//                }
+//            }
         }
 
         //Do pawn updates
         for(entity in entities) {
-            if(entity is ShipEntity){
+            if(entity is ComplexEntity){
                 for(pawn in entity.getPawnsInside()){
                     pawn.translate(pawn.getVelocity())
 //                pawn.setVelocity(Vector2())

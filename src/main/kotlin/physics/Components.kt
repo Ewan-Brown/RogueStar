@@ -114,15 +114,15 @@ class Torquer(boundingBox: List<Vector2>, private val mass: Double, centerOfMass
 
 }
 
-class Weapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
-    var projectileSpawnLocation : Coordinates<ComponentReferenceFrame> = Coordinates(Vector2(2.0, 0.0))
-    var isToggledOn = false;
-    val maxCooldown: Double = 10.0
-    var cooldownRemaining: Double = 0.0
+abstract class Weapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
 
     override fun getMass(): Double {
         return mass
     }
+}
+
+class BulletWeapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : Weapon(boundingBox, mass, centerOfMass){
+    fun getProjectileSpawnLocation() : Coordinates<ComponentReferenceFrame> = Coordinates(Vector2(2.0, 0.0))
 }
 
 class AmmoDepot(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
