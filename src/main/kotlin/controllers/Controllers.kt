@@ -5,7 +5,7 @@ import graphics.Renderer
 import math.Orientation
 import math.Vector2
 import models.Model
-import physics.ShipEntity
+import physics.ComplexEntity
 import physics.ThrusterSystem
 import physics.TorqueSystem
 import physics.WeaponSystem
@@ -55,9 +55,9 @@ sealed class Controller<in T>{
     abstract fun update(plant: T)
 }
 
-class PlayerController(val bitSet: BitSet) : Controller<ShipEntity>(){
+class PlayerController(val bitSet: BitSet) : Controller<ComplexEntity>(){
 
-    override fun update(plant: ShipEntity) {
+    override fun update(plant: ComplexEntity) {
         var thrust = Vector2(0.0, 0.0)
         for (entry in ThrustKeys.entries) {
             if(bitSet[entry.keyValue]) {
@@ -76,20 +76,19 @@ class PlayerController(val bitSet: BitSet) : Controller<ShipEntity>(){
 
         val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
-        val weaponsSystem : WeaponSystem = plant.getSystems().filterIsInstance<WeaponSystem>().first()
+        val weaponsSystem : WeaponSystem<*, *> = plant.getSystems().filterIsInstance<WeaponSystem<*, *>>().first()
 
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
-        weaponsSystem.setToggle(firing)
     }
 }
 
-class SimpleNPCController() : Controller<ShipEntity>(){
+class SimpleNPCController() : Controller<ComplexEntity>(){
 
     private var currentThrust: Vector2 = Vector2(0.5, 0.0)
 
-    override fun update(plant: ShipEntity) {
+    override fun update(plant: ComplexEntity) {
         var thrust = currentThrust
 
         currentThrust = currentThrust.rotate(0.07)
@@ -98,11 +97,10 @@ class SimpleNPCController() : Controller<ShipEntity>(){
 
         val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
-        val weaponsSystem : WeaponSystem = plant.getSystems().filterIsInstance<WeaponSystem>().first()
+        val weaponsSystem : WeaponSystem<*, *> = plant.getSystems().filterIsInstance<WeaponSystem<*, *>>().first()
 
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
-        weaponsSystem.setToggle(firing)
     }
 }

@@ -13,8 +13,15 @@ import kotlin.collections.iterator
  * Stores the "blueprint" info required to build a particular type of entity
  *
  * https://gameprogrammingpatterns.com/type-object.html
+ *
+ * TODO Could use generic type here to tag blueprint to a format of ship to controllers etc... ?
+ * ComplexEntityBlueprint<ComplexEntityType>
+ *
+ *
+ * TODO TO make re-constructable ships, maybe look at entities keeping a ref to blueprint, and component->bluprint reference by ID
+ *
  */
-class EntityBlueprint {
+class ComplexEntityBlueprint {
 
     val hullBlueprints = mutableListOf<ComponentBlueprint<EntityHull>>()
     val moduleBlueprints = mutableListOf<ComponentBlueprint<EntityModule>>()
@@ -25,7 +32,7 @@ class EntityBlueprint {
     val hullToModuleBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityModule>>>()
     val hullToStationBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityStation>>>()
 
-    fun build(): ShipEntity {
+    fun build(): ComplexEntity {
 
         val intermediateBuild = IntermediateBuild()
 
@@ -46,7 +53,7 @@ class EntityBlueprint {
         }
 
         //Build up an entity with the blueprints
-        val entity = ShipEntity()
+        val entity = ComplexEntity()
 
         for (hull in intermediateBuild.hulls) {
             entity.addHull(hull.value)
@@ -75,6 +82,7 @@ class EntityBlueprint {
         return entity
     }
 }
+
 
 class IntermediateBuild(){
     val hulls = mutableMapOf<ComponentBlueprint<EntityHull>, EntityHull>()
@@ -108,35 +116,38 @@ class ComponentBlueprint<out C: Component>(val boundingBox: List<Vector2>, val m
     }
 }
 
-interface SystemBlueprint<S: EntitySystem>{
-    fun createSystem(b: IntermediateBuild) : S
+abstract class SystemBlueprint<S: EntitySystem>{
+    abstract fun createSystem(b: IntermediateBuild) : S
+    inline fun <reified C : EntityModule> mapBlueprintsToModules(blueprints: List<ComponentBlueprint<*>>, b: IntermediateBuild,) : List<C>{
+        return blueprints.map { b.modules[it] } as List<C>
+    }
 }
 
-class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ComponentBlueprint<Thruster>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<ThrusterSystem>{
+class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ComponentBlueprint<Thruster>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<ThrusterSystem>(){
     override fun createSystem(b : IntermediateBuild): ThrusterSystem {
-        val thrusters = thrusterBlueprints.map {b.modules[it]} as List<Thruster>
+        val thrusters = mapBlueprintsToModules<Thruster>(thrusterBlueprints, b)
         val station = b.stations[pilotStationBlueprint]
         return ThrusterSystem(thrusters, station)
     }
 }
 
-class TorqueSystemBlueprint(private val torquerblueprints: List<ComponentBlueprint<Torquer>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<TorqueSystem>{
+class TorqueSystemBlueprint(private val torquerblueprints: List<ComponentBlueprint<Torquer>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<TorqueSystem>(){
     override fun createSystem(b : IntermediateBuild): TorqueSystem {
-        val torquers = torquerblueprints.map {b.modules[it]} as List<Torquer>
+        val torquers = mapBlueprintsToModules<Torquer>(torquerblueprints, b)
         val station = b.stations[pilotStationBlueprint]
         return TorqueSystem(torquers, station)
     }
 }
 
-class WeaponSystemBlueprint(private val weaponblueprints: List<ComponentBlueprint<Weapon>>, private val weaponstationBlueprint: ComponentBlueprint<EntityStation>, private val projectileCreator: EntityBlueprint ,private val ammoDepotBlueprints: List<ComponentBlueprint<AmmoDepot>>) : SystemBlueprint<WeaponSystem>{
-    override fun createSystem(b : IntermediateBuild): WeaponSystem {
-        val weapons = weaponblueprints.map {b.modules[it]} as List<Weapon>
+class WeaponSystemBlueprint<W: Weapon, P: ProjectileEntity>(private val weaponblueprints: List<ComponentBlueprint<W>>, private val weaponstationBlueprint: ComponentBlueprint<EntityStation>, private val projectileBlueprint: ProjectileBlueprint<P>, private val ammoDepotBlueprints: List<ComponentBlueprint<AmmoDepot>>) : SystemBlueprint<WeaponSystem<W, P>>() {
+    override fun createSystem(b : IntermediateBuild): WeaponSystem<W, P> {
+        val weapons = weaponblueprints.map {b.modules[it]} as List<W>
         val ammos = ammoDepotBlueprints.map { b.modules[it] } as List<AmmoDepot>
         val weaponStation = b.stations[weaponstationBlueprint]
         return WeaponSystem(weapons, {
-            val e = projectileCreator.build()
+            val e = projectileBlueprint.build()
             e.applyForce(Force(Vector2(0.1, 0.0), Coordinates(Vector2(0.0,0.0))))
-            e
+            return@WeaponSystem e
                                      }, weaponStation, ammos)
     }
 }
