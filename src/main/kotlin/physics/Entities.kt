@@ -26,17 +26,17 @@ interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefere
     fun checkAndResetNetTorque(): Double
     fun getLastForces(): List<Force>
     fun sendEffect(effect: Effect)
-    fun sendEntity(entity: ShipEntity)
+    fun sendEntity(entity: KineticEntity)
     fun setEntityConsumer(consumer: EntityConsumer)
     fun setEffectConsumer(consumer: EffectsConsumer)
     fun setPose(pose: Pose<WorldReferenceFrame>)
 }
 
 interface ProjectileEntity : KineticEntity {
-    fun getCollidingPoint(): Coordinates<EntityReferenceFrame>
+    fun getProjectileInteractionDescriptor() : ProjectileInteraction
 }
 
-class ShipEntity(): KineticEntity{
+class ComplexEntity(): KineticEntity{
 
     private var effectsConsumer: EffectsConsumer? = null
     private var entityConsumer: EntityConsumer? = null
@@ -128,7 +128,6 @@ class ShipEntity(): KineticEntity{
         this.coordinates += translation
     }
 
-    //TODO Flesh this out
     override fun getMass(): Double {
         return getModules().sumOf { it.getMass() } + getHull().sumOf { it.getMass() }
     }
@@ -235,7 +234,7 @@ class ShipEntity(): KineticEntity{
         }
     }
 
-    override fun sendEntity(entity: ShipEntity){
+    override fun sendEntity(entity: KineticEntity){
         if(entityConsumer != null){
             entityConsumer!!.addEntity(entity)
         }else{

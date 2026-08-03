@@ -20,7 +20,7 @@ import kotlin.math.min
  *
  */
 abstract class EntitySystem(){
-    abstract fun update(timeStep: Double, entity: ShipEntity)
+    abstract fun update(timeStep: Double, entity: ComplexEntity)
 }
 
 //TODO Decide
@@ -39,7 +39,7 @@ class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotSta
         }
     }
 
-    override fun update(timeStep: Double, entity: ShipEntity){
+    override fun update(timeStep: Double, entity: ComplexEntity){
         var forceOrigin : Coordinates<EntityReferenceFrame> = Coordinates(thrusters.map { it.thrustForceOrigin.applyTransform(getTransformLocalToParentFrame(it)).getVector() }.reduce { acc, vec -> acc + vec } / thrusters.count().toDouble())
         var netForceVector : Vector2 = thrusters.map {
             val localForceVec = Vector2(it.thrusterOrientation.getAngle()) * it.thrusterThrottle
@@ -52,7 +52,7 @@ class ThrusterSystem(private val thrusters: List<Thruster>, private val pilotSta
 }
 
 class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation: EntityStation?) : EntitySystem(){
-    override fun update(timeStep: Double, entity: ShipEntity) {
+    override fun update(timeStep: Double, entity: ComplexEntity) {
         val netTorque = torquers.map{it.torque}.reduce { t1, t2 -> t1+t2 }
         entity.applyTorque(netTorque)
     }
@@ -65,31 +65,25 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 }
 
 //TODO Add Ammo system
-class WeaponSystem(private val weapons: List<Weapon>, private val projectileCreator: () -> ShipEntity, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
-    override fun update(timeStep: Double, entity: ShipEntity) {
+class WeaponSystem<W : Weapon, P: ProjectileEntity>(private val weapons: List<W>, private val projectileCreator: () -> P, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
+    override fun update(timeStep: Double, entity: ComplexEntity) {
         for(weapon in weapons){
-            weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
-            if(weapon.cooldownRemaining <= 0.0 && weapon.isToggledOn){
-                // fire!
-                val proj = projectileCreator()
-                val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> = Pose(weapon.projectileSpawnLocation, Orientation(0.0), ZHeight(0.0))
-                val t1 = getTransformLocalToParentFrame(weapon)
-                val t2 = getTransformLocalToParentFrame(entity)
-                val t3 = combineTransforms(t1, t2)
-                val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
-
-                proj.setPose(spawnPoseInWorldCoords)
-
-                entity.sendEntity(proj)
-
-                weapon.cooldownRemaining = weapon.maxCooldown
-            }
-        }
-    }
-
-    fun setToggle(toggle: Boolean){
-        for (weapon in weapons){
-            weapon.isToggledOn = toggle
+//            weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
+//            if(weapon.cooldownRemaining <= 0.0 && weapon.isToggledOn){
+//                // fire!
+//                val proj = projectileCreator()
+//                val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> = Pose(weapon.projectileSpawnLocation, Orientation(0.0), ZHeight(0.0))
+//                val t1 = getTransformLocalToParentFrame(weapon)
+//                val t2 = getTransformLocalToParentFrame(entity)
+//                val t3 = combineTransforms(t1, t2)
+//                val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
+//
+//                proj.setPose(spawnPoseInWorldCoords)
+//
+//                entity.sendEntity(proj)
+//
+//                weapon.cooldownRemaining = weapon.maxCooldown
+//            }
         }
     }
 

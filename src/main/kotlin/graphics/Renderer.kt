@@ -446,7 +446,7 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
      */
     //TODO generalize vector math so it can be reused on things like colors?
     data class ColorData(val red: Float, val green: Float, val blue: Float, val alpha: Float)
-    data class MetaData(val health: Float ) //TODO this could vary across entities - Maybe make this... a builder?
+    data class MetaData(val health: Float = 1.0f ) //TODO this could vary across entities - Maybe make this... a builder?
 
     data class IntermediaryRenderable<R : ReferenceFrame>(val model: Model, var pose: Pose<R>, val scale : Double, val colorData: ColorData, val metaData: MetaData){}
 
