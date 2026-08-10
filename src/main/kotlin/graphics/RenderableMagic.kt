@@ -11,6 +11,7 @@ import math.combineTransforms
 import math.getTransformLocalToParentFrame
 import kotlin.collections.forEach
 
+//TODO Make this reusable for things that aren't intermediaary renderables. e.g troubleshooting/debugging view, alternative draw modes
 interface HasNestedRenderables<R1 : ReferenceFrame, R2 : ReferenceFrame> : InReferenceFrame<R1>, HasReferenceFrame<R2>{
     fun getImmediateRenderables() : List<IntermediaryRenderable<R2>>
     fun getChildren() : List<HasNestedRenderables<R2, *>> = emptyList()
