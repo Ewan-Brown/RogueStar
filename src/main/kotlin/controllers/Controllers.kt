@@ -81,6 +81,7 @@ class PlayerController(val bitSet: BitSet) : Controller<ComplexEntity>(){
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
+
     }
 }
 

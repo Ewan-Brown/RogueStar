@@ -19,20 +19,26 @@ object EntityBlueprintStore{
         val weaponBlueprint = ComponentBlueprint<Weapon>(Model.SQUARE.asVectors(), 1.0, Vector2(), listOf(square(Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0f), 1.0)),{ vec2, d, v1 -> BulletWeapon(vec2, d, v1) })
         val ammoDepotBlueprint = ComponentBlueprint<AmmoDepot>(Model.SQUARE.asVectors(), 1.0, Vector2(), listOf(square(Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0f), 1.0)),{ vec2, d, v1 -> AmmoDepot(vec2, d, v1) })
         val stationBlueprint = ComponentBlueprint<EntityStation>(Model.SQUARE.asVectors(), 1.0, Vector2(), listOf(square(Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0f), 1.0)), { vec2, d, v1 -> EntityStation(vec2, d, v1) })
+        val weaponBlueprint2 = ComponentBlueprint<Weapon>(Model.SQUARE.asVectors(), 1.0, Vector2(), listOf(square(Renderer.ColorData(1.0f, 1.0f, 1.0f, 1.0f), 1.0)), {vec2, d, v1 -> LaserWeapon(vec2, d, v1) })
 
         val thrusterSystemBlueprint = ThrusterSystemBlueprint(listOf(thrusterBlueprint), stationBlueprint)
         val torqueSystemBlueprint = TorqueSystemBlueprint(listOf(torquerBlueprint), stationBlueprint)
         val weaponSystemBlueprint =
             WeaponSystemBlueprint(listOf(weaponBlueprint), stationBlueprint, BulletBlueprint(1.0, 1.0), listOf(ammoDepotBlueprint))
 
+        val weaponSystemBlueprint2 =
+            WeaponSystemBlueprint(listOf(weaponBlueprint2), stationBlueprint, LaserBlueprint(), listOf(ammoDepotBlueprint))
+
         singleHullShipBlueprint.hullBlueprints.add(hullBlueprint1)
         singleHullShipBlueprint.moduleBlueprints.add(thrusterBlueprint)
         singleHullShipBlueprint.moduleBlueprints.add(torquerBlueprint)
         singleHullShipBlueprint.moduleBlueprints.add(weaponBlueprint)
+        singleHullShipBlueprint.moduleBlueprints.add(weaponBlueprint2)
         singleHullShipBlueprint.moduleBlueprints.add(ammoDepotBlueprint)
         singleHullShipBlueprint.stationBlueprints.add(stationBlueprint)
         singleHullShipBlueprint.systemBlueprints.add(thrusterSystemBlueprint)
         singleHullShipBlueprint.systemBlueprints.add(torqueSystemBlueprint)
         singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint)
+        singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint2)
     }
 }

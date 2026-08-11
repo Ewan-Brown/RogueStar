@@ -123,6 +123,12 @@ abstract class Weapon(boundingBox: List<Vector2>, private val mass: Double, cent
 
 class BulletWeapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : Weapon(boundingBox, mass, centerOfMass){
     fun getProjectileSpawnLocation() : Coordinates<ComponentReferenceFrame> = Coordinates(Vector2(2.0, 0.0))
+    fun getProjectileDirection() : Orientation<ComponentReferenceFrame> = Orientation(0.0)
+}
+
+class LaserWeapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : Weapon(boundingBox, mass, centerOfMass){
+    fun getProjectileSpawnLocation() : Coordinates<ComponentReferenceFrame> = Coordinates(Vector2(2.0, 0.0))
+    fun getProjectileDirection() : Orientation<ComponentReferenceFrame> = Orientation(0.0)
 }
 
 class AmmoDepot(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){

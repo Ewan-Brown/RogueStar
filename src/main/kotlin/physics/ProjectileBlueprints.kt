@@ -9,5 +9,11 @@ class BulletBlueprint(val mass: Double, val size: Double) : ProjectileBlueprint<
         val bullet = BulletProjectile(mass, size)
         return bullet
     }
+}
 
+class LaserBlueprint() : ProjectileBlueprint<LaserProjectile>{
+    override fun build(): LaserProjectile {
+        val bullet = LaserProjectile(1.0)
+        return bullet
+    }
 }

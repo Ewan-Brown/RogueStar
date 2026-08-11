@@ -65,7 +65,7 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 }
 
 //TODO Add Ammo system
-class WeaponSystem<W : Weapon, P: ProjectileEntity>(private val weapons: List<W>, private val projectileCreator: () -> P, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
+abstract class WeaponSystem<W : Weapon, P: ProjectileEntity>(private val weapons: List<W>, private val projectileCreator: () -> P, private val weaponStation: EntityStation?, private val ammoDepot: List<AmmoDepot>) : EntitySystem(){
     override fun update(timeStep: Double, entity: ComplexEntity) {
         for(weapon in weapons){
 //            weapon.cooldownRemaining = min(0.0, weapon.cooldownRemaining - timeStep)
@@ -86,5 +86,6 @@ class WeaponSystem<W : Weapon, P: ProjectileEntity>(private val weapons: List<W>
 //            }
         }
     }
-
 }
+
+abstract class BulletWeaponSystem
