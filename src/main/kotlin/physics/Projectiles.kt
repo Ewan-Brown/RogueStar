@@ -29,7 +29,7 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     private var orientation: Orientation<WorldReferenceFrame> = Orientation(0.0)
     private var zheight: ZHeight<WorldReferenceFrame> = ZHeight(0.0)
 
-    private var vel = Vector2()
+    private var velocity = Vector2()
     private var rotVelocity = 0.0
 
     private var lastForces = listOf<Force>()
@@ -65,7 +65,7 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     }
 
     override fun getVelocity(): Vector2 {
-        return vel
+        return velocity
     }
 
     override fun setRotationalVelocity(rotVel: Double) {
@@ -73,7 +73,7 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     }
 
     override fun setVelocity(vel: Vector2) {
-        this.vel = vel
+        this.velocity = vel
     }
 
     override fun rotate(rotation: Double) {
@@ -171,4 +171,116 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     override fun getProjectileInteractionDescriptor(): ProjectileInteraction {
         return PointProjectileInteraction(Coordinates<EntityReferenceFrame>(Vector2()))
     }
+}
+
+class LaserProjectile(trailLength: Double) : ProjectileEntity{
+
+    private var coordinates: Coordinates<WorldReferenceFrame> = Coordinates(Vector2())
+    private var zheight: ZHeight<WorldReferenceFrame> = ZHeight(0.0)
+    private var velocity = Vector2()
+    private var lastPos: Coordinates<WorldReferenceFrame>? = null
+
+    private var effectsConsumer: EffectsConsumer? = null
+    private var entityConsumer: EntityConsumer? = null
+
+    override fun getProjectileInteractionDescriptor(): ProjectileInteraction {
+        return LineProjectileInteraction(Coordinates<EntityReferenceFrame>(Vector2()) - velocity, Coordinates(Vector2()))
+    }
+
+    override fun getCenterOfMass(): Coordinates<EntityReferenceFrame> {
+        return Coordinates<EntityReferenceFrame>(Vector2())
+    }
+
+    override fun markedForRemoval(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun getRotationalVelocity(): Double {
+        return 0.0
+    }
+
+    override fun getVelocity(): Vector2 {
+        return velocity
+    }
+
+    override fun setRotationalVelocity(rotVel: Double) {
+
+    }
+
+    override fun setVelocity(vel: Vector2) {
+        velocity = vel
+    }
+
+    override fun rotate(rotation: Double) {
+        return
+    }
+
+    override fun translate(translation: Vector2) {
+        coordinates += translation
+    }
+
+    override fun getMass(): Double {
+        return 0.0
+    }
+
+    override fun update(timeStep: Double) {
+
+    }
+
+    override fun applyForce(force: Force) {
+
+    }
+
+    override fun applyTorque(torque: Double) {
+
+    }
+
+    override fun checkAndResetNetForce(): Vector2 {
+        return Vector2()
+    }
+
+    override fun checkAndResetNetTorque(): Double {
+        return 0.0
+    }
+
+    override fun getLastForces(): List<Force> {
+        return emptyList()
+    }
+
+    override fun sendEffect(effect: Effect) {
+        effectsConsumer!!.addEffect(effect)
+    }
+
+    override fun sendEntity(entity: KineticEntity) {
+        entityConsumer!!.addEntity(entity)
+    }
+
+    override fun setEntityConsumer(consumer: EntityConsumer) {
+        entityConsumer = consumer
+    }
+
+    override fun setEffectConsumer(consumer: EffectsConsumer) {
+        effectsConsumer = consumer
+    }
+
+    override fun setPose(pose: Pose<WorldReferenceFrame>) {
+
+    }
+
+    override fun getImmediateRenderables(): List<IntermediaryRenderable<EntityReferenceFrame>> {
+        TODO("Not yet implemented rendering for laser")
+    }
+
+    override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
+        return coordinates
+    }
+
+    override fun getOrientation(): Orientation<WorldReferenceFrame> {
+        return Orientation(0.0) //TODO Is this ok?
+    }
+
+    override fun getZHeight(): ZHeight<WorldReferenceFrame> {
+        return zheight
+    }
+
 }
