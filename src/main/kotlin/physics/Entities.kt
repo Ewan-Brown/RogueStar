@@ -20,11 +20,12 @@ interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefere
     fun translate(translation: Vector2)
     fun getMass(): Double
     fun update(timeStep: Double)
-    fun applyForce(force: Force)
+    fun applyLocalForce(force: Force<EntityReferenceFrame>)
+    fun applyWorldForce(force: Force<WorldReferenceFrame>)
     fun applyTorque(torque: Double)
-    fun checkAndResetNetForce(): Vector2
-    fun checkAndResetNetTorque(): Double
-    fun getLastForces(): List<Force>
+    fun popNetForce(): Vector2
+    fun popNetTorque(): Double
+    fun getLastForces(): List<Force<EntityReferenceFrame>>
     fun sendEffect(effect: Effect)
     fun sendEntity(entity: KineticEntity)
     fun setEntityConsumer(consumer: EntityConsumer)
@@ -48,8 +49,9 @@ class ComplexEntity(): KineticEntity{
     private var vel = Vector2()
     private var rotVelocity = 0.0
 
-    private var lastForces = listOf<Force>()
-    private var currentForces = mutableListOf<Force>()
+    //For Debug purposes
+    private var lastForces = listOf<Force<EntityReferenceFrame>>()
+    private var currentForces = mutableListOf<Force<EntityReferenceFrame>>()
 
     private var forceAccumulator = Vector2()
     private var torqueAccumulator = 0.0
@@ -139,7 +141,7 @@ class ComplexEntity(): KineticEntity{
     }
 
     // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
-    override fun applyForce(force: Force) {
+    override fun applyLocalForce(force: Force<EntityReferenceFrame>) {
         forceAccumulator += force.vector
         currentForces.add(force)
 
@@ -148,6 +150,11 @@ class ComplexEntity(): KineticEntity{
         val theta = force.vector.getAngleTo(comToForce)
         val torque = r * force.vector.getMagnitude() * sin(theta)
         applyTorque(torque)
+    }
+
+    override fun applyWorldForce(force: Force<WorldReferenceFrame>) {
+        val localForce = force.applyTransform(getTransformParentToLocalFrame(this))
+        applyLocalForce(localForce)
     }
 
     override fun applyTorque(torque: Double) {
@@ -160,15 +167,15 @@ class ComplexEntity(): KineticEntity{
         zheight = pose.zHeight
     }
 
-    override fun checkAndResetNetForce(): Vector2 {
+    override fun popNetForce(): Vector2 {
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
-        currentForces = mutableListOf<Force>()
+        currentForces = mutableListOf<Force<EntityReferenceFrame>>()
         return netForce
     }
 
-    override fun checkAndResetNetTorque(): Double {
+    override fun popNetTorque(): Double {
         val netTorque = torqueAccumulator
         torqueAccumulator = 0.0;
         return netTorque
@@ -222,7 +229,7 @@ class ComplexEntity(): KineticEntity{
         return systems;
     }
 
-    override fun getLastForces(): List<Force> {
+    override fun getLastForces(): List<Force<EntityReferenceFrame>> {
         return lastForces
     }
 

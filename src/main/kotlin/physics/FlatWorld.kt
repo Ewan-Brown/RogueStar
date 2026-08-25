@@ -33,8 +33,8 @@ class FlatWorld : World {
             val entityAngle = entity.getOrientation().getAngle()
 
             //Calculate new derivatives
-            velocity = entity.getVelocity() + entity.checkAndResetNetForce().rotate(entityAngle)/entity.getMass()
-            rotVelocity = entity.getRotationalVelocity() + entity.checkAndResetNetTorque()/entity.getMass()
+            velocity = entity.getVelocity() + entity.popNetForce().rotate(entityAngle)/entity.getMass()
+            rotVelocity = entity.getRotationalVelocity() + entity.popNetTorque()/entity.getMass()
 
             //Apply friction
             velocity *= 0.99
@@ -47,7 +47,7 @@ class FlatWorld : World {
             val pointOfContactDescriptor = projectile.getProjectileInteractionDescriptor()
             when(pointOfContactDescriptor){
                 is LineProjectileInteraction -> TODO()
-                is PointProjectileInteraction -> TODO()
+                is PointProjectileInteraction -> continue
                 is RadiusProjectileInteraction -> TODO()
             }
 //            val pointOfContactLocal = projectile.getPointOfContact()

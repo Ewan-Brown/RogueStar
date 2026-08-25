@@ -12,8 +12,11 @@ import math.Pose
 import math.Vector2
 import math.WorldReferenceFrame
 import math.ZHeight
+import math.getTransformLocalToParentFrame
+import math.getTransformParentToLocalFrame
 import models.Model
 import kotlin.math.sin
+import kotlin.times
 
 sealed interface ProjectileInteraction
 data class PointProjectileInteraction(val point: Coordinates<EntityReferenceFrame>) : ProjectileInteraction
@@ -32,8 +35,8 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     private var velocity = Vector2()
     private var rotVelocity = 0.0
 
-    private var lastForces = listOf<Force>()
-    private var currentForces = mutableListOf<Force>()
+    private var lastForces = listOf<Force<EntityReferenceFrame>>()
+    private var currentForces = mutableListOf<Force<EntityReferenceFrame>>()
 
     private var forceAccumulator = Vector2()
     private var torqueAccumulator = 0.0
@@ -53,7 +56,7 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     }
 
     override fun getCenterOfMass(): Coordinates<EntityReferenceFrame> {
-        TODO("Not yet implemented")
+        return Coordinates(Vector2())
     }
 
     override fun markedForRemoval() : Boolean {
@@ -92,8 +95,7 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
 
     }
 
-    // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
-    override fun applyForce(force: Force) {
+    override fun applyLocalForce(force: Force<EntityReferenceFrame>) {
         forceAccumulator += force.vector
         currentForces.add(force)
 
@@ -103,6 +105,23 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
         val torque = r * force.vector.getMagnitude() * sin(theta)
         applyTorque(torque)
     }
+
+    override fun applyWorldForce(force: Force<WorldReferenceFrame>) {
+        val localForce = force.applyTransform(getTransformParentToLocalFrame(this))
+        applyLocalForce(localForce)
+    }
+
+    // Just to double check https://www.physics.uoguelph.ca/torque-and-rotational-motion-tutorial
+//    fun applyForce(force: Force) {
+//        forceAccumulator += force.vector
+//        currentForces.add(force)
+//
+//        val comToForce: Vector2 = force.origin - getCenterOfMass()
+//        val r = comToForce.getMagnitude();
+//        val theta = force.vector.getAngleTo(comToForce)
+//        val torque = r * force.vector.getMagnitude() * sin(theta)
+//        applyTorque(torque)
+//    }
 
     override fun applyTorque(torque: Double) {
         torqueAccumulator += torque
@@ -114,21 +133,21 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
         zheight = pose.zHeight
     }
 
-    override fun checkAndResetNetForce(): Vector2 {
+    override fun popNetForce(): Vector2 {
         val netForce = forceAccumulator
         forceAccumulator = Vector2(0.0, 0.0)
         lastForces = currentForces
-        currentForces = mutableListOf<Force>()
+        currentForces = mutableListOf<Force<EntityReferenceFrame>>()
         return netForce
     }
 
-    override fun checkAndResetNetTorque(): Double {
+    override fun popNetTorque(): Double {
         val netTorque = torqueAccumulator
         torqueAccumulator = 0.0;
         return netTorque
     }
 
-    override fun getLastForces(): List<Force> {
+    override fun getLastForces(): List<Force<EntityReferenceFrame>> {
         return lastForces
     }
 
@@ -227,23 +246,20 @@ class LaserProjectile(trailLength: Double) : ProjectileEntity{
 
     }
 
-    override fun applyForce(force: Force) {
-
-    }
 
     override fun applyTorque(torque: Double) {
 
     }
 
-    override fun checkAndResetNetForce(): Vector2 {
+    override fun popNetForce(): Vector2 {
         return Vector2()
     }
 
-    override fun checkAndResetNetTorque(): Double {
+    override fun popNetTorque(): Double {
         return 0.0
     }
 
-    override fun getLastForces(): List<Force> {
+    override fun getLastForces(): List<Force<EntityReferenceFrame>> {
         return emptyList()
     }
 
@@ -281,6 +297,23 @@ class LaserProjectile(trailLength: Double) : ProjectileEntity{
 
     override fun getZHeight(): ZHeight<WorldReferenceFrame> {
         return zheight
+    }
+
+
+    override fun applyLocalForce(force: Force<EntityReferenceFrame>) {
+//        forceAccumulator += force.vector
+//        currentForces.add(force)
+//
+//        val comToForce: Vector2 = force.origin - getCenterOfMass()
+//        val r = comToForce.getMagnitude();
+//        val theta = force.vector.getAngleTo(comToForce)
+//        val torque = r * force.vector.getMagnitude() * sin(theta)
+//        applyTorque(torque)
+    }
+
+    override fun applyWorldForce(force: Force<WorldReferenceFrame>) {
+//        val localForce = force.applyTransform(getTransformParentToLocalFrame(this))
+//        applyLocalForce(localForce)
     }
 
 }

@@ -1,10 +1,10 @@
-Complete Parts rewrite
-- Write a POC for a ship with Hull, Modules, Pawns.
-- Write POC for a hull with multiple renderables
-- I need to rewrite interfaces/controllers
+Complete Blueprint rewrite
+- Making blueprints manageable
+- Programmable
+- etc
 
 Debug tools
-- implement toString
+- implement toString on everything
 - implement a visual debugging system (hover things to see details etc)
 - implement a console
 
@@ -12,9 +12,17 @@ TODO:
 - Basic audio
 - Controller support
 
+Gameplay:
+- Hacking mechanics
+  - Ships can use manned stations to hack other ships - potentially gaining temporary control over their systems.
+- Flesh out pawns
+- Grouped AI mechanics (first simple, then scaled)
+- Pawns in space
+- Slow motion/action camera. Triggers for camera
+- Native Recording?
+
 Misc
 
 Check TODOs!
 Write proper density calculations...
-Reincorporate point projectile intersection
 Add projectile 'death' (timeout/collision)
