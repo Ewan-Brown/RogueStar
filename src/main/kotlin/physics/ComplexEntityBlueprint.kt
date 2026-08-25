@@ -29,8 +29,10 @@ class ComplexEntityBlueprint {
     val stationBlueprints = mutableListOf<ComponentBlueprint<EntityStation>>()
 
     val hullToHullBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityHull>>>()
-    val hullToModuleBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityModule>>>()
-    val hullToStationBlueprintMap = mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityStation>>>()
+    val hullToModuleBlueprintMap =
+        mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityModule>>>()
+    val hullToStationBlueprintMap =
+        mutableMapOf<ComponentBlueprint<EntityHull>, List<ComponentBlueprint<EntityStation>>>()
 
     fun build(): ComplexEntity {
 
@@ -48,7 +50,7 @@ class ComplexEntityBlueprint {
             intermediateBuild.stations[stationB] = stationB.createComponent()
         }
 
-        for (systemB in systemBlueprints){
+        for (systemB in systemBlueprints) {
             intermediateBuild.systems[systemB] = systemB.createSystem(intermediateBuild)
         }
 
@@ -63,7 +65,7 @@ class ComplexEntityBlueprint {
             entity.addModule(module.value)
         }
 
-        for (station in intermediateBuild.stations){
+        for (station in intermediateBuild.stations) {
             entity.addStation(station.value)
         }
 
@@ -71,9 +73,12 @@ class ComplexEntityBlueprint {
             entity.addSystem(system.value)
         }
 
-        val hullToHullMap = hullToHullBlueprintMap.entries.associate {hull1 -> intermediateBuild.hulls[hull1.key]!! to hull1.value.map { hull2 -> intermediateBuild.hulls[hull2]!! }}
-        val hullToModuleMap = hullToModuleBlueprintMap.entries.associate {hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { module -> intermediateBuild.modules[module]!! }}
-        val hullToStationMap = hullToStationBlueprintMap.entries.associate {hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { station -> intermediateBuild.stations[station]!! }}
+        val hullToHullMap =
+            hullToHullBlueprintMap.entries.associate { hull1 -> intermediateBuild.hulls[hull1.key]!! to hull1.value.map { hull2 -> intermediateBuild.hulls[hull2]!! } }
+        val hullToModuleMap =
+            hullToModuleBlueprintMap.entries.associate { hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { module -> intermediateBuild.modules[module]!! } }
+        val hullToStationMap =
+            hullToStationBlueprintMap.entries.associate { hull -> intermediateBuild.hulls[hull.key]!! to hull.value.map { station -> intermediateBuild.stations[station]!! } }
 
         entity.addHullToHullMap(hullToHullMap)
         entity.addHullToModuleMap(hullToModuleMap)
@@ -84,18 +89,26 @@ class ComplexEntityBlueprint {
 }
 
 
-class IntermediateBuild(){
+class IntermediateBuild() {
     val hulls = mutableMapOf<ComponentBlueprint<EntityHull>, EntityHull>()
     val modules = mutableMapOf<ComponentBlueprint<EntityModule>, EntityModule>()
     val systems = mutableMapOf<SystemBlueprint<*>, EntitySystem>()
     val stations = mutableMapOf<ComponentBlueprint<EntityStation>, EntityStation>()
 }
 
-class ComponentBlueprint<out C: Component>(val boundingBox: List<Vector2>, val mass: Double, centerOfMass: Vector2, val staticRenderables: List<IntermediaryRenderable<ComponentReferenceFrame>>, val componentProducer: (List<Vector2>, Double, Vector2) -> C, private val initialConditions: (C) -> Unit = {}){
+class ComponentBlueprint<out C : Component>(
+    val boundingBox: List<Vector2>,
+    val mass: Double,
+    centerOfMass: Vector2,
+    val staticRenderables: List<IntermediaryRenderable<ComponentReferenceFrame>>,
+    val componentProducer: (List<Vector2>, Double, Vector2) -> C,
+    private val initialConditions: (C) -> Unit = {}
+) {
     val centerOfMass = Coordinates<ComponentReferenceFrame>(centerOfMass)
     var coordinates: Coordinates<EntityReferenceFrame> = Coordinates(Vector2())
     var orientation: Orientation<EntityReferenceFrame> = Orientation(0.0)
-    var ZHeight: ZHeight<EntityReferenceFrame> = ZHeight(0.0) //TODO stupid name. This is not folded into coordinates to make math less clunky, as it's solely for graphical purposes
+    var ZHeight: ZHeight<EntityReferenceFrame> =
+        ZHeight(0.0) //TODO stupid name. This is not folded into coordinates to make math less clunky, as it's solely for graphical purposes
 
     fun rotate(rotation: Double) {
         this.orientation += rotation
@@ -105,7 +118,7 @@ class ComponentBlueprint<out C: Component>(val boundingBox: List<Vector2>, val m
         this.coordinates += translation
     }
 
-    fun createComponent() : C {
+    fun createComponent(): C {
         val component = componentProducer(boundingBox, mass, centerOfMass.getVector());
         component.rotate(orientation.getAngle())
         component.translate(coordinates.getVector())
@@ -116,39 +129,56 @@ class ComponentBlueprint<out C: Component>(val boundingBox: List<Vector2>, val m
     }
 }
 
-abstract class SystemBlueprint<S: EntitySystem>{
-    abstract fun createSystem(b: IntermediateBuild) : S
-    inline fun <reified C : EntityModule> mapBlueprintsToModules(blueprints: List<ComponentBlueprint<*>>, b: IntermediateBuild,) : List<C>{
+abstract class SystemBlueprint<S : EntitySystem> {
+    abstract fun createSystem(b: IntermediateBuild): S
+    inline fun <reified C : EntityModule> mapBlueprintsToModules(
+        blueprints: List<ComponentBlueprint<*>>,
+        b: IntermediateBuild,
+    ): List<C> {
         return blueprints.map { b.modules[it] } as List<C>
     }
 }
 
-class ThrusterSystemBlueprint(private val thrusterBlueprints: List<ComponentBlueprint<Thruster>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<ThrusterSystem>(){
-    override fun createSystem(b : IntermediateBuild): ThrusterSystem {
+//TODO What's with the repeat here?
+class ThrusterSystemBlueprint(
+    private val thrusterBlueprints: List<ComponentBlueprint<Thruster>>,
+    private val pilotStationBlueprint: ComponentBlueprint<EntityStation>
+) : SystemBlueprint<ThrusterSystem>() {
+    override fun createSystem(b: IntermediateBuild): ThrusterSystem {
         val thrusters = mapBlueprintsToModules<Thruster>(thrusterBlueprints, b)
         val station = b.stations[pilotStationBlueprint]
         return ThrusterSystem(thrusters, station)
     }
 }
 
-class TorqueSystemBlueprint(private val torquerblueprints: List<ComponentBlueprint<Torquer>>, private val pilotStationBlueprint: ComponentBlueprint<EntityStation>) : SystemBlueprint<TorqueSystem>(){
-    override fun createSystem(b : IntermediateBuild): TorqueSystem {
+class TorqueSystemBlueprint(
+    private val torquerblueprints: List<ComponentBlueprint<Torquer>>,
+    private val pilotStationBlueprint: ComponentBlueprint<EntityStation>
+) : SystemBlueprint<TorqueSystem>() {
+    override fun createSystem(b: IntermediateBuild): TorqueSystem {
         val torquers = mapBlueprintsToModules<Torquer>(torquerblueprints, b)
         val station = b.stations[pilotStationBlueprint]
         return TorqueSystem(torquers, station)
     }
 }
 
-class WeaponSystemBlueprint<W: Weapon, P: ProjectileEntity>(private val weaponblueprints: List<ComponentBlueprint<W>>, private val weaponstationBlueprint: ComponentBlueprint<EntityStation>, private val projectileBlueprint: ProjectileBlueprint<P>, private val ammoDepotBlueprints: List<ComponentBlueprint<AmmoDepot>>) : SystemBlueprint<WeaponSystem<W, P>>() {
-    override fun createSystem(b : IntermediateBuild): WeaponSystem<W, P> {
-        val weapons = weaponblueprints.map {b.modules[it]} as List<W>
+class WeaponSystemBlueprint<W : Weapon, P : ProjectileEntity>(
+    private var weaponblueprints: List<ComponentBlueprint<W>> = mutableListOf(),
+    var weaponStationBlueprint: ComponentBlueprint<EntityStation>,
+    private val generator: (EntityStation?, List<AmmoDepot>) -> WeaponSystem<W, P>,
+    private val ammoDepotBlueprints: List<ComponentBlueprint<AmmoDepot>>
+) : SystemBlueprint<WeaponSystem<W, P>>() {
+
+
+    override fun createSystem(b: IntermediateBuild): WeaponSystem<W, P> {
+
+        val weapons = weaponblueprints.map { b.modules[it] } as List<W>
         val ammos = ammoDepotBlueprints.map { b.modules[it] } as List<AmmoDepot>
-        val weaponStation = b.stations[weaponstationBlueprint]
-        return WeaponSystem(weapons, {
-            val e = projectileBlueprint.build()
-            e.applyForce(Force(Vector2(0.1, 0.0), Coordinates(Vector2(0.0,0.0))))
-            return@WeaponSystem e
-                                     }, weaponStation, ammos)
+        val weaponStation = b.stations[weaponStationBlueprint]
+        val g = generator(weaponStation, ammos)
+        g.weapons.addAll(weapons)
+
+        return g
     }
 }
 

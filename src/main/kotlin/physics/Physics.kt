@@ -10,6 +10,9 @@ import graphics.WHITE
 import graphics.processRenderables
 import math.Coordinates
 import math.EntityReferenceFrame
+import math.ReferenceFrame
+import math.ReferenceFrameVariable
+import math.Transform
 import math.Vector2
 import math.getTransformLocalToParentFrame
 import models.Model
@@ -52,7 +55,7 @@ class PhysicsManager() : EntityConsumer {
             lines.add(DebugLineData(com, com + entity.getVelocity()*10.0, BLUE, GREEN))
             for (force in entity.getLastForces()) {
                 val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
-                val fEnd = fOrigin + force.vector.rotate(entity.getOrientation().getAngle()) * 500.0
+                val fEnd = (fOrigin + force.vector * 500.0)
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
         }
@@ -67,4 +70,8 @@ class PhysicsManager() : EntityConsumer {
     val world: World = FlatWorld() //In theory this is so I can replace this with non-flat worlds easily... Not sure about that...
 }
 
-data class Force(val vector: Vector2, val origin: Coordinates<EntityReferenceFrame>)
+data class Force<S : ReferenceFrame>(val vector: Vector2, val origin: Coordinates<S>) : ReferenceFrameVariable<S>{
+    override fun <S2 : ReferenceFrame> applyTransform(transform: Transform<S, S2>): Force<S2> {
+        return Force(this.vector.rotate(transform.rotation), this.origin.applyTransform(transform))
+    }
+}
