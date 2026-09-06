@@ -23,11 +23,9 @@ object EntityBlueprintStore{
 
         val thrusterSystemBlueprint = ThrusterSystemBlueprint(listOf(thrusterBlueprint), stationBlueprint)
         val torqueSystemBlueprint = TorqueSystemBlueprint(listOf(torquerBlueprint), stationBlueprint)
-        val weaponSystemBlueprint = WeaponSystemBlueprint(listOf(weaponBlueprint), stationBlueprint, {w, a -> BulletWeaponSystem(w, a)}, listOf(ammoDepotBlueprint))
-
-
-//        val weaponSystemBlueprint2 =
-//            WeaponSystemBlueprint(listOf(weaponBlueprint2), stationBlueprint, LaserBlueprint(), listOf(ammoDepotBlueprint))
+//        val weaponSystemBlueprint = WeaponSystemBlueprint(listOf(weaponBlueprint), stationBlueprint, {w, a -> BulletWeaponSystem(w, a)}, listOf(ammoDepotBlueprint))
+        val weaponSystemBlueprint2 =
+            WeaponSystemBlueprint(listOf(weaponBlueprint2), stationBlueprint, {w, a -> LaserWeaponSystem(w, a)}, listOf(ammoDepotBlueprint))
 
         singleHullShipBlueprint.hullBlueprints.add(hullBlueprint1)
         singleHullShipBlueprint.moduleBlueprints.add(thrusterBlueprint)
@@ -38,7 +36,7 @@ object EntityBlueprintStore{
         singleHullShipBlueprint.moduleBlueprints.add(ammoDepotBlueprint)
         singleHullShipBlueprint.stationBlueprints.add(stationBlueprint)
         singleHullShipBlueprint.systemBlueprints.add(torqueSystemBlueprint)
-        singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint)
-//        singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint2)
+//        singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint)
+        singleHullShipBlueprint.systemBlueprints.add(weaponSystemBlueprint2)
     }
 }

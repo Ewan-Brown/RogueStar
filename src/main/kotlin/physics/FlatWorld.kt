@@ -3,6 +3,7 @@ package physics
 import math.Coordinates
 import math.HasReferenceFrame
 import math.Pose
+import math.Vector2
 import math.WorldReferenceFrame
 import math.getTransformLocalToParentFrame
 
@@ -33,7 +34,7 @@ class FlatWorld : World {
             val entityAngle = entity.getOrientation().getAngle()
 
             //Calculate new derivatives
-            velocity = entity.getVelocity() + entity.popNetForce().rotate(entityAngle)/entity.getMass()
+            velocity = entity.getVelocity() + if(entity.getMass() > 0) entity.popNetForce().rotate(entityAngle)/entity.getMass() else Vector2()
             rotVelocity = entity.getRotationalVelocity() + entity.popNetTorque()/entity.getMass()
 
             //Apply friction
@@ -46,9 +47,10 @@ class FlatWorld : World {
         for(projectile in entities.filterIsInstance<ProjectileEntity>()){
             val pointOfContactDescriptor = projectile.getProjectileInteractionDescriptor()
             when(pointOfContactDescriptor){
-                is LineProjectileInteraction -> TODO()
-                is PointProjectileInteraction -> continue
+                is LineProjectileInteraction -> println("line projectile interaction not defined!")
+                is PointProjectileInteraction -> println("point projectile interaction not defined!")
                 is RadiusProjectileInteraction -> TODO()
+                is DisabledInteraction -> {}  // do nothing!
             }
 //            val pointOfContactLocal = projectile.getPointOfContact()
 //            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation

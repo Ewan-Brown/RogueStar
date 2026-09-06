@@ -94,9 +94,23 @@ class BulletWeaponSystem(weaponStation: EntityStation?, ammoDepot: List<AmmoDepo
     }
 }
 
-class LaserWeaponSystem(projectileCreator: () -> LaserProjectile, weaponStation: EntityStation?) :
+class LaserWeaponSystem(weaponStation: EntityStation?, ammoDepot: List<AmmoDepot>) :
     WeaponSystem<LaserWeapon, LaserProjectile>() {
     override fun update(timeStep: Double, entity: ComplexEntity) {
+        for (weapon in weapons) {
+            //Projectile creation
+            val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> =
+                Pose(weapon.getProjectileSpawnLocation(), Orientation(0.0), ZHeight(0.0))
+            val t1 = getTransformLocalToParentFrame(weapon)
+            val t2 = getTransformLocalToParentFrame(entity)
+            val t3 = combineTransforms(t1, t2)
+            val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
 
+//            println(spawnPoseInWorldCoords.orientation.getAngle())
+            val proj = LaserProjectile(1.0, Vector2(spawnPoseInWorldCoords.orientation.getAngle()))
+
+            proj.setPose(spawnPoseInWorldCoords)
+            entity.sendEntity(proj)
+        }
     }
 }

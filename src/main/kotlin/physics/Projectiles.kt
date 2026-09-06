@@ -22,6 +22,7 @@ sealed interface ProjectileInteraction
 data class PointProjectileInteraction(val point: Coordinates<EntityReferenceFrame>) : ProjectileInteraction
 data class LineProjectileInteraction(val point1: Coordinates<EntityReferenceFrame>, val point2: Coordinates<EntityReferenceFrame>) : ProjectileInteraction
 data class RadiusProjectileInteraction(val point: Coordinates<EntityReferenceFrame>, val radius: Double) : ProjectileInteraction
+class DisabledInteraction() : ProjectileInteraction
 
 class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity{
 
@@ -192,18 +193,20 @@ class BulletProjectile(private val mass: Double, size: Double): ProjectileEntity
     }
 }
 
-class LaserProjectile(trailLength: Double) : ProjectileEntity{
+class LaserProjectile(private var trailLength: Double, private var velocity: Vector2) : ProjectileEntity{
 
     private var coordinates: Coordinates<WorldReferenceFrame> = Coordinates(Vector2())
     private var zheight: ZHeight<WorldReferenceFrame> = ZHeight(0.0)
-    private var velocity = Vector2()
     private var lastPos: Coordinates<WorldReferenceFrame>? = null
 
     private var effectsConsumer: EffectsConsumer? = null
     private var entityConsumer: EntityConsumer? = null
 
     override fun getProjectileInteractionDescriptor(): ProjectileInteraction {
-        return LineProjectileInteraction(Coordinates<EntityReferenceFrame>(Vector2()) - velocity, Coordinates(Vector2()))
+        if(lastPos == null)
+            return DisabledInteraction()
+        else
+            return LineProjectileInteraction(Coordinates<EntityReferenceFrame>(Vector2()) - velocity, Coordinates(Vector2()))
     }
 
     override fun getCenterOfMass(): Coordinates<EntityReferenceFrame> {
@@ -211,7 +214,7 @@ class LaserProjectile(trailLength: Double) : ProjectileEntity{
     }
 
     override fun markedForRemoval(): Boolean {
-        TODO("Not yet implemented")
+        return false
     }
 
     override fun getRotationalVelocity(): Double {
@@ -279,12 +282,19 @@ class LaserProjectile(trailLength: Double) : ProjectileEntity{
         effectsConsumer = consumer
     }
 
-    override fun setPose(pose: Pose<WorldReferenceFrame>) {
-
+    override fun setPose(pose: Pose<WorldReferenceFrame>){
+        coordinates = pose.coordinate
+        zheight = pose.zHeight
     }
 
     override fun getImmediateRenderables(): List<IntermediaryRenderable<EntityReferenceFrame>> {
-        TODO("Not yet implemented rendering for laser")
+        return listOf(IntermediaryRenderable(
+            model = Model.LASER,
+            pose = Pose(),
+            scale = 1.0,
+            colorData = Renderer.ColorData(1.0f, 0.0f, 0.0f, 1.0f),
+            metaData = Renderer.MetaData()
+        ))
     }
 
     override fun getCoordinates(): Coordinates<WorldReferenceFrame> {
@@ -292,28 +302,16 @@ class LaserProjectile(trailLength: Double) : ProjectileEntity{
     }
 
     override fun getOrientation(): Orientation<WorldReferenceFrame> {
-        return Orientation(0.0) //TODO Is this ok?
+        val a = velocity.getAngleTo(Vector2(1.0, 0.0))
+        return Orientation(a)
     }
 
     override fun getZHeight(): ZHeight<WorldReferenceFrame> {
         return zheight
     }
 
+    override fun applyLocalForce(force: Force<EntityReferenceFrame>) {}
 
-    override fun applyLocalForce(force: Force<EntityReferenceFrame>) {
-//        forceAccumulator += force.vector
-//        currentForces.add(force)
-//
-//        val comToForce: Vector2 = force.origin - getCenterOfMass()
-//        val r = comToForce.getMagnitude();
-//        val theta = force.vector.getAngleTo(comToForce)
-//        val torque = r * force.vector.getMagnitude() * sin(theta)
-//        applyTorque(torque)
-    }
-
-    override fun applyWorldForce(force: Force<WorldReferenceFrame>) {
-//        val localForce = force.applyTransform(getTransformParentToLocalFrame(this))
-//        applyLocalForce(localForce)
-    }
+    override fun applyWorldForce(force: Force<WorldReferenceFrame>) {}
 
 }
