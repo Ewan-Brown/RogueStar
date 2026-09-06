@@ -20,7 +20,7 @@ fun main() {
     val timeStep = 1.0;
 
     val entityModels = loadModels().values.toMutableList();
-    val models = mutableListOf(Model.SQUARE, Model.BACKPLATE)
+    val models = mutableListOf(Model.SQUARE, Model.LASER, Model.BACKPLATE)
     models.addAll(entityModels)
 
     val effectsManager = EffectsManager()
@@ -48,16 +48,16 @@ fun main() {
     val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
     val playerEntity = singleHullShipBlueprint.build()
-    val nonPlayerEntity = singleHullShipBlueprint.build()
+//    val nonPlayerEntity = singleHullShipBlueprint.build()
 
     val playerController = PlayerController(bitSet)
     val npcController = SimpleNPCController()
 
     controllerManager.addControllerEntry(playerController, playerEntity)
-    controllerManager.addControllerEntry(npcController, nonPlayerEntity)
+//    controllerManager.addControllerEntry(npcController, nonPlayerEntity)
 
     physicsLayer.addEntity(playerEntity)
-    physicsLayer.addEntity(nonPlayerEntity)
+//    physicsLayer.addEntity(nonPlayerEntity)
 
     while(true){
         game.targetEntity = playerEntity
