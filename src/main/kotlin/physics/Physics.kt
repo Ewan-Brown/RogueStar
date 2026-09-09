@@ -124,7 +124,7 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             lines.add(DebugLineData(com, com + entity.getVelocity()*10.0, BLUE, GREEN))
             for (force in entity.getLastForces()) {
                 val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
-                val fEnd = (fOrigin + force.vector * 500.0)
+                val fEnd = (fOrigin + force.vector.rotate(getTransformLocalToParentFrame(entity).rotation) * 500.0)
                 lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
         }
