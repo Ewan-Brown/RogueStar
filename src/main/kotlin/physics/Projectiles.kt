@@ -49,6 +49,10 @@ class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
     override fun getCollisionTriggerData(): CollisionTrigger {
         return PointCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()))
     }
+
+    override fun getCollisionTargetData(): CollisionData? {
+        return null
+    }
 }
 
 class LaserProjectile(private var trailLength: Double, velocity: Vector2) : ComplexEntity(){
@@ -61,6 +65,10 @@ class LaserProjectile(private var trailLength: Double, velocity: Vector2) : Comp
             return DisabledInteraction()
         else
             return LineCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()) - getVelocity(), Coordinates(Vector2()))
+    }
+
+    override fun getCollisionTargetData(): CollisionData? {
+        return null
     }
 
     override fun getCenterOfMass(): Coordinates<EntityReferenceFrame> {

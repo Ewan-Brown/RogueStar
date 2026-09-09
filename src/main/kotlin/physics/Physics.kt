@@ -2,6 +2,7 @@ package physics
 
 import graphics.BLUE
 import graphics.CYAN
+import graphics.DebugCircleData
 import graphics.DebugLineData
 import graphics.GREEN
 import graphics.Renderer
@@ -73,10 +74,10 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
         for(projectile in entities){
             val collisionTriggerData = projectile.getCollisionTriggerData()
             when(collisionTriggerData){
-                is LineCollisionTrigger -> println("line projectile interaction not defined!")
-                is PointCollisionTrigger -> println("point projectile interaction not defined!")
+                is LineCollisionTrigger -> {} //println("line projectile interaction not defined!")
+                is PointCollisionTrigger -> {} //println("point projectile interaction not defined!")
                 is RadiusCollisionTrigger -> TODO()
-                is DisabledInteraction -> {}  // do nothing!
+                is DisabledInteraction -> {} // do nothing!
                 null -> {} // do nothing!
             }
 //            val pointOfContactLocal = projectile.getPointOfContact()
@@ -128,6 +129,15 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             }
         }
         return lines
+    }
+
+    fun getDebugCircles(): List<DebugCircleData> {
+        val circles = mutableListOf<DebugCircleData>()
+        for (entity in entities.filter { it.getCollisionTargetData() != null }) {
+            val data = entity.getCollisionTargetData()
+            circles.add(DebugCircleData(data!!.getCrudeBoundingBox().center.applyTransform(getTransformLocalToParentFrame(entity)), data!!.getCrudeBoundingBox().radius, Renderer.ColorData(1.0f, 0.0f, 0.0f, 1.0f)))
+        }
+        return circles
     }
 
     override fun addEntity(entity: KineticEntity) {

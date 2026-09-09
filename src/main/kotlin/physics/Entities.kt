@@ -175,7 +175,9 @@ open class ComplexEntity(): KineticEntity{
     }
 
     override fun getCollisionTargetData(): CollisionData? {
-        return null
+        return object : CollisionData{
+            override fun getCrudeBoundingBox() = CrudeBoundingBox(getCenterOfMass(), 1.0)
+        }
     }
 
     override fun getCollisionTriggerData(): CollisionTrigger? {

@@ -10,6 +10,7 @@ import java.util.*
 import controllers.PlayerController
 import controllers.SimpleNPCController
 import graphics.CameraDetails
+import graphics.DebugCircleData
 import graphics.DebugLineData
 import graphics.RendererI
 import graphics.loadModels
@@ -80,17 +81,21 @@ class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, v
         effectsManager.populateModelMap(modelDataMap)
         controllerManager.populateModelMap(modelDataMap)
 
-        val debugData = mutableListOf<DebugLineData>()
+        val debugLines = mutableListOf<DebugLineData>()
+        val debugCircles = mutableListOf<DebugCircleData>()
 
         //Enable when necessary :)
-        debugData.addAll(physicsManager.getDebugLines())
-        debugData.addAll(controllerManager.getDebugLines())
+        debugLines.addAll(physicsManager.getDebugLines())
+        debugLines.addAll(controllerManager.getDebugLines())
+
+        debugCircles.addAll(physicsManager.getDebugCircles())
+        debugCircles.addAll(controllerManager.getDebugCircles())
 
         if(targetEntity != null) {
             gui.updateCamera(CameraDetails(targetEntity!!.getCoordinates().getVector(), 1.0, 0.0))
         }
         gui.updateDrawables(modelDataMap)
-        gui.updateDebug(debugData)
+        gui.updateDebug(debugLines, debugCircles)
     }
 
     fun update(timeStep : Double){

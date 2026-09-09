@@ -27,14 +27,18 @@ import kotlin.collections.getValue
 import kotlin.collections.indices
 import kotlin.collections.set
 import kotlin.collections.withIndex
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.system.exitProcess
 
 data class DebugLineData(val p1: Coordinates<WorldReferenceFrame>, val p2: Coordinates<WorldReferenceFrame>, val colorData1: Renderer.ColorData, val colorData2: Renderer.ColorData)
+data class DebugCircleData(val p1: Coordinates<WorldReferenceFrame>, val radius: Double, val colorData1: Renderer.ColorData)
 data class CameraDetails(val targetPosition: Vector2, val targetScale: Double, val targetRotation: Double)
 interface RendererI{
     fun getMousePositionInWorldCoordinates() : Vector2
     fun updateDrawables(data: Map<Model, List<Renderer.Renderable>>)
-    fun updateDebug(debugLines: List<DebugLineData>)
+    fun updateDebug(debugLines: List<DebugLineData>, debugCircles: List<DebugCircleData>)
     fun updateCamera(cameraDetails: CameraDetails)
     //TODO Genericize this!
     fun addListener(keyListener: KeyListener)
@@ -138,9 +142,26 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
         }
     }
 
-    override fun updateDebug(debugLines: List<DebugLineData>) {
+    override fun updateDebug(debugLines: List<DebugLineData>, debugCircles: List<DebugCircleData>) {
         this.debugLines.clear()
         this.debugLines.addAll(debugLines)
+
+        // Turn circles into lines...
+        debugCircles.forEach { c ->
+            val splits = 8
+            val angle = PI * 2 / splits
+            var lastPoint: Vector2? = null
+            for(i in 0..splits){
+                val x = cos(angle * i) * c.radius//TODO This is probably wrong
+                val y = sin(angle * i) * c.radius
+                val point = Vector2(x,  y) + c.p1.getVector()
+                if(lastPoint != null){
+                    this.debugLines.add(DebugLineData(Coordinates(lastPoint), Coordinates(point), c.colorData1, c.colorData1))
+                }
+                lastPoint = point
+            }
+
+        }
     }
 
     override fun updateCamera(cameraDetails: CameraDetails) {

@@ -1,5 +1,6 @@
 package controllers
 
+import graphics.DebugCircleData
 import graphics.DebugLineData
 import graphics.Renderer
 import math.Orientation
@@ -30,8 +31,13 @@ class ControllerManager {
     }
 
     fun populateModelMap(modelDataMap: HashMap<Model, MutableList<Renderer.Renderable>>) {}
+
     fun getDebugLines() : List<DebugLineData>{
-        return listOf()
+        return emptyList()
+    }
+
+    fun getDebugCircles(): List<DebugCircleData> {
+        return emptyList()
     }
 
     fun <T> addControllerEntry(controller: Controller<T>, `interface`: T) {
