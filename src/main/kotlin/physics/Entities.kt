@@ -38,6 +38,7 @@ interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefere
     fun setPose(pose: Pose<WorldReferenceFrame>)
     fun getCollisionTargetData() : CollisionData?
     fun getCollisionTriggerData() : CollisionTrigger?
+    fun doesFrictionApply() : Boolean
 }
 
 //interface ProjectileEntity : KineticEntity {
@@ -175,6 +176,7 @@ open class ComplexEntity(): KineticEntity{
     }
 
     override fun getCollisionTargetData(): CollisionData? {
+        // TODO Flesh this out
         return object : CollisionData{
             override fun getCrudeBoundingBox() = CrudeBoundingBox(getCenterOfMass(), 1.0)
         }
@@ -182,6 +184,10 @@ open class ComplexEntity(): KineticEntity{
 
     override fun getCollisionTriggerData(): CollisionTrigger? {
         return null
+    }
+
+    override fun doesFrictionApply(): Boolean {
+        return true
     }
 
     override fun popNetForce(): Vector2 {

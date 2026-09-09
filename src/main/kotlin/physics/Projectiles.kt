@@ -55,7 +55,7 @@ class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
     }
 }
 
-class LaserProjectile(private var trailLength: Double, velocity: Vector2) : ComplexEntity(){
+class LaserProjectile(velocity: Vector2) : ComplexEntity(){
     init {
         this.setVelocity(velocity)
     }
@@ -69,6 +69,14 @@ class LaserProjectile(private var trailLength: Double, velocity: Vector2) : Comp
 
     override fun getCollisionTargetData(): CollisionData? {
         return null
+    }
+
+    override fun getMass(): Double {
+        return 0.0
+    }
+
+    override fun doesFrictionApply(): Boolean {
+        return false
     }
 
     override fun getCenterOfMass(): Coordinates<EntityReferenceFrame> {

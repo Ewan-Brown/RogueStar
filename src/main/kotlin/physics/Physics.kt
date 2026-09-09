@@ -65,10 +65,14 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             rotVelocity = entity.getRotationalVelocity() + entity.popNetTorque()/entity.getMass()
 
             //Apply friction
-            velocity *= 0.99
-            rotVelocity *= 0.99
-            entity.setVelocity(velocity)
-            entity.setRotationalVelocity(rotVelocity)
+            if(entity.doesFrictionApply()){
+                //TODO Maybe do something better than this
+                velocity *= 0.99
+                rotVelocity *= 0.99
+                entity.setVelocity(velocity)
+                entity.setRotationalVelocity(rotVelocity)
+            }
+
         }
 
         for(projectile in entities){
@@ -121,11 +125,11 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             val pos = entity.getCoordinates()
             val com = entity.getCenterOfMass().applyTransform(getTransformLocalToParentFrame(entity))
             lines.add(DebugLineData(com, pos, CYAN, BLUE))
-            lines.add(DebugLineData(com, com + entity.getVelocity()*10.0, BLUE, GREEN))
+//            lines.add(DebugLineData(com, com + entity.getVelocity()*10.0, BLUE, GREEN))
             for (force in entity.getLastForces()) {
                 val fOrigin = force.origin.applyTransform(getTransformLocalToParentFrame(entity))
                 val fEnd = (fOrigin + force.vector.rotate(getTransformLocalToParentFrame(entity).rotation) * 500.0)
-                lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
+//                lines.add(DebugLineData(fOrigin, fEnd, RED, WHITE))
             }
         }
         return lines
@@ -135,7 +139,7 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
         val circles = mutableListOf<DebugCircleData>()
         for (entity in entities.filter { it.getCollisionTargetData() != null }) {
             val data = entity.getCollisionTargetData()
-            circles.add(DebugCircleData(data!!.getCrudeBoundingBox().center.applyTransform(getTransformLocalToParentFrame(entity)), data!!.getCrudeBoundingBox().radius, Renderer.ColorData(1.0f, 0.0f, 0.0f, 1.0f)))
+            circles.add(DebugCircleData(data!!.getCrudeBoundingBox().center.applyTransform(getTransformLocalToParentFrame(entity)), data!!.getCrudeBoundingBox().radius, Renderer.ColorData(1.0f, 0.0f, 1.0f, 1.0f)))
         }
         return circles
     }

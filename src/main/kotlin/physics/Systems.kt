@@ -107,7 +107,8 @@ class LaserWeaponSystem(weaponStation: EntityStation?, ammoDepot: List<AmmoDepot
             val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
 
 //            println(spawnPoseInWorldCoords.orientation.getAngle())
-            val proj = LaserProjectile(1.0, Vector2(spawnPoseInWorldCoords.orientation.getAngle()))
+            val rand = (Math.random()-0.5 ) / 10.0
+            val proj = LaserProjectile(Vector2(spawnPoseInWorldCoords.orientation.getAngle() + rand) * 1.0)
 
             proj.setPose(spawnPoseInWorldCoords)
             entity.sendEntity(proj)

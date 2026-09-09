@@ -46,10 +46,10 @@ public class Model internal constructor(val vertexData: FloatArray, dMode: Int) 
         )
         var LASER: Model = Model(
             floatArrayOf(
-                -0.5f, -0.1f, +0.1f,
-                +0.5f, -0.1f, +0.1f,
-                +0.5f, +0.1f, +0.1f,
-                -0.5f, +0.1f, +0.1f
+                -1.0f, -0.05f, +0.05f,
+                +1.0f, -0.05f, +0.05f,
+                +1.0f, +0.05f, +0.05f,
+                -1.0f, +0.05f, +0.05f
             ), GL.GL_TRIANGLE_FAN
         )
         var BACKPLATE: Model = Model(
