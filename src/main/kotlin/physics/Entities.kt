@@ -8,6 +8,11 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
+data class CrudeBoundingBox(val center: Coordinates<EntityReferenceFrame>, val radius: Double)
+
+interface CollisionData{
+    fun getCrudeBoundingBox(): CrudeBoundingBox
+}
 
 interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
     fun getCenterOfMass() : Coordinates<EntityReferenceFrame>
@@ -31,13 +36,15 @@ interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefere
     fun setEntityConsumer(consumer: EntityConsumer)
     fun setEffectConsumer(consumer: EffectsConsumer)
     fun setPose(pose: Pose<WorldReferenceFrame>)
+    fun getCollisionTargetData() : CollisionData?
+    fun getCollisionTriggerData() : CollisionTrigger?
 }
 
-interface ProjectileEntity : KineticEntity {
-    fun getProjectileInteractionDescriptor() : ProjectileInteraction
-}
+//interface ProjectileEntity : KineticEntity {
+//    fun getProjectileInteractionDescriptor() : ProjectileInteraction
+//}
 
-class ComplexEntity(): KineticEntity{
+open class ComplexEntity(): KineticEntity{
 
     private var effectsConsumer: EffectsConsumer? = null
     private var entityConsumer: EntityConsumer? = null
@@ -165,6 +172,14 @@ class ComplexEntity(): KineticEntity{
         coordinates = pose.coordinate
         orientation = pose.orientation
         zheight = pose.zHeight
+    }
+
+    override fun getCollisionTargetData(): CollisionData? {
+        return null
+    }
+
+    override fun getCollisionTriggerData(): CollisionTrigger? {
+        return null
     }
 
     override fun popNetForce(): Vector2 {

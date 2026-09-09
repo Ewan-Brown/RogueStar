@@ -67,7 +67,7 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 }
 
 //TODO Add Ammo system
-abstract class WeaponSystem<W : Weapon, P : ProjectileEntity>() : EntitySystem() {
+abstract class WeaponSystem<W : Weapon, P : KineticEntity>() : EntitySystem() {
     val weapons: MutableList<W> = mutableListOf()
     var weaponStation: EntityStation? = null
 }

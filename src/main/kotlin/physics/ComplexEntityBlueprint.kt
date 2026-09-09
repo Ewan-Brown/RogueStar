@@ -162,7 +162,7 @@ class TorqueSystemBlueprint(
     }
 }
 
-class WeaponSystemBlueprint<W : Weapon, P : ProjectileEntity>(
+class WeaponSystemBlueprint<W : Weapon, P : KineticEntity>(
     private var weaponblueprints: List<ComponentBlueprint<W>> = mutableListOf(),
     var weaponStationBlueprint: ComponentBlueprint<EntityStation>,
     private val generator: (EntityStation?, List<AmmoDepot>) -> WeaponSystem<W, P>,

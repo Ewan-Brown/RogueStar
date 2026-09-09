@@ -9,7 +9,6 @@ import graphics.RED
 import graphics.WHITE
 import graphics.processRenderables
 import math.Coordinates
-import math.EntityReferenceFrame
 import math.HasReferenceFrame
 import math.Pose
 import math.ReferenceFrame
@@ -71,13 +70,14 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             entity.setRotationalVelocity(rotVelocity)
         }
 
-        for(projectile in entities.filterIsInstance<ProjectileEntity>()){
-            val pointOfContactDescriptor = projectile.getProjectileInteractionDescriptor()
-            when(pointOfContactDescriptor){
-                is LineProjectileInteraction -> println("line projectile interaction not defined!")
-                is PointProjectileInteraction -> println("point projectile interaction not defined!")
-                is RadiusProjectileInteraction -> TODO()
+        for(projectile in entities){
+            val collisionTriggerData = projectile.getCollisionTriggerData()
+            when(collisionTriggerData){
+                is LineCollisionTrigger -> println("line projectile interaction not defined!")
+                is PointCollisionTrigger -> println("point projectile interaction not defined!")
+                is RadiusCollisionTrigger -> TODO()
                 is DisabledInteraction -> {}  // do nothing!
+                null -> {} // do nothing!
             }
 //            val pointOfContactLocal = projectile.getPointOfContact()
 //            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation
@@ -93,7 +93,6 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
             if(entity is ComplexEntity){
                 for(pawn in entity.getPawnsInside()){
                     pawn.translate(pawn.getVelocity())
-//                pawn.setVelocity(Vector2())
                 }
             }
         }
