@@ -143,24 +143,32 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
     }
 
     override fun updateDebug(debugLines: List<DebugLineData>, debugCircles: List<DebugCircleData>) {
-        this.debugLines.clear()
-        this.debugLines.addAll(debugLines)
+        synchronized(modelDataMap) {
+            this.debugLines.clear()
+            this.debugLines.addAll(debugLines)
 
-        // Turn circles into lines...
-        debugCircles.forEach { c ->
-            val splits = 8
-            val angle = PI * 2 / splits
-            var lastPoint: Vector2? = null
-            for(i in 0..splits){
-                val x = cos(angle * i) * c.radius//TODO This is probably wrong
-                val y = sin(angle * i) * c.radius
-                val point = Vector2(x,  y) + c.p1.getVector()
-                if(lastPoint != null){
-                    this.debugLines.add(DebugLineData(Coordinates(lastPoint), Coordinates(point), c.colorData1, c.colorData1))
+            // Turn circles into lines...
+            debugCircles.forEach { c ->
+                val splits = 8
+                val angle = PI * 2 / splits
+                var lastPoint: Vector2? = null
+                for (i in 0..splits) {
+                    val x = cos(angle * i) * c.radius//TODO This is probably wrong
+                    val y = sin(angle * i) * c.radius
+                    val point = Vector2(x, y) + c.p1.getVector()
+                    if (lastPoint != null) {
+                        this.debugLines.add(
+                            DebugLineData(
+                                Coordinates(lastPoint),
+                                Coordinates(point),
+                                c.colorData1,
+                                c.colorData1
+                            )
+                        )
+                    }
+                    lastPoint = point
                 }
-                lastPoint = point
             }
-
         }
     }
 

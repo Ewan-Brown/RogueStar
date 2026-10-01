@@ -8,44 +8,51 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
-data class CrudeBoundingBox(val center: Coordinates<EntityReferenceFrame>, val radius: Double)
+data class CrudeBoundingCircle<R: ReferenceFrame>(val center: Coordinates<R>, val radius: Double)
+// This is used to make changes to the component
+data class Collision(val impulse: Vector2, val componentDamage: Int){
 
-interface CollisionData{
-    fun getCrudeBoundingBox(): CrudeBoundingBox
 }
 
-interface KineticEntity : HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
+data class Collideable(val poly: List<Vector2>, val collisionResolver: (Collision) -> Boolean)
+
+interface KinematicEntity : HasNestedRenderables<WorldReferenceFrame, EntityReferenceFrame>{
+
+    //Kinematics
+    fun getMass(): Double
     fun getCenterOfMass() : Coordinates<EntityReferenceFrame>
-    fun markedForRemoval() : Boolean
     fun getRotationalVelocity(): Double
     fun getVelocity(): Vector2
     fun setRotationalVelocity(rotVel: Double)
     fun setVelocity(vel: Vector2)
     fun rotate(rotation: Double)
     fun translate(translation: Vector2)
-    fun getMass(): Double
-    fun update(timeStep: Double)
     fun applyLocalForce(force: Force<EntityReferenceFrame>)
-    fun applyWorldForce(force: Force<WorldReferenceFrame>)
+    fun applyWorldForce(force: Force<WorldReferenceFrame>) // Utility
     fun applyTorque(torque: Double)
     fun popNetForce(): Vector2
     fun popNetTorque(): Double
-    fun getLastForces(): List<Force<EntityReferenceFrame>>
-    fun sendEffect(effect: Effect)
-    fun sendEntity(entity: KineticEntity)
+    fun setPose(pose: Pose<WorldReferenceFrame>)
+    fun getCrudeBoundingCircle() : CrudeBoundingCircle<WorldReferenceFrame>?
+    fun getCollideables() : List<Collideable>
+    fun getCollisionTriggerData() : CollisionTrigger?
+    fun doesFrictionApply() : Boolean //TODO Maybe this should return the friction coeff?
+
+    //Game logic
+    fun markedForRemoval() : Boolean
+    fun update(timeStep: Double)
     fun setEntityConsumer(consumer: EntityConsumer)
     fun setEffectConsumer(consumer: EffectsConsumer)
-    fun setPose(pose: Pose<WorldReferenceFrame>)
-    fun getCollisionTargetData() : CollisionData?
-    fun getCollisionTriggerData() : CollisionTrigger?
-    fun doesFrictionApply() : Boolean
+    fun sendEffect(effect: Effect)
+    fun sendEntity(entity: KinematicEntity)
+
+    //Debug
+    fun getLastForces(): List<Force<EntityReferenceFrame>>
+
 }
 
-//interface ProjectileEntity : KineticEntity {
-//    fun getProjectileInteractionDescriptor() : ProjectileInteraction
-//}
-
-open class ComplexEntity(): KineticEntity{
+//TODO Alot of this could be composition
+open class ComplexEntity(): KinematicEntity{
 
     private var effectsConsumer: EffectsConsumer? = null
     private var entityConsumer: EntityConsumer? = null
@@ -143,6 +150,7 @@ open class ComplexEntity(): KineticEntity{
     }
 
     override fun update(timeStep: Double) {
+        // TODO Process post-collision effects!
         for(system in systems){
             system.update(timeStep, this)
         }
@@ -175,11 +183,12 @@ open class ComplexEntity(): KineticEntity{
         zheight = pose.zHeight
     }
 
-    override fun getCollisionTargetData(): CollisionData? {
-        // TODO Flesh this out
-        return object : CollisionData{
-            override fun getCrudeBoundingBox() = CrudeBoundingBox(getCenterOfMass(), 1.0)
-        }
+    override fun getCrudeBoundingCircle(): CrudeBoundingCircle<WorldReferenceFrame>? {
+        return CrudeBoundingCircle(getCenterOfMass().applyTransform(getTransformLocalToParentFrame(this)), 1.0)
+    }
+
+    override fun getCollideables(): List<Collideable> {
+        TODO("Not yet implemented")
     }
 
     override fun getCollisionTriggerData(): CollisionTrigger? {
@@ -264,7 +273,7 @@ open class ComplexEntity(): KineticEntity{
         }
     }
 
-    override fun sendEntity(entity: KineticEntity){
+    override fun sendEntity(entity: KinematicEntity){
         if(entityConsumer != null){
             entityConsumer!!.addEntity(entity)
         }else{

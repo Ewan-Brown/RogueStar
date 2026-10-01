@@ -4,10 +4,7 @@ import graphics.BLUE
 import graphics.CYAN
 import graphics.DebugCircleData
 import graphics.DebugLineData
-import graphics.GREEN
 import graphics.Renderer
-import graphics.RED
-import graphics.WHITE
 import graphics.processRenderables
 import math.Coordinates
 import math.HasReferenceFrame
@@ -22,7 +19,7 @@ import models.Model
 import kotlin.collections.HashMap
 
 interface EntityConsumer {
-    fun addEntity(entity: KineticEntity)
+    fun addEntity(entity: KinematicEntity)
 }
 
 @JvmInline
@@ -36,8 +33,8 @@ value class TimeDuration(val duration: Double)
 
 class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> {
 
-    private val entities = mutableListOf<KineticEntity>()
-    private val entityBuffer = mutableListOf<KineticEntity>()
+    private val entities = mutableListOf<KinematicEntity>()
+    private val entityBuffer = mutableListOf<KinematicEntity>()
 
     fun update(timestep: Double) {
         synchronized(entityBuffer){
@@ -137,14 +134,14 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
 
     fun getDebugCircles(): List<DebugCircleData> {
         val circles = mutableListOf<DebugCircleData>()
-        for (entity in entities.filter { it.getCollisionTargetData() != null }) {
-            val data = entity.getCollisionTargetData()
-            circles.add(DebugCircleData(data!!.getCrudeBoundingBox().center.applyTransform(getTransformLocalToParentFrame(entity)), data!!.getCrudeBoundingBox().radius, Renderer.ColorData(1.0f, 0.0f, 1.0f, 1.0f)))
+        for (entity in entities.filter { it.getCrudeBoundingCircle() != null }) {
+            val data = entity.getCrudeBoundingCircle()
+            circles.add(DebugCircleData(data!!.center, data.radius, Renderer.ColorData(1.0f, 0.0f, 1.0f, 1.0f)))
         }
         return circles
     }
 
-    override fun addEntity(entity: KineticEntity) {
+    override fun addEntity(entity: KinematicEntity) {
         synchronized(entityBuffer){
             entityBuffer.add(entity)
             entity.setEntityConsumer(this)

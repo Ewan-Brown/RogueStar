@@ -84,9 +84,6 @@ abstract class Component(bB: List<Vector2>, centerOfMass: Vector2) : HasNestedRe
 }
 
 class EntityHull(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : Component(boundingBox, centerOfMass){
-//    override fun getImmediateRenderables(): List<Renderer.IntermediaryRenderable<ComponentReferenceFrame>> {
-//        return listOf(square(Renderer.ColorData(1.0f, 0.0f, 0.0f, 0.0f)))
-//    }
 
     override fun getMass(): Double {
         return mass

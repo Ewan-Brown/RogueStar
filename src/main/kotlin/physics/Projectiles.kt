@@ -22,6 +22,7 @@ data class LineCollisionTrigger(val point1: Coordinates<EntityReferenceFrame>, v
 data class RadiusCollisionTrigger(val point: Coordinates<EntityReferenceFrame>, val radius: Double) : CollisionTrigger
 class DisabledInteraction() : CollisionTrigger
 
+// TODO Do projectiles need EVERYTHING from complex entity? I don't think so....
 class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
 
     override fun getImmediateRenderables(): List<IntermediaryRenderable<EntityReferenceFrame>> {
@@ -50,7 +51,7 @@ class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
         return PointCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()))
     }
 
-    override fun getCollisionTargetData(): CollisionData? {
+    override fun getCrudeBoundingCircle(): CrudeBoundingCircle<WorldReferenceFrame>? {
         return null
     }
 }
@@ -65,10 +66,6 @@ class LaserProjectile(velocity: Vector2) : ComplexEntity(){
             return DisabledInteraction()
         else
             return LineCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()) - getVelocity(), Coordinates(Vector2()))
-    }
-
-    override fun getCollisionTargetData(): CollisionData? {
-        return null
     }
 
     override fun getMass(): Double {
