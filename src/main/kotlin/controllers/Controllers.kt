@@ -84,6 +84,8 @@ class PlayerController(val bitSet: BitSet) : Controller<ComplexEntity>(){
         val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
         val weaponsSystem : WeaponSystem<*, *> = plant.getSystems().filterIsInstance<WeaponSystem<*, *>>().first()
 
+        weaponsSystem.setFiring(firing)
+
         val thrustAngle = Vector2().getAngleTo(thrust)
         thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
         torquerSystem.setTorque(torque*0.01)
@@ -93,21 +95,20 @@ class PlayerController(val bitSet: BitSet) : Controller<ComplexEntity>(){
 
 class SimpleNPCController() : Controller<ComplexEntity>(){
 
-    private var currentThrust: Vector2 = Vector2(0.5, 0.0)
+//    private var currentThrust: Vector2 = Vector2(0.5, 0.0)
 
     override fun update(plant: ComplexEntity) {
-        var thrust = currentThrust
-
-        currentThrust = currentThrust.rotate(0.07)
-        var torque = Math.random() - 0.5
-        val firing = false
-
-        val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
-        val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
-        val weaponsSystem : WeaponSystem<*, *> = plant.getSystems().filterIsInstance<WeaponSystem<*, *>>().first()
-
-        val thrustAngle = Vector2().getAngleTo(thrust)
-        thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
-        torquerSystem.setTorque(torque*0.01)
+//        var thrust = currentThrust
+//
+//        currentThrust = currentThrust.rotate(0.07)
+//        var torque = Math.random() - 0.5
+//
+//        val thrusterSystem : ThrusterSystem = plant.getSystems().filterIsInstance<ThrusterSystem>().first()
+//        val torquerSystem : TorqueSystem = plant.getSystems().filterIsInstance<TorqueSystem>().first()
+//        val weaponsSystem : WeaponSystem<*, *> = plant.getSystems().filterIsInstance<WeaponSystem<*, *>>().first()
+//
+//        val thrustAngle = Vector2().getAngleTo(thrust)
+//        thrusterSystem.setThrust(Orientation(thrustAngle), thrust.normalize().getMagnitude() * .02)
+//        torquerSystem.setTorque(torque*0.01)
     }
 }

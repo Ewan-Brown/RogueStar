@@ -14,6 +14,7 @@ import graphics.DebugCircleData
 import graphics.DebugLineData
 import graphics.RendererI
 import graphics.loadModels
+import math.Vector2
 import physics.*
 import physics.EntityBlueprintStore.singleHullShipBlueprint
 
@@ -49,7 +50,8 @@ fun main() {
     val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
     val playerEntity = singleHullShipBlueprint.build()
-//    val nonPlayerEntity = singleHullShipBlueprint.build()
+    val nonPlayerEntity = singleHullShipBlueprint.build()
+    nonPlayerEntity.translate(Vector2(10.0, 0.0))
 
     val playerController = PlayerController(bitSet)
     val npcController = SimpleNPCController()
@@ -58,7 +60,7 @@ fun main() {
 //    controllerManager.addControllerEntry(npcController, nonPlayerEntity)
 
     physicsLayer.addEntity(playerEntity)
-//    physicsLayer.addEntity(nonPlayerEntity)
+    physicsLayer.addEntity(nonPlayerEntity)
 
     while(true){
         game.targetEntity = playerEntity

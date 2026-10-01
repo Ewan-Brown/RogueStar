@@ -69,26 +69,33 @@ class TorqueSystem(private val torquers: List<Torquer>, private val pilotStation
 abstract class WeaponSystem<W : Weapon, P : KinematicEntity>() : EntitySystem() {
     val weapons: MutableList<W> = mutableListOf()
     var weaponStation: EntityStation? = null
+    fun setFiring(firing: Boolean){
+        for (it in weapons) {
+            it.isFiring = firing
+        }
+    }
 }
 
 class BulletWeaponSystem(weaponStation: EntityStation?, ammoDepot: List<AmmoDepot>) :
     WeaponSystem<BulletWeapon, BulletProjectile>() {
     override fun update(timeStep: Double, entity: ComplexEntity) {
         for (weapon in weapons) {
-            //Projectile creation
-            val proj = BulletProjectile(1.0, 1.0)
-            val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> =
-                Pose(weapon.getProjectileSpawnLocation(), Orientation(0.0), ZHeight(0.0))
-            val t1 = getTransformLocalToParentFrame(weapon)
-            val t2 = getTransformLocalToParentFrame(entity)
-            val t3 = combineTransforms(t1, t2)
-            val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
+            if(weapon.isFiring) {
+                //Projectile creation
+                val proj = BulletProjectile(1.0, 1.0)
+                val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> =
+                    Pose(weapon.getProjectileSpawnLocation(), Orientation(0.0), ZHeight(0.0))
+                val t1 = getTransformLocalToParentFrame(weapon)
+                val t2 = getTransformLocalToParentFrame(entity)
+                val t3 = combineTransforms(t1, t2)
+                val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
 
-            proj.setPose(spawnPoseInWorldCoords)
+                proj.setPose(spawnPoseInWorldCoords)
 
-            proj.applyLocalForce(Force(Vector2(1.0, 0.0).rotate(0.0), Coordinates(Vector2())) )
+                proj.applyLocalForce(Force(Vector2(1.0, 0.0).rotate(0.0), Coordinates(Vector2())))
 
-            entity.sendEntity(proj)
+                entity.sendEntity(proj)
+            }
         }
     }
 }
@@ -97,20 +104,21 @@ class LaserWeaponSystem(weaponStation: EntityStation?, ammoDepot: List<AmmoDepot
     WeaponSystem<LaserWeapon, LaserProjectile>() {
     override fun update(timeStep: Double, entity: ComplexEntity) {
         for (weapon in weapons) {
-            //Projectile creation
-            val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> =
-                Pose(weapon.getProjectileSpawnLocation(), Orientation(0.0), ZHeight(0.0))
-            val t1 = getTransformLocalToParentFrame(weapon)
-            val t2 = getTransformLocalToParentFrame(entity)
-            val t3 = combineTransforms(t1, t2)
-            val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
+            if(weapon.isFiring){
+                //Projectile creation
+                val spawnPoseInComponentCoords: Pose<ComponentReferenceFrame> =
+                    Pose(weapon.getProjectileSpawnLocation(), Orientation(0.0), ZHeight(0.0))
+                val t1 = getTransformLocalToParentFrame(weapon)
+                val t2 = getTransformLocalToParentFrame(entity)
+                val t3 = combineTransforms(t1, t2)
+                val spawnPoseInWorldCoords = spawnPoseInComponentCoords.applyTransform(t3)
 
-//            println(spawnPoseInWorldCoords.orientation.getAngle())
-            val rand = (Math.random()-0.5 ) / 10.0
-            val proj = LaserProjectile(Vector2(spawnPoseInWorldCoords.orientation.getAngle() + rand) * 1.0)
+                val rand = (Math.random()-0.5 ) / 10.0
+                val proj = LaserProjectile(Vector2(spawnPoseInWorldCoords.orientation.getAngle() + rand) * 1.0)
 
-            proj.setPose(spawnPoseInWorldCoords)
-            entity.sendEntity(proj)
+                proj.setPose(spawnPoseInWorldCoords)
+                entity.sendEntity(proj)
+            }
         }
     }
 }

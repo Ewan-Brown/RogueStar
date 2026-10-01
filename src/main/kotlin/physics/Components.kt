@@ -112,7 +112,7 @@ class Torquer(boundingBox: List<Vector2>, private val mass: Double, centerOfMass
 }
 
 abstract class Weapon(boundingBox: List<Vector2>, private val mass: Double, centerOfMass: Vector2) : EntityModule(boundingBox, centerOfMass){
-
+    var isFiring = false
     override fun getMass(): Double {
         return mass
     }
