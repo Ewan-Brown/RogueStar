@@ -33,9 +33,9 @@ interface KinematicEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefe
     fun popNetForce(): Vector2
     fun popNetTorque(): Double
     fun setPose(pose: Pose<WorldReferenceFrame>)
+    fun getCollisionTriggerData() : CollisionTrigger?
     fun getCrudeBoundingCircle() : CrudeBoundingCircle<WorldReferenceFrame>?
     fun getCollideables() : List<Collideable>
-    fun getCollisionTriggerData() : CollisionTrigger?
     fun doesFrictionApply() : Boolean //TODO Maybe this should return the friction coeff?
 
     //Game logic

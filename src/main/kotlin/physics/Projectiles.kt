@@ -17,10 +17,9 @@ import models.Model
 import kotlin.math.sin
 
 sealed interface CollisionTrigger
-data class PointCollisionTrigger(val point: Coordinates<EntityReferenceFrame>) : CollisionTrigger
-data class LineCollisionTrigger(val point1: Coordinates<EntityReferenceFrame>, val point2: Coordinates<EntityReferenceFrame>) : CollisionTrigger
-data class RadiusCollisionTrigger(val point: Coordinates<EntityReferenceFrame>, val radius: Double) : CollisionTrigger
-class DisabledInteraction() : CollisionTrigger
+data class PointCollisionTrigger(val point: Coordinates<WorldReferenceFrame>) : CollisionTrigger
+data class LineCollisionTrigger(val point1: Coordinates<WorldReferenceFrame>, val point2: Coordinates<WorldReferenceFrame>) : CollisionTrigger
+data class RadiusCollisionTrigger(val point: Coordinates<WorldReferenceFrame>, val radius: Double) : CollisionTrigger
 
 // TODO Do projectiles need EVERYTHING from complex entity? I don't think so....
 class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
@@ -48,7 +47,7 @@ class BulletProjectile(private val mass: Double, size: Double): ComplexEntity(){
     }
 
     override fun getCollisionTriggerData(): CollisionTrigger {
-        return PointCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()))
+        return PointCollisionTrigger(getCoordinates())
     }
 
     override fun getCrudeBoundingCircle(): CrudeBoundingCircle<WorldReferenceFrame>? {
@@ -61,11 +60,11 @@ class LaserProjectile(velocity: Vector2) : ComplexEntity(){
         this.setVelocity(velocity)
     }
     private var lastPos: Coordinates<WorldReferenceFrame>? = null
-    override fun getCollisionTriggerData(): CollisionTrigger {
+    override fun getCollisionTriggerData(): CollisionTrigger? {
         if(lastPos == null)
-            return DisabledInteraction()
+            return null
         else
-            return LineCollisionTrigger(Coordinates<EntityReferenceFrame>(Vector2()) - getVelocity(), Coordinates(Vector2()))
+            return LineCollisionTrigger(getCoordinates() - getVelocity(), getCoordinates())
     }
 
     override fun getMass(): Double {
@@ -114,6 +113,10 @@ class LaserProjectile(velocity: Vector2) : ComplexEntity(){
     override fun update(timeStep: Double) {
         super.update(timeStep)
         lastPos = getCoordinates()
+    }
+
+    override fun getCrudeBoundingCircle(): CrudeBoundingCircle<WorldReferenceFrame>? {
+        return null
     }
 
 }

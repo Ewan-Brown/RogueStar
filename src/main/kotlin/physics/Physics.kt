@@ -17,6 +17,8 @@ import math.WorldReferenceFrame
 import math.getTransformLocalToParentFrame
 import models.Model
 import kotlin.collections.HashMap
+import kotlin.math.max
+import kotlin.math.min
 
 interface EntityConsumer {
     fun addEntity(entity: KinematicEntity)
@@ -72,22 +74,31 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
 
         }
 
-        for(projectile in entities){
-            val collisionTriggerData = projectile.getCollisionTriggerData()
+        for(possibleProjectile in entities){
+            val collisionTriggerData = possibleProjectile.getCollisionTriggerData()
             when(collisionTriggerData){
-                is LineCollisionTrigger -> {} //println("line projectile interaction not defined!")
-                is PointCollisionTrigger -> {} //println("point projectile interaction not defined!")
+                is LineCollisionTrigger -> {
+                    val minX = min(collisionTriggerData.point1.getX(), collisionTriggerData.point2.getX())
+                    val minY = min(collisionTriggerData.point1.getY(), collisionTriggerData.point2.getY())
+                    val maxX = max(collisionTriggerData.point1.getX(), collisionTriggerData.point2.getX())
+                    val maxY = max(collisionTriggerData.point1.getY(), collisionTriggerData.point2.getY())
+                    for (possibleTarget in entities) {
+                        if(possibleTarget != possibleProjectile){
+                            val circle = possibleTarget.getCrudeBoundingCircle()
+                            if(circle != null){
+                                val minPoint = circle.center - Vector2(circle.radius, circle.radius)
+                                val maxPoint = circle.center + Vector2(circle.radius, circle.radius)
+                                if(maxX > minPoint.getX() && minX < maxPoint.getX() && maxY > minPoint.getY() && minY < maxPoint.getY()){
+                                    println("rectangle BB collision detected")
+                                }
+                            }
+                        }
+                    }
+                }
+                is PointCollisionTrigger -> TODO()
                 is RadiusCollisionTrigger -> TODO()
-                is DisabledInteraction -> {} // do nothing!
                 null -> {} // do nothing!
             }
-//            val pointOfContactLocal = projectile.getPointOfContact()
-//            val pointOfContactWorld = pointOfContactLocal.rotate(projectile) + projectile.getWorldTransform().translation
-//            for(entity in entities){
-//                if(entity != projectile){
-//                    //TODO Do cheap preliminary collision checking
-//                }
-//            }
         }
 
         //Do pawn updates
