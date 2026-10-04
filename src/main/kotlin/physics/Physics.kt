@@ -74,22 +74,38 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
 
         }
 
+        data class BoundingBox (val min : Vector2, val max: Vector2)
+        //What if list of size 1? Does it make sense to return a BB?
+        fun getBoundingBox(vectors: List<Vector2>) : BoundingBox {
+            if(vectors.isEmpty()) throw IllegalArgumentException("Cant get a bounding box for empty list of vectors")
+            var minX = vectors[0].getX()
+            var minY = vectors[0].getY()
+            var maxX = vectors[0].getX()
+            var maxY = vectors[0].getY()
+            for(v in vectors){
+                if(v.getX() < minX) minX = v.getX()
+                if(v.getX() > maxX) maxX = v.getX()
+                if(v.getY() < minY) minY = v.getY()
+                if(v.getY() > maxY) maxY = v.getY()
+            }
+
+            return BoundingBox(Vector2(minX, minY), Vector2(maxX, maxY))
+        }
+
         for(possibleProjectile in entities){
             val collisionTriggerData = possibleProjectile.getCollisionTriggerData()
             when(collisionTriggerData){
                 is LineCollisionTrigger -> {
-                    val minX = min(collisionTriggerData.point1.getX(), collisionTriggerData.point2.getX())
-                    val minY = min(collisionTriggerData.point1.getY(), collisionTriggerData.point2.getY())
-                    val maxX = max(collisionTriggerData.point1.getX(), collisionTriggerData.point2.getX())
-                    val maxY = max(collisionTriggerData.point1.getY(), collisionTriggerData.point2.getY())
+                    val rect1 = getBoundingBox(listOf(collisionTriggerData.point1.getVector(), collisionTriggerData.point2.getVector()))
                     for (possibleTarget in entities) {
                         if(possibleTarget != possibleProjectile){
                             val circle = possibleTarget.getCrudeBoundingCircle()
                             if(circle != null){
-                                val minPoint = circle.center - Vector2(circle.radius, circle.radius)
-                                val maxPoint = circle.center + Vector2(circle.radius, circle.radius)
-                                if(maxX > minPoint.getX() && minX < maxPoint.getX() && maxY > minPoint.getY() && minY < maxPoint.getY()){
-                                    println("rectangle BB collision detected")
+                                val rect2 = getBoundingBox(listOf(circle.center.getVector() - Vector2(circle.radius, circle.radius),
+                                    circle.center.getVector() + Vector2(circle.radius, circle.radius)))
+                                //Crude collision measurement, TODO improve this
+                                if(rect1.max.getX() > rect1.min.getX() && rect1.min.getX() < rect2.max.getX() && rect1.max.getY() > rect2.min.getY() && rect1.min.getY() < rect2.max.getY()){
+                                    //Collision consequence
                                 }
                             }
                         }

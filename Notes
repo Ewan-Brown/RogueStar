@@ -3,16 +3,24 @@ Complete Blueprint rewrite
 - Programmable
 - etc
 
-Debug tools
-- implement toString on everything
-- implement a visual debugging system (hover things to see details etc)
-- implement a console
+
 
 TODO:
 - Basic audio
 - Controller support
+- Debug tools
+
+Debug tools
+- implement toString on everything
+- implement a visual debugging system (hover things to see details etc)
+- implement some sort of pause
+- implement a console
 
 Gameplay:
+- Shooting mechanics
+  - implement more projectiles
+  - projectiles can optionally have a 'target' (stored as entityID) which designates what the weapon was aimed at.
+        Used to assess dodge % chance, based on distance from target?
 - Hacking mechanics
   - Ships can use manned stations to hack other ships - potentially gaining temporary control over their systems.
 - Flesh out pawns
