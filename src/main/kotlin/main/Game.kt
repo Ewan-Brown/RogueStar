@@ -20,6 +20,7 @@ import physics.EntityBlueprintStore.singleHullShipBlueprint
 
 fun main() {
     val timeStep = 1.0;
+    val pauseButton = KeyEvent.VK_ESCAPE
 
     val entityModels = loadModels().values.toMutableList();
     val models = mutableListOf(Model.SQUARE, Model.LASER, Model.BACKPLATE)
@@ -30,12 +31,17 @@ fun main() {
     val physicsLayer = PhysicsManager()
     val renderer : RendererI = Renderer(models)
 
+    val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
+
     //We should decouple this from clear server stuff a little better.
     val bitSet = BitSet(256)
     val keyListener : KeyListener = object : KeyListener {
         override fun keyPressed(e: KeyEvent?) {
             if (!e!!.isAutoRepeat) {
                 bitSet.set(e.keyCode.toInt(), true)
+            }
+            if(e.keyCode == pauseButton){
+                game.paused = !game.paused
             }
         }
 
@@ -47,7 +53,6 @@ fun main() {
     }
 
     renderer.addListener(keyListener)
-    val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
     val playerEntity = singleHullShipBlueprint.build()
     val nonPlayerEntity = singleHullShipBlueprint.build()
@@ -71,6 +76,7 @@ fun main() {
 
 class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, val controllerManager: ControllerManager, val effectsManager: EffectsManager, val gui: RendererI){
 
+    var paused = false;
     var targetEntity: ComplexEntity? = null
 
     fun populateData() {
@@ -104,9 +110,11 @@ class Game(val models: MutableList<Model>, val physicsManager: PhysicsManager, v
         //Need to populate data to GUI atleast once before calling gui.setup() or else we get a crash on laptop. Maybe different GPU is reason?
         populateData()
         Thread.sleep(16)
-        val pOut = physicsManager.update(timeStep)
-        effectsManager.update(timeStep)
-        controllerManager.update()
+        if(!paused){
+            physicsManager.update(timeStep)
+            effectsManager.update(timeStep)
+            controllerManager.update()
+        }
     }
 }
 
