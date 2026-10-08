@@ -5,6 +5,8 @@ import effects.EffectsManager
 import graphics.Renderer
 import com.jogamp.newt.event.KeyEvent
 import com.jogamp.newt.event.KeyListener
+import com.jogamp.newt.event.MouseEvent
+import com.jogamp.newt.event.MouseListener
 import controllers.ControllerManager
 import java.util.*
 import controllers.PlayerController
@@ -26,14 +28,18 @@ fun main() {
     val models = mutableListOf(Model.SQUARE, Model.LASER, Model.BACKPLATE)
     models.addAll(entityModels)
 
+    val game: Game
+
     val effectsManager = EffectsManager()
     val controllerManager = ControllerManager()
     val physicsLayer = PhysicsManager()
     val renderer : RendererI = Renderer(models)
 
-    val game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
+    game = Game(models, physicsLayer, controllerManager, effectsManager, renderer)
 
-    //We should decouple this from clear server stuff a little better.
+    physicsLayer.onDebugPause = {game.paused = it} //Set pause game on debug pause!
+
+    //TODO We should decouple the player controls from general controls (e.g pause)
     val bitSet = BitSet(256)
     val keyListener : KeyListener = object : KeyListener {
         override fun keyPressed(e: KeyEvent?) {
@@ -52,7 +58,50 @@ fun main() {
         }
     }
 
-    renderer.addListener(keyListener)
+    val mouseListener : MouseListener = object : MouseListener {
+
+        override fun mouseClicked(e: MouseEvent?) {
+            val p = renderer.getMousePositionInWorldCoordinates()
+            println("point : ${p}")
+            val entities = physicsLayer.getEntitiesAt(p)
+            println("entities found : ${entities.size}")
+            for(e in entities){
+                println("\t $e")
+            }
+            println()
+        }
+
+        override fun mouseEntered(e: MouseEvent?) {
+
+        }
+
+        override fun mouseExited(e: MouseEvent?) {
+
+        }
+
+        override fun mousePressed(e: MouseEvent?) {
+
+        }
+
+        override fun mouseReleased(e: MouseEvent?) {
+
+        }
+
+        override fun mouseMoved(e: MouseEvent?) {
+
+        }
+
+        override fun mouseDragged(e: MouseEvent?) {
+
+        }
+
+        override fun mouseWheelMoved(e: MouseEvent?) {
+
+        }
+    }
+
+    renderer.addKeyListener(keyListener)
+    renderer.addMouseListener(mouseListener)
 
     val playerEntity = singleHullShipBlueprint.build()
     val nonPlayerEntity = singleHullShipBlueprint.build()

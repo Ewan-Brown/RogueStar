@@ -12,6 +12,7 @@ import com.jogamp.newt.event.WindowEvent
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.math.FloatUtil
+import com.jogamp.newt.event.MouseListener
 import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import designers.Shape
@@ -40,8 +41,8 @@ interface RendererI{
     fun updateDrawables(data: Map<Model, List<Renderer.Renderable>>)
     fun updateDebug(debugLines: List<DebugLineData>, debugCircles: List<DebugCircleData>)
     fun updateCamera(cameraDetails: CameraDetails)
-    //TODO Genericize this!
-    fun addListener(keyListener: KeyListener)
+    fun addKeyListener(keyListener: KeyListener)
+    fun addMouseListener(mouseListener: MouseListener)
 }
 
 
@@ -177,8 +178,12 @@ class Renderer(val loadedModels: List<Model>) : RendererI, GLEventListener {
             cameraVelocity = diff * 0.1
     }
 
-    override fun addListener(keyListener: KeyListener) {
+    override fun addKeyListener(keyListener: KeyListener) {
         window.addKeyListener(keyListener)
+    }
+
+    override fun addMouseListener(mouseListener: MouseListener) {
+        window.addMouseListener(mouseListener)
     }
 
     override fun init(drawable: GLAutoDrawable) {

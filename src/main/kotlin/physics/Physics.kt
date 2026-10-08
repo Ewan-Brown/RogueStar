@@ -6,9 +6,13 @@ import graphics.DebugCircleData
 import graphics.DebugLineData
 import graphics.Renderer
 import graphics.processRenderables
+import math.CollisionInitiatorData
 import math.Coordinates
 import math.HasReferenceFrame
+import math.LineCollisionTrigger
+import math.PointCollisionTrigger
 import math.Pose
+import math.RadiusCollisionTrigger
 import math.ReferenceFrame
 import math.ReferenceFrameVariable
 import math.Transform
@@ -17,8 +21,6 @@ import math.WorldReferenceFrame
 import math.getTransformLocalToParentFrame
 import models.Model
 import kotlin.collections.HashMap
-import kotlin.math.max
-import kotlin.math.min
 
 interface EntityConsumer {
     fun addEntity(entity: KinematicEntity)
@@ -35,6 +37,7 @@ value class TimeDuration(val duration: Double)
 
 class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> {
 
+    public var onDebugPause: (Boolean) -> Unit = {}
     private val entities = mutableListOf<KinematicEntity>()
     private val entityBuffer = mutableListOf<KinematicEntity>()
 
@@ -100,12 +103,15 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
                     for (possibleTarget in entities) {
                         if(possibleTarget != possibleProjectile){
                             val circle = possibleTarget.getCrudeBoundingCircle()
-                            if(circle != null){
-                                val rect2 = getBoundingBox(listOf(circle.center.getVector() - Vector2(circle.radius, circle.radius),
-                                    circle.center.getVector() + Vector2(circle.radius, circle.radius)))
-                                //Crude collision measurement, TODO improve this
-                                if(rect1.max.getX() > rect1.min.getX() && rect1.min.getX() < rect2.max.getX() && rect1.max.getY() > rect2.min.getY() && rect1.min.getY() < rect2.max.getY()){
-                                    //Collision consequence
+                            if(possibleTarget.isCollideable(CollisionInitiatorData())){
+                                if(circle != null){
+                                    val rect2 = getBoundingBox(listOf(circle.center - Vector2(circle.radius, circle.radius),
+                                        circle.center + Vector2(circle.radius, circle.radius)))
+                                    //Crude collision measurement, TODO improve this
+                                    if(rect1.max.getX() > rect1.min.getX() && rect1.min.getX() < rect2.max.getX() && rect1.max.getY() > rect2.min.getY() && rect1.min.getY() < rect2.max.getY()){
+                                        //Collision consequence
+                                        onDebugPause(true)
+                                    }
                                 }
                             }
                         }
@@ -142,6 +148,7 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
         }
     }
 
+    //TODO I don't like this pattern.
     fun getDebugLines(): List<DebugLineData> {
         val lines = mutableListOf<DebugLineData>()
 
@@ -161,12 +168,32 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
 
     fun getDebugCircles(): List<DebugCircleData> {
         val circles = mutableListOf<DebugCircleData>()
-        for (entity in entities.filter { it.getCrudeBoundingCircle() != null }) {
+        for (entity in entities) {
             val data = entity.getCrudeBoundingCircle()
-            circles.add(DebugCircleData(data!!.center, data.radius, Renderer.ColorData(1.0f, 0.0f, 1.0f, 1.0f)))
+            if(data != null){
+                circles.add(DebugCircleData(Coordinates(data.center), data.radius, Renderer.ColorData(1.0f, 0.0f, 1.0f, 1.0f)))
+            }
         }
         return circles
     }
+
+    /**
+     * List of entities that roughly overlap this point. Used in UI/Debug tools
+     */
+    fun getEntitiesAt(location: Vector2) : List<KinematicEntity>{
+        return entities.filter { entity ->
+            val circle = entity.getCrudeBoundingCircle()
+            if(circle != null){
+                return@filter circle.contains(location)
+            }else{
+                false
+            }
+        }
+    }
+
+//    fun getEntityClosestTo(location: Vector2) : ComplexEntity?{
+//
+//    }
 
     override fun addEntity(entity: KinematicEntity) {
         synchronized(entityBuffer){

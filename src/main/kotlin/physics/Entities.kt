@@ -8,7 +8,7 @@ import math.*
 import math.Orientation
 import kotlin.math.sin
 
-data class CrudeBoundingCircle<R: ReferenceFrame>(val center: Coordinates<R>, val radius: Double)
+class CrudeBoundingCircle(center: Vector2, radius: Double) : Circle(center, radius)
 // This is used to make changes to the component
 data class Collision(val impulse: Vector2, val componentDamage: Int){
 
@@ -34,7 +34,8 @@ interface KinematicEntity : HasNestedRenderables<WorldReferenceFrame, EntityRefe
     fun popNetTorque(): Double
     fun setPose(pose: Pose<WorldReferenceFrame>)
     fun getCollisionTriggerData() : CollisionTrigger?
-    fun getCrudeBoundingCircle() : CrudeBoundingCircle<WorldReferenceFrame>?
+    fun isCollideable(data: CollisionInitiatorData) : Boolean
+    fun getCrudeBoundingCircle() : CrudeBoundingCircle?
     fun getCollideables() : List<Collideable>
     fun doesFrictionApply() : Boolean //TODO Maybe this should return the friction coeff?
 
@@ -183,8 +184,8 @@ open class ComplexEntity(): KinematicEntity{
         zheight = pose.zHeight
     }
 
-    override fun getCrudeBoundingCircle(): CrudeBoundingCircle<WorldReferenceFrame>? {
-        return CrudeBoundingCircle(getCenterOfMass().applyTransform(getTransformLocalToParentFrame(this)), 1.0)
+    override fun getCrudeBoundingCircle(): CrudeBoundingCircle? {
+        return CrudeBoundingCircle(getCenterOfMass().applyTransform(getTransformLocalToParentFrame(this)).getVector(), 1.0)
     }
 
     override fun getCollideables(): List<Collideable> {
@@ -193,6 +194,10 @@ open class ComplexEntity(): KinematicEntity{
 
     override fun getCollisionTriggerData(): CollisionTrigger? {
         return null
+    }
+
+    override fun isCollideable(data: CollisionInitiatorData): Boolean {
+        return true
     }
 
     override fun doesFrictionApply(): Boolean {

@@ -105,6 +105,14 @@ class Vector2(private val x :Double, private val y :Double) {
         return this.rotate(transform.rotation) + transform.translation
     }
 
+    fun squareDistanceTo(v: Vector2) : Double{
+        return (v.y - this.y).pow(2) + (v.x - this.x).pow(2)
+    }
+
+    fun distanceTo(v: Vector2) : Double{
+        return sqrt(squareDistanceTo(v))
+    }
+
 }
 
 /**
@@ -141,6 +149,15 @@ data class Transformation3(var translation: Vector3, var rotation: Double, var s
     }
     fun copy() : Transformation3 {
         return Transformation3(translation, rotation, scale)
+    }
+}
+
+open class Circle(val center: Vector2, val radius: Double){
+    fun contains(point: Vector2) : Boolean{
+        if(center.squareDistanceTo(point) < radius.pow(2)){
+            return true
+        }
+        return false
     }
 }
 

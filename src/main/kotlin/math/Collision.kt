@@ -2,6 +2,14 @@ package math
 
 //https://dyn4j.org/2010/01/sat/
 
+class CollisionInitiatorData() //TODO Populate this
+
+sealed interface CollisionTrigger
+data class PointCollisionTrigger(val point: Coordinates<WorldReferenceFrame>) : CollisionTrigger
+data class LineCollisionTrigger(val point1: Coordinates<WorldReferenceFrame>, val point2: Coordinates<WorldReferenceFrame>) : CollisionTrigger
+data class RadiusCollisionTrigger(val point: Coordinates<WorldReferenceFrame>, val radius: Double) : CollisionTrigger
+
+
 //TODO make sure to check for containment!
 fun getCollisionMTV(s1 : List<Vector2>, s2: List<Vector2>) : Vector2? {
     val projTest1 = projectionTest(s1, s2)?.relativeMTV ?: return null
