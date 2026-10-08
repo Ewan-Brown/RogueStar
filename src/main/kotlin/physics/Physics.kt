@@ -108,7 +108,7 @@ class PhysicsManager() : EntityConsumer, HasReferenceFrame<WorldReferenceFrame> 
                                     val rect2 = getBoundingBox(listOf(circle.center - Vector2(circle.radius, circle.radius),
                                         circle.center + Vector2(circle.radius, circle.radius)))
                                     //Crude collision measurement, TODO improve this
-                                    if(rect1.max.getX() > rect1.min.getX() && rect1.min.getX() < rect2.max.getX() && rect1.max.getY() > rect2.min.getY() && rect1.min.getY() < rect2.max.getY()){
+                                    if(rect1.max.getX() > rect2.min.getX() && rect1.min.getX() < rect2.max.getX() && rect1.max.getY() > rect2.min.getY() && rect1.min.getY() < rect2.max.getY()){
                                         //Collision consequence
                                         onDebugPause(true)
                                     }
